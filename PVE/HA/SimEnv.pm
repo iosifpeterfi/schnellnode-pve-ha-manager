@@ -81,9 +81,7 @@ sub loop_end_hook {
 
     my $delay = $cur_time - $self->{loop_start_time};
 
-    die "loop take too long ($delay seconds)\n" if $delay > 20;
-
-    $cur_time++;
+    die "loop take too long ($delay seconds)\n" if $delay > 30;
 
     die "simulation end\n" if $cur_time > $max_sim_time;
 }

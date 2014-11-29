@@ -49,6 +49,15 @@ sub get_manager_lock {
     return 0;
 }
 
+sub sleep_until {
+   my ($end_time) = @_;
+
+   for (;;) {
+       my $cur_time = $haenv->get_time();
+       return if $cur_time >= $end_time;
+       $haenv->sleep($end_time - $cur_time);
+   }
+}
 
 $status = get_manager_status();
 
@@ -79,13 +88,23 @@ eval {
 	    }
 	} elsif ($status eq 'quorate') {
 
-	    # do work (max 10 seconds)
+	    my $startime = $haenv->get_time();
+
+	    my $max_time = 10;
+
+	    # do work (max_time seconds)
+	    eval {
+		#print "DO WORK:$startime\n";
+		# fixme: set alert timer
+	    };
+
+	    sleep_until($startime + $max_time);
 
 	    if (!get_manager_lock()) {
 		set_manager_status('lost_quorum');
 	    }
 	} elsif ($status eq 'lost_quorum') {
-	    die "lost_quorum";
+	    die "lost_quorum\n";
 	} elsif ($status eq 'halt') {
 	    die "halt\n";
 	} else {
