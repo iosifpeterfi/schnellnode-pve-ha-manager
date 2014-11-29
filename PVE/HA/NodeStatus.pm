@@ -19,23 +19,26 @@ sub new {
 }
 
 # possible node state:
-# 'unknown' => no info so far, or offline
-# 'online'  => node is active member
-# 'fence'   => node needs to be fenced
+my $valid_node_states = {
+    online => "no online, or possibly online (no info so far)",
+    fenced => "node was fenced",
+    needs_fence => "node needs to be fenced",
+};
 
 sub get_node_state {
     my ($self, $node) = @_;
 
-    my $state = $self->{status}->{$node} || 'unknown';
+    $self->{status}->{$node} = 'online' 
+	if !$self->{status}->{$node};
 
-    return $state;
+    return $self->{status}->{$node};
 }
 
 my $set_node_state = sub {
     my ($self, $node, $state) = @_;
 
-    die "unknown node state '$state'\n" 
-	if !($state eq 'unknown' || $state eq 'online' || $state eq 'fence');
+    die "unknown node state '$state'\n"
+	if !defined($valid_node_states->{$state});
 
     my $last_state = $self->get_node_state($node);
 
@@ -57,7 +60,7 @@ sub update {
 
 	my $state = $self->get_node_state($node);
 
-	if ($state eq 'unknown') {
+	if ($state eq 'fenced') {
 	    &$set_node_state($self, $node, 'online');
 	}
     }
@@ -68,9 +71,7 @@ sub update {
 
 	my $state = $self->get_node_state($node);
 
- 	if ($state eq 'online') {
-	    &$set_node_state($self, $node, 'unknown');
-	}
+	# node is possibly not active - no nothing
    }
 }
 
