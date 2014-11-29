@@ -1,0 +1,100 @@
+#!/usr/bin/perl 
+
+use lib '.';
+
+use strict;
+use warnings;
+
+use PVE::Tools;
+use PVE::HA::SimEnv;
+
+my $statusdir = "/var/tmp/pve-ha-manager";
+
+mkdir $statusdir;
+
+my $haenv = PVE::HA::SimEnv->new();
+
+my $status;
+
+sub get_manager_status {
+
+    my $status = PVE::Tools::file_read_firstline("$statusdir/status");
+
+    $status = 'startup' if !$status;
+
+    return $status;
+}
+
+sub set_manager_status {
+    my ($new_status) = @_;
+
+    return if $status eq $new_status;
+
+    $haenv->log('info', "manager status change $status => $new_status");
+
+    $status = $new_status;
+
+    PVE::Tools::file_set_contents("$statusdir/status", $status);
+}
+
+sub get_manager_lock {
+
+    my $count = 0;
+    for (;;) {
+	return 1 if $haenv->get_ha_manager_lock();
+	last if ++$count > 5;
+	$haenv->sleep(1);
+    }
+
+    return 0;
+}
+
+
+$status = get_manager_status();
+
+# can happen after crash?
+if ($status eq 'quorate') {
+    set_manager_status('recover');
+} else {
+    set_manager_status('startup');
+    
+}
+
+
+$haenv->log('info', "starting simulation environment (status = $status)");
+
+eval {
+
+    for (;;) {
+
+	$haenv->loop_start_hook();
+
+	if ($status eq 'recover') {
+	    $haenv->log('info', "waiting for 5 seconds");
+	    $haenv->sleep(5);
+	    set_manager_status('startup');
+	} elsif ($status eq 'startup') {
+	    if (get_manager_lock()) {
+		set_manager_status('quorate');
+	    }
+	} elsif ($status eq 'quorate') {
+
+	} elsif ($status eq 'lost_quorum') {
+
+	} elsif ($status eq 'halt') {
+	    die "halt\n";
+	} else {
+	    die "got unexpected status '$status'\n";
+	}
+
+	$haenv->loop_end_hook();
+    }
+};
+if (my $err = $@) {
+    $haenv->log('err', "exit now (status = $status) - $err ");
+} else {
+    $haenv->log('info', "exit simulation environment (status = $status)");
+}
+
+exit(0);
+

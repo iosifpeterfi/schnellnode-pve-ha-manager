@@ -1,0 +1,6 @@
+= Experimental implementation of a simple HA Manager =
+
+- should run with any distributed key/value store (consul, ...)
+
+- only works with simply resources like VMs
+
