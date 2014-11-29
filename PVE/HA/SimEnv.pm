@@ -3,6 +3,7 @@ package PVE::HA::SimEnv;
 use strict;
 use warnings;
 use POSIX qw(strftime);
+use Data::Dumper;
 
 use PVE::HA::Env;
 
@@ -17,6 +18,31 @@ my $quorum_setup = [
     [ 500 , [ 'node2', 'node3' ]],
 ];
 
+my $compute_node_info = sub {
+
+    my $last_node_info = {};
+
+    foreach my $entry (@$quorum_setup) {
+	my ($time, $members) = @$entry;
+
+	my $node_info = {};
+
+	foreach my $node (@$members) {
+	    $node_info->{$node}->{online} = 1;
+	    if (!$last_node_info->{$node}) {
+		$node_info->{$node}->{join_time} = $time;
+	    } else {
+		$node_info->{$node}->{join_time} =
+		    $last_node_info->{$node}->{join_time};
+	    }
+	}
+
+	push @$entry, $node_info;
+
+	$last_node_info = $node_info;
+    }
+};
+
 sub new {
     my ($this, $nodename) = @_;
 
@@ -25,6 +51,8 @@ sub new {
     my $self = $class->SUPER::new();
 
     $self->{nodename} = $nodename;
+
+    &$compute_node_info();
 
     return $self;
 }
@@ -66,6 +94,20 @@ sub get_ha_manager_lock {
 
     ++$cur_time;
     return 0;
+}
+
+sub get_node_info {
+    my ($self) = @_;
+
+    foreach my $entry (reverse @$quorum_setup) {
+	my ($time, $members, $node_info) = @$entry;
+
+	if ($cur_time >= $time) {
+	    return $node_info;
+	}
+    }
+
+    die "unbale to get node info";
 }
 
 sub loop_start_hook {

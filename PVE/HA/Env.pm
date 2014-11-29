@@ -17,6 +17,16 @@ sub new {
     return $self;
 }
 
+# this should return a hash containing info
+# what nodes are members and online.
+sub get_node_info {
+    my ($self) = @_;
+
+    die "implement me";   
+
+    # return { node1 => { online => 1, join_time => X }, node2 => ... }
+}
+
 sub log {
     my ($self, $level, $msg) = @_;
 
