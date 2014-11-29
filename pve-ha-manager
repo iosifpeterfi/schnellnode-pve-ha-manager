@@ -12,7 +12,7 @@ my $statusdir = "/var/tmp/pve-ha-manager";
 
 mkdir $statusdir;
 
-my $haenv = PVE::HA::SimEnv->new();
+my $haenv = PVE::HA::SimEnv->new('node1');
 
 my $status;
 
@@ -79,8 +79,13 @@ eval {
 	    }
 	} elsif ($status eq 'quorate') {
 
-	} elsif ($status eq 'lost_quorum') {
+	    # do work (max 10 seconds)
 
+	    if (!get_manager_lock()) {
+		set_manager_status('lost_quorum');
+	    }
+	} elsif ($status eq 'lost_quorum') {
+	    die "lost_quorum";
 	} elsif ($status eq 'halt') {
 	    die "halt\n";
 	} else {

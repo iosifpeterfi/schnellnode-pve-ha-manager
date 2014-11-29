@@ -10,14 +10,31 @@ use base qw(PVE::HA::Env);
 
 my $max_sim_time = 1000;
 
+# time => quorate nodes (first node gets manager lock)
+my $quorum_setup = [
+    [ 100 , [ 'node1', 'node2' ]],
+    [ 200 , [ 'node1', 'node2', 'node3' ]],
+    [ 500 , [ 'node2', 'node3' ]],
+];
+
+sub new {
+    my ($this, $nodename) = @_;
+
+    my $class = ref($this) || $this;
+
+    my $self = $class->SUPER::new();
+
+    $self->{nodename} = $nodename;
+
+    return $self;
+}
+
 sub log {
     my ($self, $level, $msg) = @_;
 
     my $time = $self->get_time();
 
-    my $timestr = strftime("%H:%M:%S", gmtime($time));
-
-    print "$level $timestr: $msg\n";
+    printf("%-5s %10d $self->{nodename}: $msg\n", $level, $time);
 }
 
 my $cur_time = 0;
@@ -37,9 +54,18 @@ sub sleep {
 sub get_ha_manager_lock {
     my ($self) = @_;
 
-    ++$cur_time;
+    foreach my $entry (reverse @$quorum_setup) {
+	my ($time, $members) = @$entry;
 
-    return 1;
+	if ($cur_time >= $time) {
+	    ++$cur_time;
+	    return 1 if $members->[0] eq $self->{nodename};
+	    return 0;
+	}
+    }
+
+    ++$cur_time;
+    return 0;
 }
 
 sub loop_start_hook {
