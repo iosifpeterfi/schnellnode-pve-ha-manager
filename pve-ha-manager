@@ -94,15 +94,27 @@ eval {
 
 	    # do work (max_time seconds)
 	    eval {
-		#print "DO WORK:$startime\n";
+		# print "DO WORK:$startime\n";
 		# fixme: set alert timer
-	    };
 
-	    sleep_until($startime + $max_time);
+		my $node_info = $haenv->get_node_info();
+
+	    };
+	    if (my $err = $@) {
+
+		# fixme: cleanup?
+		$haenv->log('err', "got unexpected error - $err");
+		set_manager_status('error');
+
+	    } else {
+		sleep_until($startime + $max_time);
+	    }
 
 	    if (!get_manager_lock()) {
 		set_manager_status('lost_quorum');
 	    }
+	} elsif ($status eq 'error') {
+	    die "stopping due to errors\n";
 	} elsif ($status eq 'lost_quorum') {
 	    die "lost_quorum\n";
 	} elsif ($status eq 'halt') {
