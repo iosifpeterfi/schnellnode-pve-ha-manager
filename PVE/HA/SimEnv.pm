@@ -15,7 +15,9 @@ my $max_sim_time = 1000;
 my $quorum_setup = [
     [ 100 , [ 'node1', 'node2' ]],
     [ 200 , [ 'node1', 'node2', 'node3' ]],
-    [ 500 , [ 'node2', 'node3' ]],
+    [ 300 , [ 'node1', 'node2' ]],
+    [ 400 , [ 'node1', 'node2', 'node3']],
+    [ 900 , [ 'node2', 'node3' ]],
 ];
 
 my $compute_node_info = sub {
@@ -59,6 +61,8 @@ sub new {
 
 sub log {
     my ($self, $level, $msg) = @_;
+
+    chomp $msg;
 
     my $time = $self->get_time();
 

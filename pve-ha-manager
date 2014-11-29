@@ -7,6 +7,7 @@ use warnings;
 
 use PVE::Tools;
 use PVE::HA::SimEnv;
+use PVE::HA::NodeStatus;
 
 my $statusdir = "/var/tmp/pve-ha-manager";
 
@@ -65,12 +66,12 @@ $status = get_manager_status();
 if ($status eq 'quorate') {
     set_manager_status('recover');
 } else {
-    set_manager_status('startup');
-    
+    set_manager_status('startup');   
 }
 
-
 $haenv->log('info', "starting simulation environment (status = $status)");
+
+my $node_status = PVE::HA::NodeStatus->new($haenv);
 
 eval {
 
@@ -98,6 +99,7 @@ eval {
 		# fixme: set alert timer
 
 		my $node_info = $haenv->get_node_info();
+		$node_status->update($node_info);
 
 	    };
 	    if (my $err = $@) {
