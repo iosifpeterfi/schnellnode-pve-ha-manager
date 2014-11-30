@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use PVE::SafeSyslog;
+use PVE::Tools;
 
 # abstract out the cluster environment
 
@@ -29,6 +30,21 @@ sub write_local_status {
     my ($self, $status) = @_;
 
     PVE::Tools::file_set_contents("$self->{statusdir}/status", $status);
+}
+
+# manager status is stored on cluster, protected by ha_manager_lock
+sub read_manager_status {
+    my ($self) = @_;
+
+    die "implement me";
+
+    return {};
+}
+
+sub write_manager_status {
+    my ($self, $status_obj) = @_;
+
+    die "implement me";
 }
 
 # this should return a hash containing info

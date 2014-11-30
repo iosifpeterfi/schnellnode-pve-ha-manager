@@ -4,10 +4,13 @@ use strict;
 use warnings;
 use POSIX qw(strftime);
 use Data::Dumper;
+use JSON; 
 
 use PVE::HA::Env;
 
 use base qw(PVE::HA::Env);
+
+my $cur_time = 0;
 
 my $max_sim_time = 5000;
 
@@ -49,44 +52,6 @@ my $compute_node_info = sub {
     }
 };
 
-sub new {
-    my ($this, $statusdir, $nodename) = @_;
-
-    my $class = ref($this) || $this;
-
-    my $self = $class->SUPER::new($statusdir);
-
-    $self->{nodename} = $nodename;
-
-    &$compute_node_info();
-
-    return $self;
-}
-
-sub log {
-    my ($self, $level, $msg) = @_;
-
-    chomp $msg;
-
-    my $time = $self->get_time();
-
-    printf("%-5s %10d $self->{nodename}: $msg\n", $level, $time);
-}
-
-my $cur_time = 0;
-
-sub get_time {
-    my ($self) = @_;
-
-    return $cur_time;
-}
-
-sub sleep {
-   my ($self, $delay) = @_;
-
-   $cur_time += $delay;
-}
-
 my $lookup_quorum_info = sub {
     my ($self) = @_;
 
@@ -101,16 +66,85 @@ my $lookup_quorum_info = sub {
     return undef;
 };
 
+my $node_is_lock_owner = sub {
+   my ($self) = @_;
+
+   if (my $members = &$lookup_quorum_info($self)) {
+       return $members->[0] eq $self->{nodename} ? 1 : 0;
+   }
+
+   return 0;
+};
+
+sub new {
+    my ($this, $statusdir, $nodename) = @_;
+
+    my $class = ref($this) || $this;
+
+    my $self = $class->SUPER::new($statusdir);
+
+    $self->{nodename} = $nodename;
+
+    &$compute_node_info();
+
+    return $self;
+}
+
+sub read_manager_status {
+    my ($self) = @_;
+
+    die "detected read without lock\n" 
+	if !&$node_is_lock_owner($self);
+    
+    my $filename = "$self->{statusdir}/manager_status";
+
+    my $raw = PVE::Tools::file_get_contents($filename);
+
+    my $data = decode_json($raw);
+ 
+    return $data;
+}
+
+sub write_manager_status {
+    my ($self, $status_obj) = @_;
+
+    die "detected write without lock\n" 
+	if !&$node_is_lock_owner($self);
+
+    my $data = encode_json($status_obj);
+    my $filename = "$self->{statusdir}/manager_status";
+
+    PVE::Tools::file_set_contents($filename, $data);
+}
+
+sub log {
+    my ($self, $level, $msg) = @_;
+
+    chomp $msg;
+
+    my $time = $self->get_time();
+
+    printf("%-5s %10d $self->{nodename}: $msg\n", $level, $time);
+}
+
+sub get_time {
+    my ($self) = @_;
+
+    return $cur_time;
+}
+
+sub sleep {
+   my ($self, $delay) = @_;
+
+   $cur_time += $delay;
+}
+
 sub get_ha_manager_lock {
     my ($self) = @_;
 
-    if (my $members = &$lookup_quorum_info($self)) {
-	++$cur_time;
-	return $members->[0] eq $self->{nodename} ? 1 : 0;
-    }
-
+    my $res = &$node_is_lock_owner($self);
     ++$cur_time;
-    return 0;
+    return $res;
 }
 
 # return true when cluster is quorate
