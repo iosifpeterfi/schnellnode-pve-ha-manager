@@ -9,7 +9,7 @@ use PVE::HA::Env;
 
 use base qw(PVE::HA::Env);
 
-my $max_sim_time = 1000;
+my $max_sim_time = 5000;
 
 # time => quorate nodes (first node gets manager lock)
 my $quorum_setup = [
@@ -18,6 +18,10 @@ my $quorum_setup = [
     [ 300 , [ 'node1', 'node2' ]],
     [ 400 , [ 'node1', 'node2', 'node3']],
     [ 900 , [ 'node2', 'node3' ]],
+    [ 1000 , [ 'node2', 'node3', 'node1' ]],
+    [ 1100 , [ 'node1', 'node2', 'node3' ]],
+
+    [ 4900 , [ 'node2', 'node3' ]],
 ];
 
 my $compute_node_info = sub {

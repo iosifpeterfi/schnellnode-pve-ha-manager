@@ -80,15 +80,22 @@ eval {
 	$haenv->loop_start_hook();
 
 	if ($status eq 'recover') {
+
 	    $haenv->log('info', "waiting for 5 seconds");
 	    $haenv->sleep(5);
+
 	    set_manager_status('wait_for_quorum');
+
 	} elsif ($status eq 'wait_for_quorum') {
 
-	    if ($haenv->quorate() && get_manager_lock()) {
-		set_manager_status('master');
-	    } else {
-		$haenv->sleep(5);
+	    $haenv->sleep(5);
+	   
+	    if ($haenv->quorate()) {
+		if (get_manager_lock()) {
+		    set_manager_status('master');
+		} else {
+		    set_manager_status('slave');
+		}
 	    }
 
 	} elsif ($status eq 'master') {
@@ -117,8 +124,25 @@ eval {
 	    }
 
 	    if (!get_manager_lock()) {
-		set_manager_status('lost_quorum');
+		if ($haenv->quorate()) {
+		    set_manager_status('slave');
+		} else {
+		    set_manager_status('wait_for_quorum');
+		    # set_manager_status('lost_quorum');
+		}
 	    }
+	} elsif ($status eq 'slave') {
+
+	    $haenv->sleep(5);
+
+	    if ($haenv->quorate()) {
+		if (get_manager_lock()) {
+		    set_manager_status('master');
+		}
+	    } else {
+		set_manager_status('wait_for_quorum');
+	    }
+
 	} elsif ($status eq 'error') {
 	    die "stopping due to errors\n";
 	} elsif ($status eq 'lost_quorum') {
