@@ -13,13 +13,13 @@ my $statusdir = "/var/tmp/pve-ha-manager";
 
 mkdir $statusdir;
 
-my $haenv = PVE::HA::SimEnv->new('node1');
+my $haenv = PVE::HA::SimEnv->new($statusdir, 'node1');
 
 my $status;
 
 sub get_manager_status {
 
-    my $status = PVE::Tools::file_read_firstline("$statusdir/status");
+    my $status = $haenv->read_local_status();
 
     $status = 'startup' if !$status;
 
@@ -35,7 +35,7 @@ sub set_manager_status {
 
     $status = $new_status;
 
-    PVE::Tools::file_set_contents("$statusdir/status", $status);
+    $haenv->write_local_status($status);
 }
 
 sub get_manager_lock {

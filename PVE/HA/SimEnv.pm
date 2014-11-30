@@ -46,11 +46,11 @@ my $compute_node_info = sub {
 };
 
 sub new {
-    my ($this, $nodename) = @_;
+    my ($this, $statusdir, $nodename) = @_;
 
     my $class = ref($this) || $this;
 
-    my $self = $class->SUPER::new();
+    my $self = $class->SUPER::new($statusdir);
 
     $self->{nodename} = $nodename;
 

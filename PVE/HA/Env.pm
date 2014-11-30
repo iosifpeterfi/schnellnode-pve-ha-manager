@@ -8,13 +8,27 @@ use PVE::SafeSyslog;
 # abstract out the cluster environment
 
 sub new {
-    my ($this) = @_;
+    my ($this, $statusdir) = @_;
 
     my $class = ref($this) || $this;
 
-    my $self = bless {}, $class;
+    my $self = bless {
+	statusdir => $statusdir,
+    }, $class;
 
     return $self;
+}
+
+sub read_local_status {
+    my ($self) = @_;
+
+    return PVE::Tools::file_read_firstline("$self->{statusdir}/status");  
+}
+
+sub write_local_status {
+    my ($self, $status) = @_;
+
+    PVE::Tools::file_set_contents("$self->{statusdir}/status", $status);
 }
 
 # this should return a hash containing info
