@@ -66,7 +66,7 @@ $status = get_manager_status();
 if ($status eq 'master') {
     set_manager_status('recover');
 } else {
-    set_manager_status('startup');   
+    set_manager_status('wait_for_quorum');   
 }
 
 $haenv->log('info', "starting simulation environment (status = $status)");
@@ -82,11 +82,15 @@ eval {
 	if ($status eq 'recover') {
 	    $haenv->log('info', "waiting for 5 seconds");
 	    $haenv->sleep(5);
-	    set_manager_status('startup');
-	} elsif ($status eq 'startup') {
-	    if (get_manager_lock()) {
+	    set_manager_status('wait_for_quorum');
+	} elsif ($status eq 'wait_for_quorum') {
+
+	    if ($haenv->quorate() && get_manager_lock()) {
 		set_manager_status('master');
+	    } else {
+		$haenv->sleep(5);
 	    }
+
 	} elsif ($status eq 'master') {
 
 	    my $startime = $haenv->get_time();
