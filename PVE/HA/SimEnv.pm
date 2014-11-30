@@ -24,7 +24,7 @@ my $quorum_setup = [
     [ 1000 , [ 'node2', 'node3', 'node1' ]],
     [ 1100 , [ 'node1', 'node2', 'node3' ]],
 
-    [ 4900 , [ 'node2', 'node3' ]],
+    [ 4800 , [ 'node2', 'node3' ]],
 ];
 
 my $compute_node_info = sub {
