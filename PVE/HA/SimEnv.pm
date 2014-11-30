@@ -81,9 +81,7 @@ sub new {
 
     my $class = ref($this) || $this;
 
-    my $self = $class->SUPER::new($statusdir);
-
-    $self->{nodename} = $nodename;
+    my $self = $class->SUPER::new($statusdir, $nodename);
 
     &$compute_node_info();
 
@@ -100,7 +98,7 @@ sub read_manager_status {
 
     my $raw = PVE::Tools::file_get_contents($filename);
 
-    my $data = decode_json($raw);
+    my $data = decode_json($raw) || {};
  
     return $data;
 }
@@ -115,6 +113,14 @@ sub write_manager_status {
     my $filename = "$self->{statusdir}/manager_status";
 
     PVE::Tools::file_set_contents($filename, $data);
+}
+
+sub manager_status_exists {
+    my ($self) = @_;
+
+    my $filename = "$self->{statusdir}/manager_status";
+ 
+    return -f $filename ? 1 : 0;
 }
 
 sub log {

@@ -9,27 +9,34 @@ use PVE::Tools;
 # abstract out the cluster environment
 
 sub new {
-    my ($this, $statusdir) = @_;
+    my ($this, $statusdir, $nodename) = @_;
 
     my $class = ref($this) || $this;
 
     my $self = bless {
 	statusdir => $statusdir,
+	nodename => $nodename,
     }, $class;
 
     return $self;
 }
 
+sub nodename {
+    my ($self) = @_;
+
+    return $self->{nodename};
+}
+
 sub read_local_status {
     my ($self) = @_;
 
-    return PVE::Tools::file_read_firstline("$self->{statusdir}/status");  
+    return PVE::Tools::file_read_firstline("$self->{statusdir}/local_status");  
 }
 
 sub write_local_status {
     my ($self, $status) = @_;
 
-    PVE::Tools::file_set_contents("$self->{statusdir}/status", $status);
+    PVE::Tools::file_set_contents("$self->{statusdir}/local_status", $status);
 }
 
 # manager status is stored on cluster, protected by ha_manager_lock
@@ -45,6 +52,15 @@ sub write_manager_status {
     my ($self, $status_obj) = @_;
 
     die "implement me";
+}
+
+# we use this to enable/disbale ha
+sub manager_status_exists {
+    my ($self) = @_;
+
+    die "implement me";
+
+    return {};
 }
 
 # this should return a hash containing info

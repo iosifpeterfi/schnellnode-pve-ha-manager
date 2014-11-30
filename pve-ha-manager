@@ -17,16 +17,7 @@ my $haenv = PVE::HA::SimEnv->new($statusdir, 'node1');
 
 my $status;
 
-sub get_manager_status {
-
-    my $status = $haenv->read_local_status();
-
-    $status = 'startup' if !$status;
-
-    return $status;
-}
-
-sub set_manager_status {
+sub set_local_status {
     my ($new_status) = @_;
 
     return if $status eq $new_status;
@@ -60,13 +51,18 @@ sub sleep_until {
    }
 }
 
-$status = get_manager_status();
+if (!$haenv->manager_status_exists()) {
+    $haenv->log('info', "HA is not enabled");
+    exit(0);
+}
+
+$status = $haenv->read_local_status() || 'wait_for_quorum';
 
 # can happen after crash?
 if ($status eq 'master') {
-    set_manager_status('recover');
+    set_local_status('recover');
 } else {
-    set_manager_status('wait_for_quorum');   
+    set_local_status('wait_for_quorum');   
 }
 
 $haenv->log('info', "starting simulation environment (status = $status)");
@@ -84,7 +80,7 @@ eval {
 	    $haenv->log('info', "waiting for 5 seconds");
 	    $haenv->sleep(5);
 
-	    set_manager_status('wait_for_quorum');
+	    set_local_status('wait_for_quorum');
 
 	} elsif ($status eq 'wait_for_quorum') {
 
@@ -92,9 +88,9 @@ eval {
 	   
 	    if ($haenv->quorate()) {
 		if (get_manager_lock()) {
-		    set_manager_status('master');
+		    set_local_status('master');
 		} else {
-		    set_manager_status('slave');
+		    set_local_status('slave');
 		}
 	    }
 
@@ -104,20 +100,26 @@ eval {
 
 	    my $max_time = 10;
 
+
 	    # do work (max_time seconds)
 	    eval {
+		my $ms = $haenv->read_manager_status();
+
+		$ms->{master_node} = $haenv->nodename();
+
 		# print "DO WORK:$startime\n";
 		# fixme: set alert timer
 
 		my $node_info = $haenv->get_node_info();
 		$node_status->update($node_info);
 
+		$haenv->write_manager_status($ms);
 	    };
 	    if (my $err = $@) {
 
 		# fixme: cleanup?
 		$haenv->log('err', "got unexpected error - $err");
-		set_manager_status('error');
+		set_local_status('error');
 
 	    } else {
 		sleep_until($startime + $max_time);
@@ -125,10 +127,10 @@ eval {
 
 	    if (!get_manager_lock()) {
 		if ($haenv->quorate()) {
-		    set_manager_status('slave');
+		    set_local_status('slave');
 		} else {
-		    set_manager_status('wait_for_quorum');
-		    # set_manager_status('lost_quorum');
+		    set_local_status('wait_for_quorum');
+		    # set_local_status('lost_quorum');
 		}
 	    }
 	} elsif ($status eq 'slave') {
@@ -137,10 +139,10 @@ eval {
 
 	    if ($haenv->quorate()) {
 		if (get_manager_lock()) {
-		    set_manager_status('master');
+		    set_local_status('master');
 		}
 	    } else {
-		set_manager_status('wait_for_quorum');
+		set_local_status('wait_for_quorum');
 	    }
 
 	} elsif ($status eq 'error') {
