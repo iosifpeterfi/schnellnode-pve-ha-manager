@@ -83,20 +83,42 @@ sub sleep {
    $cur_time += $delay;
 }
 
-sub get_ha_manager_lock {
+my $lookup_quorum_info = sub {
     my ($self) = @_;
 
     foreach my $entry (reverse @$quorum_setup) {
 	my ($time, $members) = @$entry;
 
 	if ($cur_time >= $time) {
-	    ++$cur_time;
-	    return 1 if $members->[0] eq $self->{nodename};
-	    return 0;
+	    return $members;
 	}
+    }
+    
+    return undef;
+};
+
+sub get_ha_manager_lock {
+    my ($self) = @_;
+
+    if (my $members = &$lookup_quorum_info($self)) {
+	++$cur_time;
+	return $members->[0] eq $self->{nodename} ? 1 : 0;
     }
 
     ++$cur_time;
+    return 0;
+}
+
+# return true when cluster is quorate
+sub quorate {
+    my ($self) = @_;
+
+    if (my $members = &$lookup_quorum_info($self)) {
+	foreach my $node (@$members) {
+	    return 1 if $node eq $self->{nodename};
+	}
+    }
+
     return 0;
 }
 

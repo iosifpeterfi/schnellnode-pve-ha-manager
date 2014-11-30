@@ -63,7 +63,7 @@ sub sleep_until {
 $status = get_manager_status();
 
 # can happen after crash?
-if ($status eq 'quorate') {
+if ($status eq 'master') {
     set_manager_status('recover');
 } else {
     set_manager_status('startup');   
@@ -85,9 +85,9 @@ eval {
 	    set_manager_status('startup');
 	} elsif ($status eq 'startup') {
 	    if (get_manager_lock()) {
-		set_manager_status('quorate');
+		set_manager_status('master');
 	    }
-	} elsif ($status eq 'quorate') {
+	} elsif ($status eq 'master') {
 
 	    my $startime = $haenv->get_time();
 

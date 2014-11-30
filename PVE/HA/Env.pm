@@ -54,6 +54,13 @@ sub get_ha_manager_lock {
     die "implement me";
 }
 
+# return true when cluster is quorate
+sub quorate {
+    my ($self) = @_;
+
+    die "implement me";
+}
+
 # return current time
 # overwrite that if you want to simulate
 sub get_time {
