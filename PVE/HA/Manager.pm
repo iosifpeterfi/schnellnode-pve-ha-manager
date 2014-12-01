@@ -18,10 +18,14 @@ sub new {
 
     my $ns = PVE::HA::NodeStatus->new($haenv, $ms->{node_status} || {});
 
+    # fixme: use separate class  PVE::HA::ServiceStatus
+    my $ss = $ms->{service_status} || {};
+
     my $self = bless {
 	haenv => $haenv,
 	ms => $ms, # master status
 	ns => $ns, # PVE::HA::NodeStatus
+	ss => $ss, # service status
     }, $class;
 
     return $self;
@@ -36,20 +40,18 @@ sub cleanup {
 sub flush_master_status {
     my ($self) = @_;
 
-    my $haenv = $self->{haenv};
-    my $ms = $self->{ms};
-    my $ns = $self->{ns};
+    my ($haenv, $ms, $ns, $ss) = ($self->{haenv}, $self->{ms}, $self->{ns}, $self->{ss});
 
     $ms->{node_status} = $ns->{status};
+    $ms->{service_status} = $ss;
+
     $haenv->write_manager_status($ms);
 } 
 
 sub manage {
     my ($self) = @_;
 
-    my $haenv = $self->{haenv};
-    my $ms = $self->{ms};
-    my $ns = $self->{ns};
+    my ($haenv, $ms, $ns, $ss) = ($self->{haenv}, $self->{ms}, $self->{ns}, $self->{ss});
 
     $ns->update($haenv->get_node_info());
     
