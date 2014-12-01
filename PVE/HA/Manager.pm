@@ -8,12 +8,20 @@ use Data::Dumper;
 use PVE::HA::NodeStatus;
 
 sub new {
-    my ($this, $env) = @_;
+    my ($this, $haenv) = @_;
 
     my $class = ref($this) || $this;
 
+    my $ms = $haenv->read_manager_status();
+
+    $ms->{master_node} = $haenv->nodename();
+
+    my $ns = PVE::HA::NodeStatus->new($haenv, $ms->{node_status} || {});
+
     my $self = bless {
-	env => $env,
+	haenv => $haenv,
+	ms => $ms, # master status
+	ns => $ns, # PVE::HA::NodeStatus
     }, $class;
 
     return $self;
@@ -25,27 +33,27 @@ sub cleanup {
     # todo: ?
 }
 
+sub flush_master_status {
+    my ($self) = @_;
+
+    my $haenv = $self->{haenv};
+    my $ms = $self->{ms};
+    my $ns = $self->{ns};
+
+    $ms->{node_status} = $ns->{status};
+    $haenv->write_manager_status($ms);
+} 
+
 sub manage {
     my ($self) = @_;
 
-    my $haenv = $self->{env};
+    my $haenv = $self->{haenv};
+    my $ms = $self->{ms};
+    my $ns = $self->{ns};
 
-    my $ms = $haenv->read_manager_status();
-
-    $ms->{node_status} = {} if !$ms->{node_status};
-
-    my $node_status = PVE::HA::NodeStatus->new($haenv, $ms->{node_status});
-
-    $ms->{master_node} = $haenv->nodename();
-
-    my $node_info = $haenv->get_node_info();
+    $ns->update($haenv->get_node_info());
     
-    $node_status->update($node_info);
-    
-
-    $ms->{node_status} = $node_status->{status};
-    $haenv->write_manager_status($ms);
-
+    $self->flush_master_status();
 }
 
 
