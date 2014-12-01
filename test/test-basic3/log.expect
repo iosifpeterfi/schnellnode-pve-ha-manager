@@ -1,0 +1,13 @@
+info           0 node1: starting simulation environment (status = wait_for_quorum)
+info         101 node1: manager status change wait_for_quorum => master
+info         101 node1: node 'node2' status change: 'new' => 'online'
+info         101 node1: node 'node1' status change: 'new' => 'online'
+info         200 node1: node 'node3' status change: 'new' => 'online'
+info         310 node1: node 'node3' status change: 'online' => 'unknown'
+info         409 node1: node 'node3' status change: 'unknown' => 'online'
+info         914 node1: manager status change master => wait_for_quorum
+info        1015 node1: manager status change wait_for_quorum => slave
+info        1101 node1: manager status change slave => master
+info        4818 node1: manager status change master => wait_for_quorum
+err         5803 node1: exit now (status = wait_for_quorum) - simulation end
+ 

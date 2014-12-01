@@ -9,4 +9,4 @@ test:
 
 .PHONY: clean
 clean:
-	rm -rf *~ test-*/log  test-*/status
+	rm -rf *~ test-*/log  test-*/*~ test-*/status

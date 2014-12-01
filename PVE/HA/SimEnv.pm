@@ -12,20 +12,10 @@ use base qw(PVE::HA::Env);
 
 my $cur_time = 0;
 
-my $max_sim_time = 5000;
+my $max_sim_time = 1000;
 
 # time => quorate nodes (first node gets manager lock)
-my $quorum_setup = [
-    [ 100 , [ 'node1', 'node2' ]],
-    [ 200 , [ 'node1', 'node2', 'node3' ]],
-    [ 300 , [ 'node1', 'node2' ]],
-    [ 400 , [ 'node1', 'node2', 'node3']],
-    [ 900 , [ 'node2', 'node3' ]],
-    [ 1000 , [ 'node2', 'node3', 'node1' ]],
-    [ 1100 , [ 'node1', 'node2', 'node3' ]],
-
-    [ 4800 , [ 'node2', 'node3' ]],
-];
+my $quorum_setup = [];
 
 my $compute_node_info = sub {
 
@@ -33,6 +23,8 @@ my $compute_node_info = sub {
 
     foreach my $entry (@$quorum_setup) {
 	my ($time, $members) = @$entry;
+
+	$max_sim_time = $time + 1000;
 
 	my $node_info = {};
 
@@ -84,6 +76,11 @@ sub new {
     my $nodename = 'node1';
     if (-f "$testdir/hostname") {
 	$nodename = PVE::Tools::file_read_firstline("$testdir/hostname");
+    }
+
+    if (-f "$testdir/membership") {
+	my $raw = PVE::Tools::file_get_contents("$testdir/membership");
+	$quorum_setup = decode_json($raw);
     }
 
     my $statusdir = "$testdir/status";
