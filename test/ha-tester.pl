@@ -17,10 +17,15 @@ sub run_test {
     my $statusdir = "$dir/status";
     remove_tree($statusdir);
     mkdir $statusdir;
+
+    if (-f "$dir/manager_status") {
+	system("cp $dir/manager_status $statusdir/manager_status");
+    }
+
     my $logfile = "$dir/log";
     my $logexpect = "$logfile.expect";
 
-    my $res = system("../pve-ha-manager --test '$statusdir'|tee $logfile");
+    my $res = system("../pve-ha-manager --test '$dir'|tee $logfile");
     die "Test '$dir' failed\n" if $res != 0;
 
     if (-f $logexpect) {

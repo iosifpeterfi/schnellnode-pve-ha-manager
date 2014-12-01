@@ -1,0 +1,3 @@
+info           0 abc: starting simulation environment (status = wait_for_quorum)
+err         5005 abc: exit now (status = wait_for_quorum) - simulation end
+ 

@@ -21,7 +21,7 @@ my $haenv;
 
 if ($testdir) {
 
-    $haenv = PVE::HA::SimEnv->new($testdir, 'node1');
+    $haenv = PVE::HA::SimEnv->new($testdir);
 
 } else {
     # my $statusdir; = "/var/tmp/pve-ha-manager";

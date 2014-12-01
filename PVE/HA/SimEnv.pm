@@ -77,9 +77,16 @@ my $node_is_lock_owner = sub {
 };
 
 sub new {
-    my ($this, $statusdir, $nodename) = @_;
+    my ($this, $testdir) = @_;
 
     my $class = ref($this) || $this;
+
+    my $nodename = 'node1';
+    if (-f "$testdir/hostname") {
+	$nodename = PVE::Tools::file_read_firstline("$testdir/hostname");
+    }
+
+    my $statusdir = "$testdir/status";
 
     my $self = $class->SUPER::new($statusdir, $nodename);
 
