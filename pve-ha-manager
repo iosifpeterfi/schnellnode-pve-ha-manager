@@ -1,19 +1,32 @@
 #!/usr/bin/perl 
 
-use lib '.';
+use lib ('.', '..');
 
 use strict;
 use warnings;
-
+use Getopt::Long;
+  
 use PVE::Tools;
 use PVE::HA::SimEnv;
 use PVE::HA::Manager;
 
-my $statusdir = "/var/tmp/pve-ha-manager";
+my $testdir;
 
-mkdir $statusdir;
+if (!GetOptions ("test=s"   => \$testdir)) {
+    print "usage: $0 [--test=<dir>]\n";
+    exit -1;
+}
 
-my $haenv = PVE::HA::SimEnv->new($statusdir, 'node1');
+my $haenv;
+
+if ($testdir) {
+
+    $haenv = PVE::HA::SimEnv->new($testdir, 'node1');
+
+} else {
+    # my $statusdir; = "/var/tmp/pve-ha-manager";
+    die "implement me";
+}
 
 my $status;
 
