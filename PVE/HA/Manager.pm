@@ -19,6 +19,12 @@ sub new {
     return $self;
 }
 
+sub cleanup {
+    my ($self) = @_;
+
+    # todo: ?
+}
+
 sub manage {
     my ($self) = @_;
 
