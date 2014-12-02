@@ -62,6 +62,34 @@ sub select_service_node {
     return shift @$online_nodes;
 }
 
+my $change_service_state = sub {
+    my ($self, $sid, $new_state, %params) = @_;
+
+    my ($haenv, $ss) = ($self->{haenv}, $self->{ss});
+
+    my $sd = $ss->{$sid} || die "no such service '$sid";
+
+    my $old_state = $sd->{state};
+
+    die "no state change" if $old_state eq $new_state; # just to be sure
+
+    my $changes = '';
+    foreach my $k (keys %params) {
+	my $v = $params{$k};
+	next if defined($sd->{$k}) && $sd->{$k} eq $v;
+	$changes .= ", " if $changes;
+	$changes .= "$k = $v";
+	$sd->{$k} = $v;
+    }
+    
+    $sd->{state} = $new_state;
+
+    # fixme: cleanup state (remove unused values)
+
+    $changes = " ($changes)" if $changes;
+    $haenv->log('info', "service '$sid': state changed to '$new_state' $changes\n");
+};
+
 sub manage {
     my ($self) = @_;
 
@@ -91,9 +119,7 @@ sub manage {
 		# do nothing
 	    } elsif ($cd->{state} eq 'enabled') {
 		if (my $node = $self->select_service_node($cd)) {
-		    $haenv->log('info', "starting service '$sid' on node '$node'\n");
-		    $sd->{state} = 'started';
-		    $sd->{node} = $node;
+		    &$change_service_state($self, $sid, 'started', node => $node);
 		} else {
 		    # fixme: warn 
 		}
@@ -105,17 +131,15 @@ sub manage {
 
 	    if (!$ns->node_is_online($sd->{node})) {
 
-		$haenv->log('info', "fence service '$sid' on node '$sd->{node}'\n");
-
-		$sd->{state} = 'fence';
+		&$change_service_state($self, $sid, 'fence');
 
 	    } else {
 
 		if ($cd->{state} eq 'disabled') {
-		    $sd->{state} = 'request_stop';
+		    &$change_service_state($self, $sid, 'request_stop');
 		} elsif ($cd->{state} eq 'enabled') {
 		    if ($sd->{node} ne $cd->{node}) {
-			$sd->{state} = 'migrate'; # fixme: save new node
+			&$change_service_state($self, $sid, 'migrate');
 		    } else {
 			# do nothing
 		    }
@@ -131,7 +155,7 @@ sub manage {
 	} elsif ($sd->{state} eq 'fence') {
 
 	    if ($ns->fence_node($sd->{node})) {
-		$sd->{state} = 'stopped';
+		&$change_service_state($self, $sid, 'stopped');
 	    } else {
 		# do nothing, wait until fence is successful
 	    }
