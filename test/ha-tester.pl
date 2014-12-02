@@ -21,6 +21,9 @@ sub run_test {
     if (-f "$dir/manager_status") {
 	system("cp $dir/manager_status $statusdir/manager_status");
     }
+   if (-f "$dir/service_status") {
+	system("cp $dir/service_status $statusdir/service_status");
+    }
 
     my $logfile = "$dir/log";
     my $logexpect = "$logfile.expect";

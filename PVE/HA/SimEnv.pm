@@ -102,9 +102,7 @@ sub read_manager_status {
 
     my $raw = PVE::Tools::file_get_contents($filename);
 
-    my $data = decode_json($raw) || {};
- 
-    return $data;
+    return decode_json($raw) || {};
 }
 
 sub write_manager_status {
@@ -125,6 +123,65 @@ sub manager_status_exists {
     my $filename = "$self->{statusdir}/manager_status";
  
     return -f $filename ? 1 : 0;
+}
+
+my $read_service_status = sub {
+    my ($self) = @_;
+
+    my $filename = "$self->{statusdir}/service_status";
+
+    if (-f $filename) {
+	my $raw = PVE::Tools::file_get_contents($filename);
+	return decode_json($raw);
+    } else {
+	return {};
+    }
+};
+
+my $write_service_status = sub {
+    my ($self, $status_obj) = @_;
+
+    my $data = encode_json($status_obj);
+    my $filename = "$self->{statusdir}/service_status";
+
+    PVE::Tools::file_set_contents($filename, $data);
+};
+
+sub read_service_config {
+    my ($self) = @_;
+
+    my $conf = {
+	'pvevm:101' => {
+	    type => 'pvevm',
+	    name => '101',
+	    state => 'enabled',
+	},
+	'pvevm:102' => {
+	    type => 'pvevm',
+	    name => '102',
+	    state => 'disabled',
+	},
+	'pvevm:103' => {
+	    type => 'pvevm',
+	    name => '103',
+	    state => 'enabled',
+	},
+    };
+
+    my $rl = &$read_service_status($self);
+
+    foreach my $sid (keys %$conf) {
+	die "service '$sid' does not exists\n" 
+	    if !($rl->{$sid} && $rl->{$sid}->{node});
+    }
+
+    foreach my $sid (keys %$rl) {
+	next if !$conf->{$sid};
+	$conf->{$sid}->{current_node} = $rl->{$sid}->{node};
+	$conf->{$sid}->{node} = $conf->{$sid}->{current_node};
+    }
+
+    return $conf;
 }
 
 sub log {

@@ -63,6 +63,22 @@ sub manager_status_exists {
     return {};
 }
 
+sub parse_service_config {
+    my ($self, $raw) = @_;
+
+    die "implement me";
+
+    return {};
+}
+
+sub read_service_config {
+    my ($self) = @_;
+
+    die "implement me";
+
+    return {};
+}
+
 # this should return a hash containing info
 # what nodes are members and online.
 sub get_node_info {

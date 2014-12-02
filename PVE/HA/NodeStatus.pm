@@ -20,20 +20,37 @@ sub new {
 
 # possible node state:
 my $valid_node_states = {
-    new => "node is new, never seen before",
     online => "node online and member of quorate partition",
     unknown => "not member of quorate partition, but possibly still running",
-    fenced => "node was fenced",
-    needs_fence => "node needs to be fenced",
+    fence => "node needs to be fenced",
 };
 
 sub get_node_state {
     my ($self, $node) = @_;
 
-    $self->{status}->{$node} = 'new' 
+    $self->{status}->{$node} = 'unknown' 
 	if !$self->{status}->{$node};
 
     return $self->{status}->{$node};
+}
+
+sub node_is_online {
+    my ($self, $node) = @_;
+
+    return $self->get_node_state($node) eq 'online';
+}
+
+sub list_online_nodes {
+    my ($self) = @_;
+
+    my $res = [];
+
+    foreach my $node (keys %{$self->{status}}) {
+	next if $self->{status}->{$node} ne 'online';
+	push @$res, $node;
+    }
+
+    return $res;
 }
 
 my $set_node_state = sub {
@@ -62,16 +79,12 @@ sub update {
 
 	my $state = $self->get_node_state($node);
 
-	if ($state eq 'new') {
-	    &$set_node_state($self, $node, 'online');
-	} elsif ($state eq 'online') {
+	if ($state eq 'online') {
 	    # &$set_node_state($self, $node, 'online');
 	} elsif ($state eq 'unknown') {
 	    &$set_node_state($self, $node, 'online');
-	} elsif ($state eq 'needs_fence') {
+	} elsif ($state eq 'fence') {
 	    # do nothing, wait until fenced
-	} elsif ($state eq 'fenced') {
-	    &$set_node_state($self, $node, 'online');
 	} else {
 	    die "detected unknown node state '$state";
 	}
@@ -85,21 +98,31 @@ sub update {
 
 	# node is not inside quorate partition, possibly not active
 
-	if ($state eq 'new') {
-	    # do nothing
-	} elsif ($state eq 'online') {
+	if ($state eq 'online') {
 	    &$set_node_state($self, $node, 'unknown');
 	} elsif ($state eq 'unknown') {
 	    # &$set_node_state($self, $node, 'unknown');
-	} elsif ($state eq 'needs_fence') {
+	} elsif ($state eq 'fence') {
 	    # do nothing, wait until fenced
-	} elsif ($state eq 'fenced') {
-	    &$set_node_state($self, $node, 'online');
 	} else {
 	    die "detected unknown node state '$state";
 	}
 
    }
+}
+
+sub fence_node {
+    my ($self, $node) = @_;
+
+    my $state = $self->get_node_state($node);
+
+    if ($state eq 'fence') {
+	die "return ID of existing fence task";
+    } else {
+	die "return ID of new fence task";
+    }
+
+    return "fixme:TASKID";
 }
 
 1;
