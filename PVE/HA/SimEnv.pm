@@ -2,9 +2,11 @@ package PVE::HA::SimEnv;
 
 use strict;
 use warnings;
-use POSIX qw(strftime);
+use POSIX qw(strftime EINTR);
 use Data::Dumper;
 use JSON; 
+use IO::File;
+use Fcntl qw(:DEFAULT :flock);
 
 use PVE::HA::Env;
 
@@ -13,6 +15,8 @@ use base qw(PVE::HA::Env);
 my $cur_time = 0;
 
 my $max_sim_time = 1000;
+
+
 
 # time => quorate nodes (first node gets manager lock)
 my $quorum_setup = [];
@@ -58,16 +62,6 @@ my $lookup_quorum_info = sub {
     return undef;
 };
 
-my $node_is_lock_owner = sub {
-   my ($self) = @_;
-
-   if (my $members = &$lookup_quorum_info($self)) {
-       return $members->[0] eq $self->{nodename} ? 1 : 0;
-   }
-
-   return 0;
-};
-
 sub new {
     my ($this, $testdir) = @_;
 
@@ -92,11 +86,88 @@ sub new {
     return $self;
 }
 
+sub sim_cluster_lock {
+     my ($self, $code, @param) = @_;
+
+     my $lockfile = "$self->{statusdir}/cluster.lck";
+     my $fh = IO::File->new(">>$lockfile") ||
+	 die "unable to open '$lockfile'\n";
+
+     my $success;
+     for (;;) {
+	 $success = flock($fh, LOCK_EX);
+	 if ($success || ($! != EINTR)) {
+	     last;
+	 }
+	 if (!$success) {
+	     die "can't aquire lock '$lockfile' - $!\n";
+	 }
+     }
+     
+     my $res;
+
+     eval { $res = &$code(@param) };
+     my $err = $@;
+
+     close($fh);
+
+     die $err if $err;
+
+     return $res;
+}
+
+sub sim_get_lock {
+    my ($self, $lock_name) = @_;
+
+    my $filename = "$self->{statusdir}/cluster_locks";
+
+    my $code = sub {
+
+	my $raw = "{}";
+	$raw = PVE::Tools::file_get_contents($filename) if -f $filename; 
+
+	my $data = decode_json($raw);
+
+	my $res;
+
+	my $nodename = $self->nodename();
+	my $ctime = $self->get_time();
+
+	if (my $d = $data->{$lock_name}) {
+	    
+	    my $tdiff = $ctime - $d->{time};
+	    
+	    if ($tdiff <= 120) {
+		if ($d->{node} eq $nodename) {
+		    $d->{time} = $ctime;
+		    $res = 1;
+		} else {
+		    $res = 0;
+		}
+	    } else {
+		$d->{node} = $nodename;
+		$res = 1;
+	    }
+
+	} else {
+	    $data->{$lock_name} = {
+		time => $ctime,
+		node => $nodename,
+	    };
+	    $res = 1;
+	}
+	
+	$raw = encode_json($data);
+	PVE::Tools::file_set_contents($filename, $raw);
+
+	return $res;
+    };
+
+    $self->sim_cluster_lock($code);
+}
+
 sub read_manager_status {
     my ($self) = @_;
-
-    die "detected read without lock\n" 
-	if !&$node_is_lock_owner($self);
     
     my $filename = "$self->{statusdir}/manager_status";
 
@@ -107,9 +178,6 @@ sub read_manager_status {
 
 sub write_manager_status {
     my ($self, $status_obj) = @_;
-
-    die "detected write without lock\n" 
-	if !&$node_is_lock_owner($self);
 
     my $data = encode_json($status_obj);
     my $filename = "$self->{statusdir}/manager_status";
@@ -209,7 +277,7 @@ sub sleep {
 sub get_ha_manager_lock {
     my ($self) = @_;
 
-    my $res = &$node_is_lock_owner($self);
+    my $res = $self->sim_get_lock('ha_manager_lock');
     ++$cur_time;
     return $res;
 }
