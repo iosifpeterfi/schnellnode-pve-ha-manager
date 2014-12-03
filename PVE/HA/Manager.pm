@@ -48,6 +48,7 @@ sub flush_master_status {
     $haenv->write_manager_status($ms);
 } 
 
+# Attention: must be idempotent (alway return the same result for same input!)
 sub select_service_node {
     my ($self, $service_conf) = @_;
 
@@ -149,7 +150,7 @@ sub manage {
 			&$change_service_state($self, $sid, 'request_stop');
 		    } elsif ($cd->{state} eq 'enabled') {
 			my $node = $self->select_service_node($cd);
-			if ($sd->{node} ne $node) {
+			if ($node && ($sd->{node} ne $node)) {
 			    &$change_service_state($self, $sid, 'migrate');
 			} else {
 			    # do nothing
