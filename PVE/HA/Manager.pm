@@ -96,7 +96,12 @@ sub manage {
     my ($haenv, $ms, $ns, $ss) = ($self->{haenv}, $self->{ms}, $self->{ns}, $self->{ss});
 
     $ns->update($haenv->get_node_info());
-    
+
+    if (!$ns->node_is_online($haenv->nodename())) {
+	$haenv->log('info', "master seems offline\n");
+	return;
+    }
+
     my $sc = $haenv->read_service_config();
 
     # compute new service status
@@ -109,68 +114,77 @@ sub manage {
 	$ss->{$sid} = { state => 'started', node => $sc->{$sid}->{current_node}};
     }
 
-    foreach my $sid (keys %$ss) {
-	my $sd = $ss->{$sid};
-	my $cd = $sc->{$sid} || { state => 'disabled' };
+    for (;;) {
+	my $repeat = 0;
 
-	if ($sd->{state} eq 'stopped') {
+	foreach my $sid (keys %$ss) {
+	    my $sd = $ss->{$sid};
+	    my $cd = $sc->{$sid} || { state => 'disabled' };
 
-	    if ($cd->{state} eq 'disabled') {
-		# do nothing
-	    } elsif ($cd->{state} eq 'enabled') {
-		if (my $node = $self->select_service_node($cd)) {
-		    &$change_service_state($self, $sid, 'started', node => $node);
-		} else {
-		    # fixme: warn 
-		}
-	    } else {
-		# do nothing - todo: log something?
-	    }
+	    my $last_state = $sd->{state};
 
-	} elsif ($sd->{state} eq 'started') {
-
-	    if (!$ns->node_is_online($sd->{node})) {
-
-		&$change_service_state($self, $sid, 'fence');
-
-	    } else {
+	    if ($last_state eq 'stopped') {
 
 		if ($cd->{state} eq 'disabled') {
-		    &$change_service_state($self, $sid, 'request_stop');
+		    # do nothing
 		} elsif ($cd->{state} eq 'enabled') {
-		    if ($sd->{node} ne $cd->{node}) {
-			&$change_service_state($self, $sid, 'migrate');
+		    if (my $node = $self->select_service_node($cd)) {
+			&$change_service_state($self, $sid, 'started', node => $node);
 		    } else {
-			# do nothing
+			# fixme: warn 
 		    }
 		} else {
 		    # do nothing - todo: log something?
 		}
-	    }
 
-	} elsif ($sd->{state} eq 'migrate') {
+	    } elsif ($last_state eq 'started') {
 
-	    die "implement me";
+		if (!$ns->node_is_online($sd->{node})) {
 
-	} elsif ($sd->{state} eq 'fence') {
+		    &$change_service_state($self, $sid, 'fence');
 
-	    if ($ns->fence_node($sd->{node})) {
-		&$change_service_state($self, $sid, 'stopped');
+		} else {
+
+		    if ($cd->{state} eq 'disabled') {
+			&$change_service_state($self, $sid, 'request_stop');
+		    } elsif ($cd->{state} eq 'enabled') {
+			my $node = $self->select_service_node($cd);
+			if ($sd->{node} ne $node) {
+			    &$change_service_state($self, $sid, 'migrate');
+			} else {
+			    # do nothing
+			}
+		    } else {
+			# do nothing - todo: log something?
+		    }
+		}
+
+	    } elsif ($last_state eq 'migrate') {
+
+		die "implement me";
+
+	    } elsif ($last_state eq 'fence') {
+
+		if ($ns->fence_node($sd->{node})) {
+		    &$change_service_state($self, $sid, 'stopped');
+		} else {
+		    # do nothing, wait until fence is successful
+		}
+
+	    } elsif ($last_state eq 'request_stop') {
+
+#fixme:		die "implement me";
+
 	    } else {
-		# do nothing, wait until fence is successful
+
+		die "unknown service state '$last_state'";
 	    }
 
-	} elsif ($sd->{state} eq 'request_stop') {
-
-	    die "implement me";
-
-	} else {
-
-	    die "unknown service state '$sd->{state}'";
+	    $repeat = 1 if $sd->{state} ne $last_state;
 	}
 
+	last if !$repeat;
     }
-   
 
     # remove stale services
     # fixme:

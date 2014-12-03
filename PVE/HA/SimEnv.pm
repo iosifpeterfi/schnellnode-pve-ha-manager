@@ -117,7 +117,7 @@ sub sim_cluster_lock {
 }
 
 sub sim_get_lock {
-    my ($self, $lock_name) = @_;
+    my ($self, $lock_name, $unlock) = @_;
 
     my $filename = "$self->{statusdir}/cluster_locks";
 
@@ -133,30 +133,48 @@ sub sim_get_lock {
 	my $nodename = $self->nodename();
 	my $ctime = $self->get_time();
 
-	if (my $d = $data->{$lock_name}) {
+	if ($unlock) {
+
+	    if (my $d = $data->{$lock_name}) {
+		my $tdiff = $ctime - $d->{time};
 	    
-	    my $tdiff = $ctime - $d->{time};
-	    
-	    if ($tdiff <= 120) {
-		if ($d->{node} eq $nodename) {
-		    $d->{time} = $ctime;
+		if ($tdiff > 120) {
+		    $res = 1;
+		} elsif (($tdiff <= 120) && ($d->{node} eq $nodename)) {
+		    delete $data->{$lock_name};
 		    $res = 1;
 		} else {
 		    $res = 0;
 		}
-	    } else {
-		$d->{node} = $nodename;
-		$res = 1;
 	    }
 
 	} else {
-	    $data->{$lock_name} = {
-		time => $ctime,
-		node => $nodename,
-	    };
-	    $res = 1;
+
+	    if (my $d = $data->{$lock_name}) {
+	    
+		my $tdiff = $ctime - $d->{time};
+	    
+		if ($tdiff <= 120) {
+		    if ($d->{node} eq $nodename) {
+			$d->{time} = $ctime;
+			$res = 1;
+		    } else {
+			$res = 0;
+		    }
+		} else {
+		    $d->{node} = $nodename;
+		    $res = 1;
+		}
+
+	    } else {
+		$data->{$lock_name} = {
+		    time => $ctime,
+		    node => $nodename,
+		};
+		$res = 1;
+	    }
 	}
-	
+
 	$raw = encode_json($data);
 	PVE::Tools::file_set_contents($filename, $raw);
 
@@ -278,6 +296,17 @@ sub get_ha_manager_lock {
     my ($self) = @_;
 
     my $res = $self->sim_get_lock('ha_manager_lock');
+    ++$cur_time;
+    return $res;
+}
+
+sub test_ha_agent_lock {
+    my ($self, $node) = @_;
+
+    my $lck = "ha_agent_${node}_lock";
+    my $res = $self->sim_get_lock($lck);
+    $self->sim_get_lock($lck, 1) if $res; # unlock
+
     ++$cur_time;
     return $res;
 }

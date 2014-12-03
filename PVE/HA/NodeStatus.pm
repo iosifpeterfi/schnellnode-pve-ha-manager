@@ -6,12 +6,12 @@ use warnings;
 use Data::Dumper;
 
 sub new {
-    my ($this, $env, $status) = @_;
+    my ($this, $haenv, $status) = @_;
 
     my $class = ref($this) || $this;
 
     my $self = bless {
-	env => $env,
+	haenv => $haenv,
 	status => $status,
     }, $class;
 
@@ -45,7 +45,7 @@ sub list_online_nodes {
 
     my $res = [];
 
-    foreach my $node (keys %{$self->{status}}) {
+    foreach my $node (sort keys %{$self->{status}}) {
 	next if $self->{status}->{$node} ne 'online';
 	push @$res, $node;
     }
@@ -56,6 +56,8 @@ sub list_online_nodes {
 my $set_node_state = sub {
     my ($self, $node, $state) = @_;
 
+    my $haenv = $self->{haenv};
+
     die "unknown node state '$state'\n"
 	if !defined($valid_node_states->{$state});
 
@@ -65,8 +67,8 @@ my $set_node_state = sub {
 
     $self->{status}->{$node} = $state;
 
-    $self->{env}->log('info', "node '$node' status change: " .
-		    "'$last_state' => '$state'\n");
+    $haenv->log('info', "node '$node': state changed from " .
+		"'$last_state' => '$state'\n");
 
 };
 
@@ -111,18 +113,19 @@ sub update {
    }
 }
 
+# start fencing
 sub fence_node {
     my ($self, $node) = @_;
 
+    my $haenv = $self->{haenv};
+
     my $state = $self->get_node_state($node);
 
-    if ($state eq 'fence') {
-	die "return ID of existing fence task";
-    } else {
-	die "return ID of new fence task";
+    if ($state ne 'fence') {
+	&$set_node_state($self, $node, 'fence');
     }
 
-    return "fixme:TASKID";
+    return $haenv->test_ha_agent_lock($node)
 }
 
 1;
