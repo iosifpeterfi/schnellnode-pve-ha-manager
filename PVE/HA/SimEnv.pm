@@ -16,50 +16,53 @@ my $cur_time = 0;
 
 my $max_sim_time = 1000;
 
-
-
-# time => quorate nodes (first node gets manager lock)
-my $quorum_setup = [];
-
-my $compute_node_info = sub {
-
-    my $last_node_info = {};
-
-    foreach my $entry (@$quorum_setup) {
-	my ($time, $members) = @$entry;
-
-	$max_sim_time = $time + 1000;
-
-	my $node_info = {};
-
-	foreach my $node (@$members) {
-	    $node_info->{$node}->{online} = 1;
-	    if (!$last_node_info->{$node}) {
-		$node_info->{$node}->{join_time} = $time;
-	    } else {
-		$node_info->{$node}->{join_time} =
-		    $last_node_info->{$node}->{join_time};
-	    }
-	}
-
-	push @$entry, $node_info;
-
-	$last_node_info = $node_info;
-    }
-};
-
-my $lookup_quorum_info = sub {
+my $read_cluster_status = sub {
     my ($self) = @_;
 
-    foreach my $entry (reverse @$quorum_setup) {
-	my ($time, $members) = @$entry;
+    my $filename = "$self->{statusdir}/cluster_status";
 
-	if ($cur_time >= $time) {
-	    return $members;
+    my $raw = PVE::Tools::file_get_contents($filename);
+    my $cstatus = decode_json($raw);
+
+    return $cstatus;
+};
+
+my $write_cluster_status = sub {
+    my ($self, $cstatus) = @_;
+
+    my $filename = "$self->{statusdir}/cluster_status";
+
+    PVE::Tools::file_set_contents($filename, encode_json($cstatus));
+};
+
+my $compute_node_info = sub {
+    my ($self, $cstatus) = @_;
+
+    my $node_info = {};
+
+    my $node_count = 0;
+    my $online_count = 0;
+
+    foreach my $node (keys %$cstatus) {
+	my $d = $cstatus->{$node};
+
+	my $online = ($d->{power} eq 'on' && $d->{network} eq 'on') ? 1 : 0;
+	$node_info->{$node}->{online} = $online;
+
+	$node_count++;
+	$online_count++ if $online;
+    }
+
+    my $quorate = ($online_count > int($node_count/2)) ? 1 : 0;
+		   
+    if (!$quorate) {
+	foreach my $node (keys %$cstatus) {
+	    my $d = $cstatus->{$node};
+	    $node_info->{$node}->{online} = 0;
 	}
     }
-    
-    return undef;
+
+    return ($node_info, $quorate);
 };
 
 sub new {
@@ -72,16 +75,18 @@ sub new {
 	$nodename = PVE::Tools::file_read_firstline("$testdir/hostname");
     }
 
-    if (-f "$testdir/membership") {
-	my $raw = PVE::Tools::file_get_contents("$testdir/membership");
-	$quorum_setup = decode_json($raw);
-    }
-
     my $statusdir = "$testdir/status";
 
     my $self = $class->SUPER::new($statusdir, $nodename);
 
-    &$compute_node_info();
+    if (-f "$testdir/cmdlist") {
+	my $raw = PVE::Tools::file_get_contents("$testdir/cmdlist");
+	$self->{cmdlist} = decode_json($raw);
+    } else {
+	$self->{cmdlist} = [];
+    }
+
+    $self->{loop_count} = 0;
 
     return $self;
 }
@@ -181,7 +186,7 @@ sub sim_get_lock {
 	return $res;
     };
 
-    $self->sim_cluster_lock($code);
+    return $self->sim_cluster_lock($code);
 }
 
 sub read_manager_status {
@@ -315,27 +320,23 @@ sub test_ha_agent_lock {
 sub quorate {
     my ($self) = @_;
 
-    if (my $members = &$lookup_quorum_info($self)) {
-	foreach my $node (@$members) {
-	    return 1 if $node eq $self->{nodename};
-	}
-    }
-
-    return 0;
+    my $code = sub { 
+	my $cstatus = &$read_cluster_status($self);
+	my ($node_info, $quorate) = &$compute_node_info($self, $cstatus); 
+	return $quorate;
+    };
+    return $self->sim_cluster_lock($code);
 }
 
 sub get_node_info {
     my ($self) = @_;
 
-    foreach my $entry (reverse @$quorum_setup) {
-	my ($time, $members, $node_info) = @$entry;
-
-	if ($cur_time >= $time) {
-	    return $node_info;
-	}
-    }
-
-    die "unbale to get node info";
+    my $code = sub { 
+	my $cstatus = &$read_cluster_status($self);
+	my ($node_info, $quorate) = &$compute_node_info($self, $cstatus); 
+	return $node_info;
+    };
+    return $self->sim_cluster_lock($code);
 }
 
 sub loop_start_hook {
@@ -343,11 +344,24 @@ sub loop_start_hook {
 
     $self->{loop_start_time} = $cur_time;
 
+    # apply new comand after 5 loop iterations
+
+    if (($self->{loop_count} % 5) == 0) {
+	my $list = shift $self->{cmdlist};
+	return if !$list;
+
+	foreach my $cmd (@$list) {
+	    $self->sim_cluster_cmd($cmd);
+	}
+    }
+
     # do nothing
 }
 
 sub loop_end_hook {
     my ($self) = @_;
+
+    ++$self->{loop_count};
 
     my $delay = $cur_time - $self->{loop_start_time};
 
@@ -355,5 +369,39 @@ sub loop_end_hook {
 
     die "simulation end\n" if $cur_time > $max_sim_time;
 }
+
+# simulate cluster commands
+# power <node> <on|off>
+# network <node> <on|off>
+
+sub sim_cluster_cmd {
+    my ($self, $cmdstr) = @_;
+
+    my $code = sub {
+
+	my $cstatus = &$read_cluster_status($self);
+
+	my ($cmd, $node, $action) = split(/\s+/, $cmdstr);
+
+	die "sim_cluster_cmd: no node specified" if !$node;
+	die "sim_cluster_cmd: unknown action '$action'" if $action !~ m/^(on|off)$/;
+
+	if ($cmd eq 'power') {
+		$cstatus->{$node}->{power} = $action;
+		$cstatus->{$node}->{network} = $action;
+	} elsif ($cmd eq 'network') {
+		$cstatus->{$node}->{network} = $action;
+	} else {
+	    die "sim_cluster_cmd: unknown command '$cmd'\n";
+	}
+
+	$self->log('info', "execute $cmdstr");
+
+	&$write_cluster_status($self, $cstatus);
+    };
+
+    return $self->sim_cluster_lock($code);
+}
+
 
 1;

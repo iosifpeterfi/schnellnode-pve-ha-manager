@@ -125,7 +125,14 @@ sub fence_node {
 	&$set_node_state($self, $node, 'fence');
     }
 
-    return $haenv->test_ha_agent_lock($node)
+    my $success = $haenv->test_ha_agent_lock($node);
+
+    if ($success) {
+	$haenv->log("info", "fencing: acknowleged - got agent_lock");
+	die "implement me";
+    }
+
+    return $success;
 }
 
 1;
