@@ -1,6 +1,50 @@
-= Experimental implementation of a simple HA Manager =
+= Proxmox HA Manager =
 
-- should run with any distributed key/value store (consul, ...)
+== Motivation ==
+
+The current HA manager has a bunch of drawbacks:
+
+- no more development (redhat moved to pacemaker)
+
+- highly depend on corosync (old version)
+
+- complicated code (cause by compatibility layer with 
+  older cluster stack (cman)
+
+- no self-fencing
+
+In future, we want to make HA easier for our users, and it should 
+be possible to move to newest corosync, or even a totally different 
+cluster stack. So we want:
+
+- possible to run with any distributed key/value store which provides
+  some kind of locking (with timeouts).
+
+- self fencing using linux watchdog device
+
+- implemented in perl, so thatw e can use PVE framework
 
 - only works with simply resources like VMs
 
+= Architecture =
+
+== Cluster requirements ==
+
+=== Cluster wide locks with timeouts ===
+
+The cluster stack must provide cluster wide locks with timeouts.
+The Proxmox 'pmxcfs' implements this on top of corosync.
+
+== Self fencing ==
+
+A node needs to aquire a special 'agent_lock' (one separate lock for
+each node) before starting HA resources, and the node updates the
+watchdog device once it get that lock. If the node loose quorum, or is
+unable to get the 'agent_lock', the watchdog is no longer updated. The
+node can release the lock if there are no running HA resources.
+
+This makes sure that the node holds the 'agent_lock' as long as there
+are running services on that node.
+
+The HA manger can assume that the watchdog triggered a reboot when he
+is able to aquire the 'agent_lock' for that node.
