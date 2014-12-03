@@ -2,9 +2,20 @@
 
 use strict;
 use warnings;
+use Getopt::Long;
+
 use File::Path qw(make_path remove_tree);
 
 use PVE::Tools;
+
+
+my $opt_nodiff;
+
+if (!GetOptions ("nodiff"   => \$opt_nodiff)) {
+    print "usage: $0 testdir [--nodiff]\n";
+    exit -1;
+}
+
 
 #my $testcmd = "../pve-ha-manager --test"
 
@@ -30,6 +41,8 @@ sub run_test {
 
     my $res = system("../pve-ha-manager --test '$dir'|tee $logfile");
     die "Test '$dir' failed\n" if $res != 0;
+
+    return if $opt_nodiff;
 
     if (-f $logexpect) {
 	my $cmd = ['diff', '-u', $logexpect, $logfile]; 
