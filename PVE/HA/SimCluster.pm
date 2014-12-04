@@ -206,6 +206,8 @@ sub run {
 		$self->sim_cluster_cmd($cmd);
 	    }
 	}
+
+	++$self->{loop_count};
     }
 }
  

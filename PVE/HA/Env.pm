@@ -6,7 +6,7 @@ use warnings;
 use PVE::SafeSyslog;
 use PVE::Tools;
 
-# abstract out the cluster environment
+# abstract out the cluster environment for a single node
 
 sub new {
     my ($this, $statusdir, $nodename) = @_;

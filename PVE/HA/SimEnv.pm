@@ -55,8 +55,6 @@ sub new {
     $self->{cur_time} = 0;
     $self->{loop_delay} = 0;
 
-    $self->{loop_count} = 0;
-
     return $self;
 }
 
@@ -303,8 +301,6 @@ sub loop_start_hook {
 
 sub loop_end_hook {
     my ($self) = @_;
-
-    ++$self->{loop_count};
 
     my $delay = $self->{loop_delay};
     $self->{loop_delay} = 0;
