@@ -5,7 +5,8 @@ use lib ('.', '..');
 use strict;
 use warnings;
 use Getopt::Long;
-  
+use JSON; 
+
 use PVE::Tools;
 use PVE::HA::SimEnv;
 use PVE::HA::Server;
@@ -17,39 +18,64 @@ if (!GetOptions ("test=s"   => \$testdir)) {
     exit -1;
 }
 
-my $haenv;
-
 if ($testdir) {
 
-    $haenv = PVE::HA::SimEnv->new($testdir);
+    my $filename = "$testdir/cluster_status";
 
+    my $raw = PVE::Tools::file_get_contents($filename);
+    my $cstatus = decode_json($raw);
+
+    my $cluster = {};
+    foreach my $node (sort keys %$cstatus) {
+
+	my $haenv = PVE::HA::SimEnv->new($testdir, $node);
+	if (!$haenv->manager_status_exists()) {
+	    $haenv->log('info', "HA is not enabled");
+	    exit(0);
+	}
+
+	$haenv->log('info', "starting server");
+	my $server = PVE::HA::Server->new($haenv);
+
+	$cluster->{$node}->{haenv} = $haenv;
+	$cluster->{$node}->{server} = $server;
+    }
+
+    eval {
+
+	my $ctime = 0;
+
+	for (;;) {
+
+	    foreach my $node (sort keys %$cluster) {
+		my $haenv = $cluster->{$node}->{haenv};
+		my $server = $cluster->{$node}->{server};
+
+		$haenv->loop_start_hook($ctime);
+
+		die "implement me" if !$server->do_one_iteration();
+
+		$haenv->loop_end_hook();
+
+		my $simtime = $haenv->get_time();
+		$ctime = $simtime if $simtime > $ctime;
+	    }
+	}
+    };
+    if (my $err = $@) {
+	#$haenv->log('err', "exit server - $err ");
+	print "ERROR - $err\n";
+    } else {
+	#$haenv->log('info', "exit server - done");
+	print "exit server - done\n";
+    }
+
+    exit(0);
+   
 } else {
     # my $statusdir; = "/var/tmp/pve-ha-manager";
     die "implement me";
 }
 
-if (!$haenv->manager_status_exists()) {
-    $haenv->log('info', "HA is not enabled");
-    exit(0);
-}
 
-$haenv->log('info', "starting server");
-
-my $server = PVE::HA::Server->new($haenv);
-
-eval {
-
-    for (;;) {
-
-	last if !$server->do_one_iteration();
-
-    }
-};
-if (my $err = $@) {
-    $haenv->log('err', "exit server - $err ");
-} else {
-    $haenv->log('info', "exit server - done");
-}
-
-exit(0);
 

@@ -64,14 +64,12 @@ my $compute_node_info = sub {
 };
 
 sub new {
-    my ($this, $testdir) = @_;
+    my ($this, $testdir, $nodename) = @_;
+
+    die "missing testdir" if !$testdir;
+    die "missing nodename" if !$nodename;
 
     my $class = ref($this) || $this;
-
-    my $nodename = 'node1';
-    if (-f "$testdir/hostname") {
-	$nodename = PVE::Tools::file_read_firstline("$testdir/hostname");
-    }
 
     my $statusdir = "$testdir/status";
 
@@ -351,9 +349,14 @@ sub get_node_info {
 }
 
 sub loop_start_hook {
-    my ($self) = @_;
+    my ($self, $starttime) = @_;
 
     $self->{loop_delay} = 0;
+
+    die "no starttime" if !defined($starttime);
+    die "strange start time" if $starttime < $self->{cur_time};
+
+    $self->{cur_time} = $starttime;
 
     # apply new comand after 5 loop iterations
 

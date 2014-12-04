@@ -108,8 +108,6 @@ sub do_one_iteration {
 
     my $status = $self->get_local_status();
 
-    $haenv->loop_start_hook();
-
     if ($status eq 'recover') {
 
 	$haenv->log('info', "waiting for 5 seconds");
@@ -184,8 +182,6 @@ sub do_one_iteration {
     } else {
 	die "got unexpected status '$status'\n";
     }
-
-    $haenv->loop_end_hook();
 
     return 1;
 }
