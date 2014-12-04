@@ -7,11 +7,22 @@ use Data::Dumper;
 use JSON; 
 use IO::File;
 use Fcntl qw(:DEFAULT :flock);
+use File::Copy;
+use File::Path qw(make_path remove_tree);
 
 my $max_sim_time = 1000;
 
 use PVE::HA::SimEnv;
 use PVE::HA::Server;
+
+# Status directory layout
+#
+# configuration
+#
+# $testdir/cmdlist   Command list for simulation
+#
+# runtime status
+# $testdir/status/
 
 sub read_cluster_status_nolock {
     my ($self) = @_;
@@ -41,7 +52,10 @@ sub new {
 
     my $self = bless {}, $class;
 
-    $self->{statusdir} = "$testdir/status";
+    my $statusdir = $self->{statusdir} = "$testdir/status";
+
+    remove_tree($statusdir);
+    mkdir $statusdir;
 
     $self->{cur_time} = 0;
 
@@ -51,6 +65,13 @@ sub new {
     } else {
 	$self->{cmdlist} = []; # fixme: interactive mode
     }
+
+    # copy initial configuartion
+    copy("$testdir/manager_status", "$statusdir/manager_status"); # optional
+    copy("$testdir/service_status", "$statusdir/service_status"); # optional
+
+    copy("$testdir/cluster_status", "$statusdir/cluster_status") ||
+	"Copy failed: $!";
 
     $self->{loop_count} = 0;
 

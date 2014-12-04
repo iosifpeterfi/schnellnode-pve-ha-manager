@@ -25,18 +25,6 @@ sub run_test {
     $dir =~ s!/+$!!;
 
     print "run: $dir\n";
-    my $statusdir = "$dir/status";
-    remove_tree($statusdir);
-    mkdir $statusdir;
-
-    if (-f "$dir/manager_status") {
-	system("cp $dir/manager_status $statusdir/manager_status");
-    }
-    if (-f "$dir/service_status") {
-	system("cp $dir/service_status $statusdir/service_status");
-    }
-
-    system("cp $dir/cluster_status $statusdir/cluster_status");
 
     my $logfile = "$dir/log";
     my $logexpect = "$logfile.expect";
