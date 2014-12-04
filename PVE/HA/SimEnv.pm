@@ -12,8 +12,6 @@ use PVE::HA::Env;
 
 use base qw(PVE::HA::Env);
 
-my $cur_time = 0;
-
 my $max_sim_time = 1000;
 
 my $read_cluster_status = sub {
@@ -78,6 +76,9 @@ sub new {
     my $statusdir = "$testdir/status";
 
     my $self = $class->SUPER::new($statusdir, $nodename);
+
+    $self->{cur_time} = 0;
+    $self->{loop_delay} = 0;
 
     if (-f "$testdir/cmdlist") {
 	my $raw = PVE::Tools::file_get_contents("$testdir/cmdlist");
@@ -288,20 +289,30 @@ sub log {
 sub get_time {
     my ($self) = @_;
 
-    return $cur_time;
+    return $self->{cur_time};
 }
 
 sub sleep {
    my ($self, $delay) = @_;
 
-   $cur_time += $delay;
+   $self->{loop_delay} += $delay;
+}
+
+sub sleep_until {
+   my ($self, $end_time) = @_;
+
+   my $cur_time = $self->{cur_time} + $self->{loop_delay};
+
+   return if $cur_time >= $end_time;
+
+   $self->{loop_delay} += $end_time - $cur_time;
 }
 
 sub get_ha_manager_lock {
     my ($self) = @_;
 
     my $res = $self->sim_get_lock('ha_manager_lock');
-    ++$cur_time;
+    ++$self->{loop_delay};
     return $res;
 }
 
@@ -312,7 +323,7 @@ sub test_ha_agent_lock {
     my $res = $self->sim_get_lock($lck);
     $self->sim_get_lock($lck, 1) if $res; # unlock
 
-    ++$cur_time;
+    ++$self->{loop_delay};
     return $res;
 }
 
@@ -342,7 +353,7 @@ sub get_node_info {
 sub loop_start_hook {
     my ($self) = @_;
 
-    $self->{loop_start_time} = $cur_time;
+    $self->{loop_delay} = 0;
 
     # apply new comand after 5 loop iterations
 
@@ -363,11 +374,14 @@ sub loop_end_hook {
 
     ++$self->{loop_count};
 
-    my $delay = $cur_time - $self->{loop_start_time};
+    my $delay = $self->{loop_delay};
+    $self->{loop_delay} = 0;
 
     die "loop take too long ($delay seconds)\n" if $delay > 30;
 
-    die "simulation end\n" if $cur_time > $max_sim_time;
+    $self->{cur_time} += $delay;
+
+    die "simulation end\n" if $self->{cur_time} > $max_sim_time;
 }
 
 # simulate cluster commands

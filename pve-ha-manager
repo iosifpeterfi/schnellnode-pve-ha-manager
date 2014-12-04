@@ -8,7 +8,7 @@ use Getopt::Long;
   
 use PVE::Tools;
 use PVE::HA::SimEnv;
-use PVE::HA::Manager;
+use PVE::HA::Server;
 
 my $testdir;
 
@@ -28,154 +28,27 @@ if ($testdir) {
     die "implement me";
 }
 
-my $status;
-my $manager;
-
-sub set_local_status {
-    my ($new_status) = @_;
-
-    return if $status eq $new_status;
-
-    $haenv->log('info', "manager status change $status => $new_status");
-
-    $status = $new_status;
-
-    $haenv->write_local_status($status);
-
-    if ($status eq 'master') {
-	$manager = PVE::HA::Manager->new($haenv);
-    } else {
-	if ($manager) {
-	    $manager->cleanup();
-	    $manager = undef;
-	}
-    }
-}
-
-sub get_manager_lock {
-
-    my $count = 0;
-    for (;;) {
-	return 1 if $haenv->get_ha_manager_lock();
-	last if ++$count > 5;
-	$haenv->sleep(1);
-    }
-
-    return 0;
-}
-
-sub sleep_until {
-   my ($end_time) = @_;
-
-   for (;;) {
-       my $cur_time = $haenv->get_time();
-       return if $cur_time >= $end_time;
-       $haenv->sleep($end_time - $cur_time);
-   }
-}
-
 if (!$haenv->manager_status_exists()) {
     $haenv->log('info', "HA is not enabled");
     exit(0);
 }
 
-$status = $haenv->read_local_status() || 'wait_for_quorum';
+$haenv->log('info', "starting server");
 
-# can happen after crash?
-if ($status eq 'master') {
-    set_local_status('recover');
-} else {
-    set_local_status('wait_for_quorum');   
-}
-
-$haenv->log('info', "starting simulation environment (status = $status)");
+my $server = PVE::HA::Server->new($haenv);
 
 eval {
 
     for (;;) {
 
-	$haenv->loop_start_hook();
+	last if !$server->do_one_iteration();
 
-	if ($status eq 'recover') {
-
-	    $haenv->log('info', "waiting for 5 seconds");
-	    $haenv->sleep(5);
-
-	    set_local_status('wait_for_quorum');
-
-	} elsif ($status eq 'wait_for_quorum') {
-
-	    $haenv->sleep(5);
-	   
-	    if ($haenv->quorate()) {
-		if (get_manager_lock()) {
-		    set_local_status('master');
-		} else {
-		    set_local_status('slave');
-		}
-	    }
-
-	} elsif ($status eq 'master') {
-
-	    die "no manager" if !defined($manager);
-
-	    my $startime = $haenv->get_time();
-
-	    my $max_time = 10;
-
-
-	    # do work (max_time seconds)
-	    eval {
-		# fixme: set alert timer
-		$manager->manage();
-	    };
-	    if (my $err = $@) {
-
-		# fixme: cleanup?
-		$haenv->log('err', "got unexpected error - $err");
-		set_local_status('error');
-
-	    } else {
-		sleep_until($startime + $max_time);
-	    }
-
-	    if (!get_manager_lock()) {
-		if ($haenv->quorate()) {
-		    set_local_status('slave');
-		} else {
-		    set_local_status('wait_for_quorum');
-		    # set_local_status('lost_quorum');
-		}
-	    }
-	} elsif ($status eq 'slave') {
-
-	    $haenv->sleep(5);
-
-	    if ($haenv->quorate()) {
-		if (get_manager_lock()) {
-		    set_local_status('master');
-		}
-	    } else {
-		set_local_status('wait_for_quorum');
-	    }
-
-	} elsif ($status eq 'error') {
-	    die "stopping due to errors\n";
-	} elsif ($status eq 'lost_quorum') {
-	    die "lost_quorum\n";
-	} elsif ($status eq 'halt') {
-	    die "halt\n";
-	} else {
-	    die "got unexpected status '$status'\n";
-	}
-
-	$haenv->loop_end_hook();
     }
 };
 if (my $err = $@) {
-    $haenv->log('err', "exit now (status = $status) - $err ");
+    $haenv->log('err', "exit server - $err ");
 } else {
-    $haenv->log('info', "exit simulation environment (status = $status)");
+    $haenv->log('info', "exit server - done");
 }
 
 exit(0);

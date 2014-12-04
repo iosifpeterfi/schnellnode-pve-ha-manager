@@ -30,13 +30,17 @@ sub nodename {
 sub read_local_status {
     my ($self) = @_;
 
-    return PVE::Tools::file_read_firstline("$self->{statusdir}/local_status");  
+    my $node = $self->{nodename};
+    my $filename = "$self->{statusdir}/local_status_$node";
+    return PVE::Tools::file_read_firstline($filename);  
 }
 
 sub write_local_status {
     my ($self, $status) = @_;
 
-    PVE::Tools::file_set_contents("$self->{statusdir}/local_status", $status);
+    my $node = $self->{nodename};
+    my $filename = "$self->{statusdir}/local_status_$node";
+    PVE::Tools::file_set_contents($filename, $status);
 }
 
 # manager status is stored on cluster, protected by ha_manager_lock
@@ -86,13 +90,13 @@ sub get_node_info {
 
     die "implement me";   
 
-    # return { node1 => { online => 1, join_time => X }, node2 => ... }
+    # return { node1 => { online => 1 }, node2 => ... }
 }
 
 sub log {
-    my ($self, $level, $msg) = @_;
+    my ($self, $level, @args) = @_;
 
-    syslog($level, $msg);
+    syslog($level, @args);
 }
 
 # aquire a cluster wide lock 
@@ -121,6 +125,16 @@ sub sleep {
    my ($self, $delay) = @_;
 
    sleep($delay);
+}
+
+sub sleep_until {
+   my ($self, $end_time) = @_;
+
+   for (;;) {
+       my $cur_time = $self->get_time();
+       return if $cur_time >= $end_time;
+       $self->sleep($end_time - $cur_time);
+   }
 }
 
 sub loop_start_hook {
