@@ -8,7 +8,7 @@ use Getopt::Long;
 use JSON; 
 
 use PVE::Tools;
-use PVE::HA::SimCluster;
+use PVE::HA::Sim::Hardware;
 
 my $testdir;
 
@@ -19,20 +19,15 @@ if (!GetOptions ("test=s"   => \$testdir)) {
 
 if ($testdir) {
 
-    my $filename = "$testdir/cluster_status";
+    my $hardware = PVE::HA::Sim::Hardware->new($testdir);
 
-    my $raw = PVE::Tools::file_get_contents($filename);
-    my $cstatus = decode_json($raw);
+    $hardware->log('err', "starting simulation");
 
-    my $cluster = PVE::HA::SimCluster->new($testdir);
-
-    $cluster->log('err', "starting simulation");
-
-    eval { $cluster->run(); };
+    eval { $hardware->run(); };
     if (my $err = $@) {
-	$cluster->log('err', "exit simulation - $err ");
+	$hardware->log('err', "exit simulation - $err ");
     } else {
-	$cluster->log('info', "exit simulation - done");
+	$hardware->log('info', "exit simulation - done");
     }
 
     exit(0);

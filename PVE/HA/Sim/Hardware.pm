@@ -1,4 +1,10 @@
-package PVE::HA::SimCluster;
+package PVE::HA::Sim::Hardware;
+
+# Simulate Hardware resources
+
+# power supply for nodes: on/off
+# network connection to nodes: on/off
+# watchdog devices for nodes
 
 use strict;
 use warnings;
@@ -10,7 +16,7 @@ use Fcntl qw(:DEFAULT :flock);
 use File::Copy;
 use File::Path qw(make_path remove_tree);
 
-my $max_sim_time = 1000;
+my $max_sim_time = 10000;
 
 use PVE::HA::SimEnv;
 use PVE::HA::Server;
@@ -24,10 +30,10 @@ use PVE::HA::Server;
 # runtime status
 # $testdir/status/
 
-sub read_cluster_status_nolock {
+sub read_hardware_status_nolock {
     my ($self) = @_;
 
-    my $filename = "$self->{statusdir}/cluster_status";
+    my $filename = "$self->{statusdir}/hardware_status";
 
     my $raw = PVE::Tools::file_get_contents($filename);
     my $cstatus = decode_json($raw);
@@ -35,10 +41,10 @@ sub read_cluster_status_nolock {
     return $cstatus;
 }
 
-sub write_cluster_status_nolock {
+sub write_hardware_status_nolock {
     my ($self, $cstatus) = @_;
 
-    my $filename = "$self->{statusdir}/cluster_status";
+    my $filename = "$self->{statusdir}/hardware_status";
 
     PVE::Tools::file_set_contents($filename, encode_json($cstatus));
 };
@@ -70,12 +76,12 @@ sub new {
     copy("$testdir/manager_status", "$statusdir/manager_status"); # optional
     copy("$testdir/service_status", "$statusdir/service_status"); # optional
 
-    copy("$testdir/cluster_status", "$statusdir/cluster_status") ||
-	die "Copy failed: $!";
+    copy("$testdir/hardware_status", "$statusdir/hardware_status") ||
+	die "Copy failed: $!\n";
 
     $self->{loop_count} = 0;
 
-    my $cstatus = $self->read_cluster_status_nolock();
+    my $cstatus = $self->read_hardware_status_nolock();
 
     foreach my $node (sort keys %$cstatus) {
 
@@ -105,7 +111,7 @@ sub log {
 
     my $time = $self->get_time();
 
-    printf("%-5s %5d %10s: $msg\n", $level, $time, 'cluster');
+    printf("%-5s %5d %10s: $msg\n", $level, $time, 'hardware');
 }
 
 sub statusdir {
@@ -114,10 +120,10 @@ sub statusdir {
     return $self->{statusdir};
 }
 
-sub cluster_lock {
+sub global_lock {
     my ($self, $code, @param) = @_;
 
-    my $lockfile = "$self->{statusdir}/cluster.lck";
+    my $lockfile = "$self->{statusdir}/hardware.lck";
     my $fh = IO::File->new(">>$lockfile") ||
 	die "unable to open '$lockfile'\n";
 
@@ -144,24 +150,69 @@ sub cluster_lock {
     return $res;
 }
 
-# simulate cluster commands
+my $compute_node_info = sub {
+    my ($self, $cstatus) = @_;
+
+    my $node_info = {};
+
+    my $node_count = 0;
+    my $online_count = 0;
+
+    foreach my $node (keys %$cstatus) {
+	my $d = $cstatus->{$node};
+
+	my $online = ($d->{power} eq 'on' && $d->{network} eq 'on') ? 1 : 0;
+	$node_info->{$node}->{online} = $online;
+
+	$node_count++;
+	$online_count++ if $online;
+    }
+
+    my $quorate = ($online_count > int($node_count/2)) ? 1 : 0;
+		   
+    if (!$quorate) {
+	foreach my $node (keys %$cstatus) {
+	    my $d = $cstatus->{$node};
+	    $node_info->{$node}->{online} = 0;
+	}
+    }
+
+    return ($node_info, $quorate);
+};
+
+sub get_node_info {
+    my ($self) = @_;
+
+    my ($node_info, $quorate);
+
+    my $code = sub { 
+	my $cstatus = $self->read_hardware_status_nolock();
+	($node_info, $quorate) = &$compute_node_info($self, $cstatus); 
+    };
+
+    $self->global_lock($code);
+
+    return ($node_info, $quorate);
+}
+
+# simulate hardware commands
 # power <node> <on|off>
 # network <node> <on|off>
 
-sub sim_cluster_cmd {
+sub sim_hardware_cmd {
     my ($self, $cmdstr) = @_;
 
     my $code = sub {
 
-	my $cstatus = $self->read_cluster_status_nolock();
+	my $cstatus = $self->read_hardware_status_nolock();
 
 	my ($cmd, $node, $action) = split(/\s+/, $cmdstr);
 
-	die "sim_cluster_cmd: no node specified" if !$node;
-	die "sim_cluster_cmd: unknown action '$action'" if $action !~ m/^(on|off)$/;
+	die "sim_hardware_cmd: no node specified" if !$node;
+	die "sim_hardware_cmd: unknown action '$action'" if $action !~ m/^(on|off)$/;
 
 	my $haenv = $self->{nodes}->{$node}->{haenv};
-	die "sim_cluster_cmd: no such node '$node'\n" if !$haenv;
+	die "sim_hardware_cmd: no such node '$node'\n" if !$haenv;
 	
 	if ($cmd eq 'power') {
 	    if ($cstatus->{$node}->{power} ne $action) {
@@ -179,15 +230,15 @@ sub sim_cluster_cmd {
 	} elsif ($cmd eq 'network') {
 		$cstatus->{$node}->{network} = $action;
 	} else {
-	    die "sim_cluster_cmd: unknown command '$cmd'\n";
+	    die "sim_hardware_cmd: unknown command '$cmd'\n";
 	}
 
 	$self->log('info', "execute $cmdstr");
 
-	$self->write_cluster_status_nolock($cstatus);
+	$self->write_hardware_status_nolock($cstatus);
     };
 
-    return $self->cluster_lock($code);
+    return $self->global_lock($code);
 }
 
 sub run {
@@ -224,7 +275,7 @@ sub run {
 	    return if !$list;
 
 	    foreach my $cmd (@$list) {
-		$self->sim_cluster_cmd($cmd);
+		$self->sim_hardware_cmd($cmd);
 	    }
 	}
 

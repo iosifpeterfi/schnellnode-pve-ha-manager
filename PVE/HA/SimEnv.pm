@@ -12,46 +12,16 @@ use PVE::HA::Env;
 
 use base qw(PVE::HA::Env);
 
-my $compute_node_info = sub {
-    my ($self, $cstatus) = @_;
-
-    my $node_info = {};
-
-    my $node_count = 0;
-    my $online_count = 0;
-
-    foreach my $node (keys %$cstatus) {
-	my $d = $cstatus->{$node};
-
-	my $online = ($d->{power} eq 'on' && $d->{network} eq 'on') ? 1 : 0;
-	$node_info->{$node}->{online} = $online;
-
-	$node_count++;
-	$online_count++ if $online;
-    }
-
-    my $quorate = ($online_count > int($node_count/2)) ? 1 : 0;
-		   
-    if (!$quorate) {
-	foreach my $node (keys %$cstatus) {
-	    my $d = $cstatus->{$node};
-	    $node_info->{$node}->{online} = 0;
-	}
-    }
-
-    return ($node_info, $quorate);
-};
-
 sub new {
-    my ($this, $cluster, $nodename) = @_;
+    my ($this, $hardware, $nodename) = @_;
 
     die "missing nodename" if !$nodename;
 
     my $class = ref($this) || $this;
 
-    my $self = $class->SUPER::new($cluster->statusdir(), $nodename);
+    my $self = $class->SUPER::new($hardware->statusdir(), $nodename);
 
-    $self->{cluster} = $cluster;
+    $self->{hardware} = $hardware;
     $self->{cur_time} = 0;
     $self->{loop_delay} = 0;
 
@@ -127,7 +97,7 @@ sub sim_get_lock {
 	return $res;
     };
 
-    return $self->{cluster}->cluster_lock($code);
+    return $self->{hardware}->global_lock($code);
 }
 
 sub read_manager_status {
@@ -289,26 +259,16 @@ sub test_ha_agent_lock {
 sub quorate {
     my ($self) = @_;
 
-    my $code = sub { 
-	my $cstatus = $self->{cluster}->read_cluster_status_nolock();
-	my ($node_info, $quorate) = &$compute_node_info($self, $cstatus);
-	my $node = $self->nodename();
-	return 0 if !$node_info->{$node}->{online};
-
-	return $quorate;
-    };
-    return $self->{cluster}->cluster_lock($code);
+    my ($node_info, $quorate) = $self->{hardware}->get_node_info();
+    my $node = $self->nodename();
+    return 0 if !$node_info->{$node}->{online};
+    return $quorate;
 }
 
 sub get_node_info {
     my ($self) = @_;
 
-    my $code = sub { 
-	my $cstatus = $self->{cluster}->read_cluster_status_nolock();
-	my ($node_info, $quorate) = &$compute_node_info($self, $cstatus); 
-	return $node_info;
-    };
-    return $self->{cluster}->cluster_lock($code);
+    return $self->{hardware}->get_node_info();
 }
 
 sub loop_start_hook {
