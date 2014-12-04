@@ -12,27 +12,6 @@ use PVE::HA::Env;
 
 use base qw(PVE::HA::Env);
 
-my $max_sim_time = 1000;
-
-my $read_cluster_status = sub {
-    my ($self) = @_;
-
-    my $filename = "$self->{statusdir}/cluster_status";
-
-    my $raw = PVE::Tools::file_get_contents($filename);
-    my $cstatus = decode_json($raw);
-
-    return $cstatus;
-};
-
-my $write_cluster_status = sub {
-    my ($self, $cstatus) = @_;
-
-    my $filename = "$self->{statusdir}/cluster_status";
-
-    PVE::Tools::file_set_contents($filename, encode_json($cstatus));
-};
-
 my $compute_node_info = sub {
     my ($self, $cstatus) = @_;
 
@@ -64,60 +43,21 @@ my $compute_node_info = sub {
 };
 
 sub new {
-    my ($this, $testdir, $nodename) = @_;
+    my ($this, $cluster, $nodename) = @_;
 
-    die "missing testdir" if !$testdir;
     die "missing nodename" if !$nodename;
 
     my $class = ref($this) || $this;
 
-    my $statusdir = "$testdir/status";
+    my $self = $class->SUPER::new($cluster->statusdir(), $nodename);
 
-    my $self = $class->SUPER::new($statusdir, $nodename);
-
+    $self->{cluster} = $cluster;
     $self->{cur_time} = 0;
     $self->{loop_delay} = 0;
-
-    if (-f "$testdir/cmdlist") {
-	my $raw = PVE::Tools::file_get_contents("$testdir/cmdlist");
-	$self->{cmdlist} = decode_json($raw);
-    } else {
-	$self->{cmdlist} = [];
-    }
 
     $self->{loop_count} = 0;
 
     return $self;
-}
-
-sub sim_cluster_lock {
-     my ($self, $code, @param) = @_;
-
-     my $lockfile = "$self->{statusdir}/cluster.lck";
-     my $fh = IO::File->new(">>$lockfile") ||
-	 die "unable to open '$lockfile'\n";
-
-     my $success;
-     for (;;) {
-	 $success = flock($fh, LOCK_EX);
-	 if ($success || ($! != EINTR)) {
-	     last;
-	 }
-	 if (!$success) {
-	     die "can't aquire lock '$lockfile' - $!\n";
-	 }
-     }
-     
-     my $res;
-
-     eval { $res = &$code(@param) };
-     my $err = $@;
-
-     close($fh);
-
-     die $err if $err;
-
-     return $res;
 }
 
 sub sim_get_lock {
@@ -185,7 +125,7 @@ sub sim_get_lock {
 	return $res;
     };
 
-    return $self->sim_cluster_lock($code);
+    return $self->{cluster}->cluster_lock($code);
 }
 
 sub read_manager_status {
@@ -330,22 +270,22 @@ sub quorate {
     my ($self) = @_;
 
     my $code = sub { 
-	my $cstatus = &$read_cluster_status($self);
+	my $cstatus = $self->{cluster}->read_cluster_status_nolock();
 	my ($node_info, $quorate) = &$compute_node_info($self, $cstatus); 
 	return $quorate;
     };
-    return $self->sim_cluster_lock($code);
+    return $self->{cluster}->cluster_lock($code);
 }
 
 sub get_node_info {
     my ($self) = @_;
 
     my $code = sub { 
-	my $cstatus = &$read_cluster_status($self);
+	my $cstatus = $self->{cluster}->read_cluster_status_nolock();
 	my ($node_info, $quorate) = &$compute_node_info($self, $cstatus); 
 	return $node_info;
     };
-    return $self->sim_cluster_lock($code);
+    return $self->{cluster}->cluster_lock($code);
 }
 
 sub loop_start_hook {
@@ -357,17 +297,6 @@ sub loop_start_hook {
     die "strange start time" if $starttime < $self->{cur_time};
 
     $self->{cur_time} = $starttime;
-
-    # apply new comand after 5 loop iterations
-
-    if (($self->{loop_count} % 5) == 0) {
-	my $list = shift $self->{cmdlist};
-	return if !$list;
-
-	foreach my $cmd (@$list) {
-	    $self->sim_cluster_cmd($cmd);
-	}
-    }
 
     # do nothing
 }
@@ -383,42 +312,6 @@ sub loop_end_hook {
     die "loop take too long ($delay seconds)\n" if $delay > 30;
 
     $self->{cur_time} += $delay;
-
-    die "simulation end\n" if $self->{cur_time} > $max_sim_time;
 }
-
-# simulate cluster commands
-# power <node> <on|off>
-# network <node> <on|off>
-
-sub sim_cluster_cmd {
-    my ($self, $cmdstr) = @_;
-
-    my $code = sub {
-
-	my $cstatus = &$read_cluster_status($self);
-
-	my ($cmd, $node, $action) = split(/\s+/, $cmdstr);
-
-	die "sim_cluster_cmd: no node specified" if !$node;
-	die "sim_cluster_cmd: unknown action '$action'" if $action !~ m/^(on|off)$/;
-
-	if ($cmd eq 'power') {
-		$cstatus->{$node}->{power} = $action;
-		$cstatus->{$node}->{network} = $action;
-	} elsif ($cmd eq 'network') {
-		$cstatus->{$node}->{network} = $action;
-	} else {
-	    die "sim_cluster_cmd: unknown command '$cmd'\n";
-	}
-
-	$self->log('info', "execute $cmdstr");
-
-	&$write_cluster_status($self, $cstatus);
-    };
-
-    return $self->sim_cluster_lock($code);
-}
-
 
 1;

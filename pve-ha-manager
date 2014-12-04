@@ -8,8 +8,7 @@ use Getopt::Long;
 use JSON; 
 
 use PVE::Tools;
-use PVE::HA::SimEnv;
-use PVE::HA::Server;
+use PVE::HA::SimCluster;
 
 my $testdir;
 
@@ -25,49 +24,15 @@ if ($testdir) {
     my $raw = PVE::Tools::file_get_contents($filename);
     my $cstatus = decode_json($raw);
 
-    my $cluster = {};
-    foreach my $node (sort keys %$cstatus) {
+    my $cluster = PVE::HA::SimCluster->new($testdir);
 
-	my $haenv = PVE::HA::SimEnv->new($testdir, $node);
-	if (!$haenv->manager_status_exists()) {
-	    $haenv->log('info', "HA is not enabled");
-	    exit(0);
-	}
+    $cluster->log('err', "starting simulation");
 
-	$haenv->log('info', "starting server");
-	my $server = PVE::HA::Server->new($haenv);
-
-	$cluster->{$node}->{haenv} = $haenv;
-	$cluster->{$node}->{server} = $server;
-    }
-
-    eval {
-
-	my $ctime = 0;
-
-	for (;;) {
-
-	    foreach my $node (sort keys %$cluster) {
-		my $haenv = $cluster->{$node}->{haenv};
-		my $server = $cluster->{$node}->{server};
-
-		$haenv->loop_start_hook($ctime);
-
-		die "implement me" if !$server->do_one_iteration();
-
-		$haenv->loop_end_hook();
-
-		my $simtime = $haenv->get_time();
-		$ctime = $simtime if $simtime > $ctime;
-	    }
-	}
-    };
+    eval { $cluster->run(); };
     if (my $err = $@) {
-	#$haenv->log('err', "exit server - $err ");
-	print "ERROR - $err\n";
+	$cluster->log('err', "exit simulation - $err ");
     } else {
-	#$haenv->log('info', "exit server - done");
-	print "exit server - done\n";
+	$cluster->log('info', "exit simulation - done");
     }
 
     exit(0);
