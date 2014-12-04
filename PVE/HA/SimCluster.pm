@@ -65,7 +65,7 @@ sub new {
 	my $server = PVE::HA::Server->new($haenv);
 
 	$self->{nodes}->{$node}->{haenv} = $haenv;
-	$self->{nodes}->{$node}->{server} = $server;
+	$self->{nodes}->{$node}->{server} = undef; # create on power on
     }
 
     return $self;
@@ -139,9 +139,22 @@ sub sim_cluster_cmd {
 	die "sim_cluster_cmd: no node specified" if !$node;
 	die "sim_cluster_cmd: unknown action '$action'" if $action !~ m/^(on|off)$/;
 
+	my $haenv = $self->{nodes}->{$node}->{haenv};
+	die "sim_cluster_cmd: no such node '$node'\n" if !$haenv;
+	
 	if ($cmd eq 'power') {
-		$cstatus->{$node}->{power} = $action;
-		$cstatus->{$node}->{network} = $action;
+	    if ($cstatus->{$node}->{power} ne $action) {
+		if ($action eq 'on') {
+		    my $server = $self->{nodes}->{$node}->{server} = PVE::HA::Server->new($haenv);
+		} elsif ($self->{nodes}->{$node}->{server}) {
+		    $haenv->log('info', "server killed by poweroff");
+		    $self->{nodes}->{$node}->{server} = undef;
+		}
+	    }
+
+	    $cstatus->{$node}->{power} = $action;
+	    $cstatus->{$node}->{network} = $action;
+
 	} elsif ($cmd eq 'network') {
 		$cstatus->{$node}->{network} = $action;
 	} else {
@@ -161,9 +174,13 @@ sub run {
 
     for (;;) {
 
+	my $starttime = $self->get_time();
+
 	foreach my $node (sort keys %{$self->{nodes}}) {
 	    my $haenv = $self->{nodes}->{$node}->{haenv};
 	    my $server = $self->{nodes}->{$node}->{server};
+
+	    next if !$server;
 
 	    $haenv->loop_start_hook($self->get_time());
 
@@ -174,6 +191,8 @@ sub run {
 	    my $nodetime = $haenv->get_time();
 	    $self->{cur_time} = $nodetime if $nodetime > $self->{cur_time};
 	}
+
+	$self->{cur_time} = $starttime + 20 if ($self->{cur_time} - $starttime) < 20;
 
 	die "simulation end\n" if $self->{cur_time} > $max_sim_time;
 
