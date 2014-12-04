@@ -86,14 +86,17 @@ sub set_local_status {
     }
 }
 
-sub get_manager_lock {
+sub get_manager_locks {
     my ($self) = @_;
 
     my $haenv = $self->{haenv};
 
     my $count = 0;
     for (;;) {
-	return 1 if $haenv->get_ha_manager_lock();
+
+	return 1 if $haenv->get_ha_agent_lock() && 
+	    $haenv->get_ha_manager_lock();
+
 	last if ++$count > 5;
 	$haenv->sleep(1);
     }
@@ -121,7 +124,7 @@ sub do_one_iteration {
 	$haenv->sleep(5);
 	   
 	if ($haenv->quorate()) {
-	    if ($self->get_manager_lock()) {
+	    if ($self->get_manager_locks()) {
 		$self->set_local_status('master');
 	    } else {
 		$self->set_local_status('slave');
@@ -153,7 +156,7 @@ sub do_one_iteration {
 	    $haenv->sleep_until($startime + $max_time);
 	}
 
-	if (!$self->get_manager_lock()) {
+	if (!$self->get_manager_locks()) {
 	    if ($haenv->quorate()) {
 		$self->set_local_status('slave');
 	    } else {
@@ -166,7 +169,7 @@ sub do_one_iteration {
 	$haenv->sleep(5);
 
 	if ($haenv->quorate()) {
-	    if ($self->get_manager_lock()) {
+	    if ($self->get_manager_locks()) {
 		$self->set_local_status('master');
 	    }
 	} else {

@@ -71,7 +71,7 @@ sub new {
     copy("$testdir/service_status", "$statusdir/service_status"); # optional
 
     copy("$testdir/cluster_status", "$statusdir/cluster_status") ||
-	"Copy failed: $!";
+	die "Copy failed: $!";
 
     $self->{loop_count} = 0;
 

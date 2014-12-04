@@ -61,6 +61,8 @@ sub new {
 sub sim_get_lock {
     my ($self, $lock_name, $unlock) = @_;
 
+    return 0 if !$self->quorate();
+
     my $filename = "$self->{statusdir}/cluster_locks";
 
     my $code = sub {
@@ -104,6 +106,7 @@ sub sim_get_lock {
 			$res = 0;
 		    }
 		} else {
+		    $self->log('info', "got lock '$lock_name'");
 		    $d->{node} = $nodename;
 		    $res = 1;
 		}
@@ -113,6 +116,7 @@ sub sim_get_lock {
 		    time => $ctime,
 		    node => $nodename,
 		};
+		$self->log('info', "got lock '$lock_name'");
 		$res = 1;
 	    }
 	}
@@ -252,10 +256,28 @@ sub get_ha_manager_lock {
     return $res;
 }
 
+sub get_ha_agent_lock_name {
+    my ($self, $node) = @_;
+
+    $node = $self->nodename() if !$node;
+
+    return "ha_agent_${node}_lock";
+}
+
+sub get_ha_agent_lock {
+    my ($self) = @_;
+
+    my $lck = $self->get_ha_agent_lock_name();
+    my $res = $self->sim_get_lock($lck);
+    ++$self->{loop_delay};
+
+    return $res;
+}
+
 sub test_ha_agent_lock {
     my ($self, $node) = @_;
 
-    my $lck = "ha_agent_${node}_lock";
+    my $lck = $self->get_ha_agent_lock_name($node);
     my $res = $self->sim_get_lock($lck);
     $self->sim_get_lock($lck, 1) if $res; # unlock
 
@@ -269,7 +291,10 @@ sub quorate {
 
     my $code = sub { 
 	my $cstatus = $self->{cluster}->read_cluster_status_nolock();
-	my ($node_info, $quorate) = &$compute_node_info($self, $cstatus); 
+	my ($node_info, $quorate) = &$compute_node_info($self, $cstatus);
+	my $node = $self->nodename();
+	return 0 if !$node_info->{$node}->{online};
+
 	return $quorate;
     };
     return $self->{cluster}->cluster_lock($code);
