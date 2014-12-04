@@ -84,7 +84,7 @@ sub log {
 
     my $time = $self->get_time();
 
-    printf("%-5s %10d cluster: $msg\n", $level, $time);
+    printf("%-5s %5d %10s: $msg\n", $level, $time, 'cluster');
 }
 
 sub statusdir {

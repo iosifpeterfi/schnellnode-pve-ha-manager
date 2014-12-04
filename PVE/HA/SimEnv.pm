@@ -219,7 +219,7 @@ sub log {
 
     my $time = $self->get_time();
 
-    printf("%-5s %10d $self->{nodename}: $msg\n", $level, $time);
+    printf("%-5s %5d %10s: $msg\n", $level, $time, $self->{nodename});
 }
 
 sub get_time {
