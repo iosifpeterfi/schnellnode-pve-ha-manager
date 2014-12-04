@@ -18,7 +18,7 @@ use File::Path qw(make_path remove_tree);
 
 my $max_sim_time = 10000;
 
-use PVE::HA::SimEnv;
+use PVE::HA::Sim::Env;
 use PVE::HA::Server;
 
 # Status directory layout
@@ -85,7 +85,7 @@ sub new {
 
     foreach my $node (sort keys %$cstatus) {
 
-	my $haenv = PVE::HA::SimEnv->new($self, $node);
+	my $haenv = PVE::HA::Sim::Env->new($self, $node);
 	die "HA is not enabled\n" if !$haenv->manager_status_exists();
 
 	$haenv->log('info', "starting server");

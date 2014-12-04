@@ -1,4 +1,4 @@
-package PVE::HA::SimEnv;
+package PVE::HA::Sim::Env;
 
 use strict;
 use warnings;
