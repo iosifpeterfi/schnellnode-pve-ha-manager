@@ -262,7 +262,9 @@ sub run {
 
 	my $starttime = $self->get_time();
 
-	foreach my $node (sort keys %{$self->{nodes}}) {
+	my @nodes = sort keys %{$self->{nodes}};
+
+	foreach my $node (@nodes) {
 	    my $haenv = $self->{nodes}->{$node}->{haenv};
 	    my $server = $self->{nodes}->{$node}->{server};
 
@@ -276,10 +278,11 @@ sub run {
 
 	    my $nodetime = $haenv->get_time();
 	    $self->{cur_time} = $nodetime if $nodetime > $self->{cur_time};
-
-	    if (!$self->watchdog_check($node)) {
-
-		die "node '$node' fenced - implement me";
+	    
+	    foreach my $n (@nodes) {
+		if (!$self->watchdog_check($n)) {
+		    die "node '$n' fenced - implement me";
+		}
 	    }
 	}
 
