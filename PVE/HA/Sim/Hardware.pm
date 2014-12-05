@@ -31,10 +31,15 @@ use PVE::HA::Server;
 # $testdir/service_status    Service status
 
 #
-# runtime status
-# $testdir/status/local_status_<node>  local CRM Daemon status
+# runtime status for simulation system
+#
 # $testdir/status/cluster_locks        Cluster locks
-# $testdir/status/hardware_status
+# $testdir/status/hardware_status      Hardware status (power/network on/off)
+# $testdir/status/watchdog_status      Watchdog status
+#
+# runtime status
+#
+# $testdir/status/local_status_<node>  local CRM Daemon status
 # $testdir/status/manager_status
 # $testdir/status/service_status 
 
@@ -271,6 +276,11 @@ sub run {
 
 	    my $nodetime = $haenv->get_time();
 	    $self->{cur_time} = $nodetime if $nodetime > $self->{cur_time};
+
+	    if (!$self->watchdog_check($node)) {
+
+		die "node '$node' fenced - implement me";
+	    }
 	}
 
 	$self->{cur_time} = $starttime + 20 if ($self->{cur_time} - $starttime) < 20;
@@ -291,7 +301,128 @@ sub run {
 	++$self->{loop_count};
     }
 }
+
+my $modify_watchog = sub {
+    my ($self, $code) = @_;
+
+    my $update_cmd = sub {
+
+	my $filename = "$self->{statusdir}/watchdog_status";
  
+	my ($res, $wdstatus);
+
+	if (-f $filename) {
+	    my $raw = PVE::Tools::file_get_contents($filename);
+	    $wdstatus = decode_json($raw);
+	} else {
+	    $wdstatus = {};
+	}
+	
+	($wdstatus, $res) = &$code($wdstatus);
+
+	PVE::Tools::file_set_contents($filename, encode_json($wdstatus));
+
+	return $res;
+    };
+
+    return $self->global_lock($update_cmd);
+};
+
+sub watchdog_check {
+    my ($self, $node) = @_;
+
+    my $code = sub {
+	my ($wdstatus) = @_;
+
+	my $res = 1;
+
+	foreach my $wfh (keys %$wdstatus) {
+	    my $wd = $wdstatus->{$wfh};
+	    next if $wd->{node} ne $node;
+
+	    my $ctime = $self->get_time();
+	    my $tdiff = $ctime - $wd->{update_time};
+
+	    if ($tdiff > 60) { # expired
+		$res = 0;
+		delete $wdstatus->{$wfh};
+	    }
+	}
+	
+	return ($wdstatus, $res);
+    };
+
+    return &$modify_watchog($self, $code);
+}
+
+my $wdcounter = 0;
+
+sub watchdog_open {
+    my ($self, $node) = @_;
+
+    my $code = sub {
+	my ($wdstatus) = @_;
+
+	++$wdcounter;
+
+	my $id = "WD:$node:$$:$wdcounter";
+
+	die "internal error" if defined($wdstatus->{$id});
+
+	$wdstatus->{$id} = {
+	    node => $node,
+	    update_time => $self->get_time(),
+	};
+
+	return ($wdstatus, $id);
+    };
+
+    return &$modify_watchog($self, $code);
+}
+
+sub watchdog_close {
+    my ($self, $wfh) = @_;
+
+    my $code = sub {
+	my ($wdstatus) = @_;
+
+	my $wd = $wdstatus->{$wfh};
+	die "no such watchdog handle '$wfh'\n" if !defined($wd);
+
+	my $tdiff = $self->get_time() - $wd->{update_time};
+	die "watchdog expired" if $tdiff > 60;
+
+	delete $wdstatus->{$wfh};
+
+	return ($wdstatus);
+    };
+
+    return &$modify_watchog($self, $code);
+}
+
+sub watchdog_update {
+    my ($self, $wfh) = @_;
+
+    my $code = sub {
+	my ($wdstatus) = @_;
+
+	my $wd = $wdstatus->{$wfh};
+
+	die "no such watchdog handle '$wfh'\n" if !defined($wd);
+
+	my $ctime = $self->get_time();
+	my $tdiff = $ctime - $wd->{update_time};
+
+	die "watchdog expired" if $tdiff > 60;
+	
+	$wd->{update_time} = $ctime;
+
+	return ($wdstatus);
+    };
+
+    return &$modify_watchog($self, $code);
+}
+
 
 
 1;

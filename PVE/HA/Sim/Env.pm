@@ -318,4 +318,24 @@ sub loop_end_hook {
     $self->{cur_time} += $delay;
 }
 
+sub watchdog_open {
+    my ($self) = @_;
+
+    my $node = $self->nodename();
+
+    return $self->{hardware}->watchdog_open($node);
+}
+
+sub watchdog_update {
+    my ($self, $wfh) = @_;
+
+    return $self->{hardware}->watchdog_update($wfh);
+}
+
+sub watchdog_close {
+    my ($self, $wfh) = @_;
+
+    return $self->{hardware}->watchdog_close($wfh);
+}
+
 1;

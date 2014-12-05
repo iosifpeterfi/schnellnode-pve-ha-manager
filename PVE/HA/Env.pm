@@ -137,4 +137,22 @@ sub loop_end_hook {
     return $self->{plug}->loop_end_hook(@args);
 }
 
+sub watchdog_open {
+    my ($self) = @_;
+
+    return $self->{plug}->watchdog_open();
+}
+
+sub watchdog_update {
+    my ($self, $wfh) = @_;
+
+    return $self->{plug}->watchdog_update($wfh);
+}
+
+sub watchdog_close {
+    my ($self, $wfh) = @_;
+
+    return $self->{plug}->watchdog_close($wfh);
+}
+
 1;
