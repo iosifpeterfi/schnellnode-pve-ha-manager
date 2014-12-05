@@ -260,6 +260,8 @@ sub sim_hardware_cmd {
 sub run {
     my ($self) = @_;
 
+    my $last_command_time = 0;
+
     for (;;) {
 
 	my $starttime = $self->get_time();
@@ -298,9 +300,13 @@ sub run {
 
 	if (($self->{loop_count} % 5) == 0) {
 	    my $list = shift $self->{cmdlist};
-	    return if !$list;
+	    if (!$list) {
+		# end sumulation (500 seconds after last command)
+		return if (($self->{cur_time} - $last_command_time) > 500);
+	    }
 
 	    foreach my $cmd (@$list) {
+		$last_command_time = $self->{cur_time};
 		$self->sim_hardware_cmd($cmd, 'cmdlist');
 	    }
 	}
