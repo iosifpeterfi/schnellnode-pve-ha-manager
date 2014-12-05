@@ -1,0 +1,38 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use Getopt::Long;
+use JSON;
+
+use PVE::Tools;
+use PVE::HA::Sim::Hardware;
+
+my $opt_interactive;
+
+sub show_usage {
+    print "usage: $0 <testdir> [--interactive]\n";
+    exit(-1);
+};
+
+if (!GetOptions ("intercative"   => \$opt_interactive)) {
+    show_usage();
+}
+
+my $testdir = shift || show_usage();
+
+my $hardware = PVE::HA::Sim::Hardware->new($testdir);
+
+$hardware->log('err', "starting simulation");
+
+eval { $hardware->run(); };
+if (my $err = $@) {
+    $hardware->log('err', "exit simulation - $err ");
+} else {
+    $hardware->log('info', "exit simulation - done");
+}
+
+exit(0);
+
+
+
