@@ -129,7 +129,7 @@ sub fence_node {
 
     if ($success) {
 	$haenv->log("info", "fencing: acknowleged - got agent lock for node '$node'");
-	die "implement me";
+	&$set_node_state($self, $node, 'unknown');
     }
 
     return $success;

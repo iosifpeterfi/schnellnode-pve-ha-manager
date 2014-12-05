@@ -166,11 +166,7 @@ sub manage {
 
 	    } elsif ($last_state eq 'fence') {
 
-		if ($ns->fence_node($sd->{node})) {
-		    &$change_service_state($self, $sid, 'stopped');
-		} else {
-		    # do nothing, wait until fence is successful
-		}
+		# do nothing here - wait until fenced
 
 	    } elsif ($last_state eq 'request_stop') {
 
@@ -181,7 +177,24 @@ sub manage {
 		die "unknown service state '$last_state'";
 	    }
 
+
 	    $repeat = 1 if $sd->{state} ne $last_state;
+	}
+
+	# handle fencing
+	my $fenced_nodes = {};
+	foreach my $sid (keys %$ss) {
+	    my $sd = $ss->{$sid};
+	    next if $sd->{state} ne 'fence';
+
+	    if (!defined($fenced_nodes->{$sd->{node}})) {
+		$fenced_nodes->{$sd->{node}} = $ns->fence_node($sd->{node}) || 0;
+	    }
+
+	    next if !$fenced_nodes->{$sd->{node}};
+
+	    # node fence was sucessful - mark service as stopped
+	    &$change_service_state($self, $sid, 'stopped');	    
 	}
 
 	last if !$repeat;
