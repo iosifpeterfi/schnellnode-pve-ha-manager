@@ -1,0 +1,179 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use PVE::SafeSyslog;
+use POSIX ":sys_wait_h";
+use Fcntl ':flock';
+use Getopt::Long;
+use Time::HiRes qw (gettimeofday);
+use PVE::Tools qw(dir_glob_foreach file_read_firstline);
+use PVE::INotify;
+use PVE::Cluster qw(cfs_read_file);
+use PVE::RPCEnvironment;
+use PVE::CLIHandler;
+use Data::Dumper;
+
+use base qw(PVE::CLIHandler);
+
+my $pve_ha_crm_pidfile = "/var/run/pve-ha-crm.pid";
+
+$SIG{'__WARN__'} = sub {
+    my $err = $@;
+    my $t = $_[0];
+    chomp $t;
+    print "$t\n";
+    syslog('warning', "WARNING: %s", $t);
+    $@ = $err;
+};
+
+initlog('pve-ha-crm');
+
+$ENV{'PATH'} = '/sbin:/bin:/usr/sbin:/usr/bin';
+
+die "please run as root\n" if $> != 0;
+
+PVE::INotify::inotify_init();
+
+my $rpcenv = PVE::RPCEnvironment->init('cli');
+
+$rpcenv->init_request();
+$rpcenv->set_language($ENV{LANG});
+$rpcenv->set_user('root@pam');
+
+my $nodename = PVE::INotify::nodename();
+
+my $commandline = [$0, @ARGV];
+
+$0 = "pve-ha-crm";
+
+sub lockpidfile {
+    my $pidfile = shift;
+    my $lkfn = "$pidfile.lock";
+
+    if (!open (FLCK, ">>$lkfn")) {
+	my $msg = "can't aquire lock on file '$lkfn' - $!";
+	syslog ('err', $msg);
+	die "ERROR: $msg\n";
+    }
+
+    if (!flock (FLCK, LOCK_EX|LOCK_NB)) {
+	close (FLCK);
+        my $msg = "can't aquire lock '$lkfn' - $!";
+	syslog ('err', $msg);
+	die "ERROR: $msg\n";
+    }
+}
+
+sub writepidfile {
+    my $pidfile = shift;
+
+    if (!open (PIDFH, ">$pidfile")) {
+	my $msg = "can't open pid file '$pidfile' - $!";
+	syslog ('err', $msg);
+	die "ERROR: $msg\n";
+    } 
+    print PIDFH "$$\n";
+    close (PIDFH);
+}
+
+sub cleanup {
+    unlink "$pve_ha_crm_pidfile.lock";
+    unlink $pve_ha_crm_pidfile;
+}
+
+sub run_server {
+    my ($param) = @_;
+
+    # try to get the lock
+    lockpidfile($pve_ha_crm_pidfile);
+
+    # run in background
+    my $spid;
+
+    PVE::Cluster::cfs_update();
+ 
+    if (!$param->{debug}) {
+	open STDIN,  '</dev/null' || die "can't read /dev/null";
+	open STDOUT, '>/dev/null' || die "can't write /dev/null";
+    }
+
+    if (!$param->{debug}) {
+	$spid = fork();
+	if (!defined ($spid)) {
+	    my $msg =  "can't put server into background - fork failed";
+	    syslog('err', $msg);
+	    die "ERROR: $msg\n";
+	} elsif ($spid) { # parent
+	    exit (0);
+	}
+    } 
+
+    writepidfile($pve_ha_crm_pidfile);
+
+    open STDERR, '>&STDOUT' || die "can't close STDERR\n";
+ 
+    $SIG{INT} = $SIG{TERM} = $SIG{QUIT} = sub { 
+	syslog('info' , "server closing");
+
+	# fixme: implement this ?
+    };
+
+
+    print "DO WORK\n";
+
+    exit(0);
+}
+
+__PACKAGE__->register_method ({
+    name => 'start',
+    path => 'start',
+    method => 'POST',
+    description => "Start the Proxmox HA CRM service.",
+    parameters => {
+    	additionalProperties => 0,
+	properties => {
+	    debug => {
+		description => "Debug mode - stay in foreground",
+		type => "boolean",
+		optional => 1,
+		default => 0,
+	    },
+	},
+    },
+    returns => { type => 'null' },
+
+    code => sub {
+	my ($param) = @_;
+
+	run_server($param);
+
+	return undef;
+    }});
+
+
+my $cmddef = {
+    start => [ __PACKAGE__, 'start', []],
+};
+
+my $cmd = shift;
+
+PVE::CLIHandler::handle_cmd($cmddef, $0, $cmd, \@ARGV, undef, $0);
+
+exit (0);
+
+__END__
+
+=head1 NAME
+                                          
+pve-ha-crm - PVE Cluster Ressource Manager Daemon
+
+=head1 SYNOPSIS
+
+=include synopsis
+
+=head1 DESCRIPTION
+
+This is the Cluster Ressource Manager.
+
+=include pve_copyright
