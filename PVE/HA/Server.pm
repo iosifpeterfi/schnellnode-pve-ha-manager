@@ -92,14 +92,41 @@ sub get_manager_locks {
     my $haenv = $self->{haenv};
 
     my $count = 0;
+    my $agent_lock = 0;
+    my $manager_lock = 0;
+
     for (;;) {
 
-	return 1 if $haenv->get_ha_agent_lock() && 
-	    $haenv->get_ha_manager_lock();
+	if (!$manager_lock) {
+	    if ($manager_lock = $haenv->get_ha_manager_lock()) {
+		if ($self->{ha_manager_wd}) {
+		    $haenv->watchdog_update($self->{ha_manager_wd});
+		} else {
+		    my $wfh = $haenv->watchdog_open();
+		    $self->{ha_manager_wd} = $wfh;
+		}
+	    }
+	}
 
+	if (!$agent_lock) {
+	    if ($agent_lock = $haenv->get_ha_agent_lock()) {
+		if ($self->{ha_agent_wd}) {
+		    $haenv->watchdog_update($self->{ha_agent_wd});
+		} else {
+		    my $wfh = $haenv->watchdog_open();
+		    $self->{ha_agent_wd} = $wfh;
+		}
+	    }
+	}
+	    
 	last if ++$count > 5;
+
+	last if $manager_lock && $agent_lock;
+
 	$haenv->sleep(1);
     }
+
+    return 1 if $manager_lock;
 
     return 0;
 }
