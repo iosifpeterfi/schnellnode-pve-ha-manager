@@ -119,13 +119,15 @@ sub get_time {
 }
 
 sub log {
-    my ($self, $level, $msg) = @_;
+    my ($self, $level, $msg, $id) = @_;
 
     chomp $msg;
 
     my $time = $self->get_time();
 
-    printf("%-5s %5d %10s: $msg\n", $level, $time, 'hardware');
+    $id = 'hardware' if !$id;
+
+    printf("%-5s %5d %10s: $msg\n", $level, $time, $id);
 }
 
 sub statusdir {
@@ -214,7 +216,7 @@ sub get_node_info {
 # network <node> <on|off>
 
 sub sim_hardware_cmd {
-    my ($self, $cmdstr) = @_;
+    my ($self, $cmdstr, $logid) = @_;
 
     my $code = sub {
 
@@ -233,7 +235,7 @@ sub sim_hardware_cmd {
 		if ($action eq 'on') {
 		    my $server = $self->{nodes}->{$node}->{server} = PVE::HA::Server->new($haenv);
 		} elsif ($self->{nodes}->{$node}->{server}) {
-		    $haenv->log('info', "server killed by poweroff");
+		    $haenv->log('info', "server killed by poweroff", $logid);
 		    $self->{nodes}->{$node}->{server} = undef;
 		}
 	    }
@@ -247,7 +249,7 @@ sub sim_hardware_cmd {
 	    die "sim_hardware_cmd: unknown command '$cmd'\n";
 	}
 
-	$self->log('info', "execute $cmdstr");
+	$self->log('info', "execute $cmdstr", $logid);
 
 	$self->write_hardware_status_nolock($cstatus);
     };
@@ -281,7 +283,9 @@ sub run {
 	    
 	    foreach my $n (@nodes) {
 		if (!$self->watchdog_check($n)) {
-		    die "node '$n' fenced - implement me";
+		    $self->sim_hardware_cmd("power $n off", 'fencedev');
+		    $self->log('info', "server '$n' killed by poweroff (fencing)");
+		    $self->{nodes}->{$n}->{server} = undef;
 		}
 	    }
 	}
@@ -297,7 +301,7 @@ sub run {
 	    return if !$list;
 
 	    foreach my $cmd (@$list) {
-		$self->sim_hardware_cmd($cmd);
+		$self->sim_hardware_cmd($cmd, 'cmdlist');
 	    }
 	}
 
