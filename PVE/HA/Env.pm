@@ -35,7 +35,7 @@ sub read_local_status {
 sub write_local_status {
     my ($self, $status) = @_;
 
-    return $self->{plug}->write_local_status();
+    return $self->{plug}->write_local_status($status);
 }
 
 # manager status is stored on cluster, protected by ha_manager_lock
