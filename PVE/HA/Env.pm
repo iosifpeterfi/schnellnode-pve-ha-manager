@@ -9,14 +9,13 @@ use PVE::Tools;
 # abstract out the cluster environment for a single node
 
 sub new {
-    my ($this, $statusdir, $nodename) = @_;
+    my ($this, $baseclass, $node, @args) = @_;
 
     my $class = ref($this) || $this;
 
-    my $self = bless {
-	statusdir => $statusdir,
-	nodename => $nodename,
-    }, $class;
+    my $plug = $baseclass->new($node, @args);
+
+    my $self = bless { plug => $plug }, $class;
 
     return $self;
 }
@@ -24,63 +23,45 @@ sub new {
 sub nodename {
     my ($self) = @_;
 
-    return $self->{nodename};
+    return $self->{plug}->nodename();
 }
 
 sub read_local_status {
     my ($self) = @_;
 
-    my $node = $self->{nodename};
-    my $filename = "$self->{statusdir}/local_status_$node";
-    return PVE::Tools::file_read_firstline($filename);  
+    return $self->{plug}->read_local_status();
 }
 
 sub write_local_status {
     my ($self, $status) = @_;
 
-    my $node = $self->{nodename};
-    my $filename = "$self->{statusdir}/local_status_$node";
-    PVE::Tools::file_set_contents($filename, $status);
+    return $self->{plug}->write_local_status();
 }
 
 # manager status is stored on cluster, protected by ha_manager_lock
 sub read_manager_status {
     my ($self) = @_;
 
-    die "implement me";
-
-    return {};
+    return $self->{plug}->read_manager_status();
 }
 
 sub write_manager_status {
     my ($self, $status_obj) = @_;
 
-    die "implement me";
+    return $self->{plug}->write_manager_status($status_obj);
 }
 
 # we use this to enable/disbale ha
 sub manager_status_exists {
     my ($self) = @_;
 
-    die "implement me";
-
-    return {};
-}
-
-sub parse_service_config {
-    my ($self, $raw) = @_;
-
-    die "implement me";
-
-    return {};
+    return $self->{plug}->manager_status_exists();
 }
 
 sub read_service_config {
     my ($self) = @_;
 
-    die "implement me";
-
-    return {};
+    return $self->{plug}->read_service_config();
 }
 
 # this should return a hash containing info
@@ -88,29 +69,40 @@ sub read_service_config {
 sub get_node_info {
     my ($self) = @_;
 
-    die "implement me";   
-
-    # return { node1 => { online => 1 }, node2 => ... }
+    return $self->{plug}->get_node_info();
 }
 
 sub log {
     my ($self, $level, @args) = @_;
 
-    syslog($level, @args);
+    return $self->{plug}->log($level, @args);
 }
 
-# aquire a cluster wide lock 
+# aquire a cluster wide manager lock 
 sub get_ha_manager_lock {
     my ($self) = @_;
 
-    die "implement me";
+    return $self->{plug}->get_ha_manager_lock();
+}
+
+# aquire a cluster wide node agent lock 
+sub get_ha_agent_lock {
+    my ($self) = @_;
+
+    return $self->{plug}->get_ha_agent_lock();
+}
+
+sub test_ha_agent_lock {
+    my ($self, $node) = @_;
+
+    return $self->{plug}->test_ha_agent_lock($node);
 }
 
 # return true when cluster is quorate
 sub quorate {
     my ($self) = @_;
 
-    die "implement me";
+    return $self->{plug}->quorate();
 }
 
 # return current time
@@ -118,36 +110,31 @@ sub quorate {
 sub get_time {
     my ($self) = @_;
 
-    return time();
+    return $self->{plug}->get_time();
 }
 
 sub sleep {
    my ($self, $delay) = @_;
 
-   sleep($delay);
+   return $self->{plug}->sleep($delay);
 }
 
 sub sleep_until {
    my ($self, $end_time) = @_;
 
-   for (;;) {
-       my $cur_time = $self->get_time();
-       return if $cur_time >= $end_time;
-       $self->sleep($end_time - $cur_time);
-   }
+   return $self->{plug}->sleep_until($end_time);
 }
 
 sub loop_start_hook {
-    my ($self) = @_;
+    my ($self, @args) = @_;
 
-    # do nothing
+    return $self->{plug}->loop_start_hook(@args);
 }
 
 sub loop_end_hook {
-    my ($self) = @_;
-
-    # do nothing
+    my ($self, @args) = @_;
+    
+    return $self->{plug}->loop_end_hook(@args);
 }
-
 
 1;

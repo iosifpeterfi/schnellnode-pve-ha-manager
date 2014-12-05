@@ -25,10 +25,18 @@ use PVE::HA::Server;
 #
 # configuration
 #
-# $testdir/cmdlist   Command list for simulation
+# $testdir/cmdlist           Command list for simulation
+# $testdir/hardware_status   Hardware description (number of nodes, ...)
+# $testdir/manager_status    CRM status (start with {})
+# $testdir/service_status    Service status
+
 #
 # runtime status
-# $testdir/status/
+# $testdir/status/local_status_<node>  local CRM Daemon status
+# $testdir/status/cluster_locks        Cluster locks
+# $testdir/status/hardware_status
+# $testdir/status/manager_status
+# $testdir/status/service_status 
 
 sub read_hardware_status_nolock {
     my ($self) = @_;
@@ -85,7 +93,8 @@ sub new {
 
     foreach my $node (sort keys %$cstatus) {
 
-	my $haenv = PVE::HA::Sim::Env->new($self, $node);
+	my $haenv = PVE::HA::Env->new('PVE::HA::Sim::Env', $node, $self);
+
 	die "HA is not enabled\n" if !$haenv->manager_status_exists();
 
 	$haenv->log('info', "starting server");

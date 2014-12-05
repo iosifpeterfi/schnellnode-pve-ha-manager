@@ -10,22 +10,45 @@ use Fcntl qw(:DEFAULT :flock);
 
 use PVE::HA::Env;
 
-use base qw(PVE::HA::Env);
-
 sub new {
-    my ($this, $hardware, $nodename) = @_;
+    my ($this, $nodename, $hardware) = @_;
 
     die "missing nodename" if !$nodename;
 
     my $class = ref($this) || $this;
 
-    my $self = $class->SUPER::new($hardware->statusdir(), $nodename);
+    my $self = bless {}, $class;
+
+    $self->{statusdir} = $hardware->statusdir();
+    $self->{nodename} = $nodename;
 
     $self->{hardware} = $hardware;
     $self->{cur_time} = 0;
     $self->{loop_delay} = 0;
 
     return $self;
+}
+
+sub nodename {
+    my ($self) = @_;
+
+    return $self->{nodename};
+}
+
+sub read_local_status {
+    my ($self) = @_;
+
+    my $node = $self->{nodename};
+    my $filename = "$self->{statusdir}/local_status_$node";
+    return PVE::Tools::file_read_firstline($filename);  
+}
+
+sub write_local_status {
+    my ($self, $status) = @_;
+
+    my $node = $self->{nodename};
+    my $filename = "$self->{statusdir}/local_status_$node";
+    PVE::Tools::file_set_contents($filename, $status);
 }
 
 sub sim_get_lock {

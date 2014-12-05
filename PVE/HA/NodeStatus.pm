@@ -128,8 +128,7 @@ sub fence_node {
     my $success = $haenv->test_ha_agent_lock($node);
 
     if ($success) {
-	my $lck = $haenv->get_ha_agent_lock_name($node);
-	$haenv->log("info", "fencing: acknowleged - got lock '$lck'");
+	$haenv->log("info", "fencing: acknowleged - got agent lock for node '$node'");
 	die "implement me";
     }
 
