@@ -16,10 +16,14 @@ use Fcntl qw(:DEFAULT :flock);
 use File::Copy;
 use File::Path qw(make_path remove_tree);
 
+my $watchdog_timeout = 180;
+my $lock_timeout = 200;
+
 my $max_sim_time = 10000;
 
 use PVE::HA::Sim::Env;
 use PVE::HA::CRM;
+use PVE::HA::LRM;
 
 # Status directory layout
 #
@@ -98,14 +102,16 @@ sub new {
 
     foreach my $node (sort keys %$cstatus) {
 
-	my $haenv = PVE::HA::Env->new('PVE::HA::Sim::Env', $node, $self);
+	$self->{nodes}->{$node} = {};
 
-	die "HA is not enabled\n" if !$haenv->manager_status_exists();
+	$self->{nodes}->{$node}->{crm_env} = 
+	    PVE::HA::Env->new('PVE::HA::Sim::Env', $node, $self, 'crm', $lock_timeout);
 
-	$haenv->log('info', "starting server");
+	$self->{nodes}->{$node}->{lrm_env} = 
+	    PVE::HA::Env->new('PVE::HA::Sim::Env', $node, $self, 'lrm', $lock_timeout);
 
-	$self->{nodes}->{$node}->{haenv} = $haenv;
 	$self->{nodes}->{$node}->{crm} = undef; # create on power on
+	$self->{nodes}->{$node}->{lrm} = undef; # create on power on
     }
 
     return $self;
@@ -126,7 +132,7 @@ sub log {
 
     $id = 'hardware' if !$id;
 
-    printf("%-5s %5d %10s: $msg\n", $level, $time, $id);
+    printf("%-5s %5d %12s: $msg\n", $level, $time, $id);
 }
 
 sub statusdir {
@@ -226,17 +232,25 @@ sub sim_hardware_cmd {
 	die "sim_hardware_cmd: no node specified" if !$node;
 	die "sim_hardware_cmd: unknown action '$action'" if $action !~ m/^(on|off)$/;
 
-	my $haenv = $self->{nodes}->{$node}->{haenv};
-	die "sim_hardware_cmd: no such node '$node'\n" if !$haenv;
+	my $d = $self->{nodes}->{$node};
+	die "sim_hardware_cmd: no such node '$node'\n" if !$d;
+
+	$self->log('info', "execute $cmdstr", $logid);
 	
 	if ($cmd eq 'power') {
 	    if ($cstatus->{$node}->{power} ne $action) {
-		if ($action eq 'on') {
-		    my $crm = $self->{nodes}->{$node}->{crm} = 
-			PVE::HA::CRM->new($haenv);
-		} elsif ($self->{nodes}->{$node}->{crm}) {
-		    $haenv->log('info', "server killed by poweroff", $logid);
-		    $self->{nodes}->{$node}->{crm} = undef;
+		if ($action eq 'on') {	      
+		    $d->{crm} = PVE::HA::CRM->new($d->{crm_env}) if !$d->{crm};
+		    $d->{lrm} = PVE::HA::LRM->new($d->{lrm_env}) if !$d->{lrm};
+		} else {
+		    if ($d->{crm}) {
+			$d->{crm_env}->log('info', "killed by poweroff");
+			$d->{crm} = undef;
+		    }
+		    if ($d->{lrm}) {
+			$d->{lrm_env}->log('info', "killed by poweroff");
+			$d->{lrm} = undef;
+		    }
 		}
 	    }
 
@@ -248,8 +262,6 @@ sub sim_hardware_cmd {
 	} else {
 	    die "sim_hardware_cmd: unknown command '$cmd'\n";
 	}
-
-	$self->log('info', "execute $cmdstr", $logid);
 
 	$self->write_hardware_status_nolock($cstatus);
     };
@@ -269,25 +281,39 @@ sub run {
 	my @nodes = sort keys %{$self->{nodes}};
 
 	foreach my $node (@nodes) {
-	    my $haenv = $self->{nodes}->{$node}->{haenv};
-	    my $crm = $self->{nodes}->{$node}->{crm};
 
-	    next if !$crm;
-
-	    $haenv->loop_start_hook($self->get_time());
-
-	    die "implement me" if !$crm->do_one_iteration();
-
-	    $haenv->loop_end_hook();
-
-	    my $nodetime = $haenv->get_time();
-	    $self->{cur_time} = $nodetime if $nodetime > $self->{cur_time};
+	    my $d = $self->{nodes}->{$node};
 	    
+	    if (my $crm = $d->{crm}) {
+
+		$d->{crm_env}->loop_start_hook($self->get_time());
+
+		die "implement me (CRM exit)" if !$crm->do_one_iteration();
+
+		$d->{crm_env}->loop_end_hook();
+
+		my $nodetime = $d->{crm_env}->get_time();
+		$self->{cur_time} = $nodetime if $nodetime > $self->{cur_time};
+	    }
+
+	    if (my $lrm = $d->{lrm}) {
+
+		$d->{lrm_env}->loop_start_hook($self->get_time());
+
+		die "implement me (LRM exit)" if !$lrm->do_one_iteration();
+
+		$d->{lrm_env}->loop_end_hook();
+
+		my $nodetime = $d->{lrm_env}->get_time();
+		$self->{cur_time} = $nodetime if $nodetime > $self->{cur_time};
+	    }
+
 	    foreach my $n (@nodes) {
 		if (!$self->watchdog_check($n)) {
-		    $self->sim_hardware_cmd("power $n off", 'fencedev');
-		    $self->log('info', "server '$n' killed by poweroff (fencing)");
+		    $self->sim_hardware_cmd("power $n off", 'watchdog');
+		    $self->log('info', "server '$n' stopped by poweroff (watchdog)");
 		    $self->{nodes}->{$n}->{crm} = undef;
+		    $self->{nodes}->{$n}->{lrm} = undef;
 		}
 	    }
 	}
@@ -356,7 +382,7 @@ sub watchdog_check {
 	    my $ctime = $self->get_time();
 	    my $tdiff = $ctime - $wd->{update_time};
 
-	    if ($tdiff > 60) { # expired
+	    if ($tdiff > $watchdog_timeout) { # expired
 		$res = 0;
 		delete $wdstatus->{$wfh};
 	    }
@@ -403,7 +429,7 @@ sub watchdog_close {
 	die "no such watchdog handle '$wfh'\n" if !defined($wd);
 
 	my $tdiff = $self->get_time() - $wd->{update_time};
-	die "watchdog expired" if $tdiff > 60;
+	die "watchdog expired" if $tdiff > $watchdog_timeout;
 
 	delete $wdstatus->{$wfh};
 
@@ -426,7 +452,7 @@ sub watchdog_update {
 	my $ctime = $self->get_time();
 	my $tdiff = $ctime - $wd->{update_time};
 
-	die "watchdog expired" if $tdiff > 60;
+	die "watchdog expired" if $tdiff > $watchdog_timeout;
 	
 	$wd->{update_time} = $ctime;
 

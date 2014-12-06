@@ -13,7 +13,7 @@ use PVE::HA::Tools;
 
 my $valid_states = {
     wait_for_agent_lock => "waiting for agnet lock",
-    locked => "got agent_lock",
+    active => "got agent_lock",
     lost_agent_lock => "lost agent_lock",
 };
 
@@ -56,7 +56,7 @@ sub set_local_status {
     # important: only update if if really changed 
     return if $old->{state} eq $new->{state};
 
-    $haenv->log('info', "LRM status change $old->{state} => $new->{state}");
+    $haenv->log('info', "status change $old->{state} => $new->{state}");
 
     $new->{state_change_time} = $haenv->get_time();
 
@@ -111,22 +111,22 @@ sub do_one_iteration {
 	my $service_count = 1; # todo: correctly compute
 
 	if ($service_count && $haenv->quorate()) {
-	    if ($self->get_protectedt_ha_agent_lock()) {
-		$self->set_local_status({ state => 'locked' });
+	    if ($self->get_protected_ha_agent_lock()) {
+		$self->set_local_status({ state => 'active' });
 	    }
 	}
 	
     } elsif ($state eq 'lost_agent_lock') {
 
 	if ($haenv->quorate()) {
-	    if ($self->get_protectedt_ha_agent_lock()) {
-		$self->set_local_status({ state => 'locked' });
+	    if ($self->get_protected_ha_agent_lock()) {
+		$self->set_local_status({ state => 'active' });
 	    }
 	}
 
-    } elsif ($state eq 'locked') {
+    } elsif ($state eq 'active') {
 
-	if (!$self->get_protectedt_ha_agent_lock()) {
+	if (!$self->get_protected_ha_agent_lock()) {
 	    $self->set_local_status({ state => 'lost_agent_lock'});
 	}
     }
@@ -142,7 +142,7 @@ sub do_one_iteration {
 
 	$haenv->sleep(5);
 	   
-    } elsif ($state eq 'locked') {
+    } elsif ($state eq 'active') {
 
 	my $startime = $haenv->get_time();
 

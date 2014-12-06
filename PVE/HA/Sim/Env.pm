@@ -12,10 +12,12 @@ use PVE::HA::Tools;
 use PVE::HA::Env;
 
 sub new {
-    my ($this, $nodename, $hardware) = @_;
+    my ($this, $nodename, $hardware, $log_id, $lock_timeout) = @_;
 
     die "missing nodename" if !$nodename;
-
+    die "missing log_id" if !$log_id;
+    die "missing lock_timeout" if !$lock_timeout;
+    
     my $class = ref($this) || $this;
 
     my $self = bless {}, $class;
@@ -26,6 +28,10 @@ sub new {
     $self->{hardware} = $hardware;
     $self->{cur_time} = 0;
     $self->{loop_delay} = 0;
+
+    $self->{lock_timeout} = $lock_timeout;
+
+    $self->{log_id} = $log_id;
 
     return $self;
 }
@@ -57,9 +63,9 @@ sub sim_get_lock {
 	    if (my $d = $data->{$lock_name}) {
 		my $tdiff = $ctime - $d->{time};
 	    
-		if ($tdiff > 120) {
+		if ($tdiff > $self->{lock_timeout}) {
 		    $res = 1;
-		} elsif (($tdiff <= 120) && ($d->{node} eq $nodename)) {
+		} elsif (($tdiff <= $self->{lock_timeout}) && ($d->{node} eq $nodename)) {
 		    delete $data->{$lock_name};
 		    $res = 1;
 		} else {
@@ -73,7 +79,7 @@ sub sim_get_lock {
 	    
 		my $tdiff = $ctime - $d->{time};
 	    
-		if ($tdiff <= 120) {
+		if ($tdiff <= $self->{lock_timeout}) {
 		    if ($d->{node} eq $nodename) {
 			$d->{time} = $ctime;
 			$res = 1;
@@ -156,7 +162,7 @@ sub log {
 
     my $time = $self->get_time();
 
-    printf("%-5s %5d %10s: $msg\n", $level, $time, $self->{nodename});
+    printf("%-5s %5d %12s: $msg\n", $level, $time, "$self->{nodename}/$self->{log_id}");
 }
 
 sub get_time {

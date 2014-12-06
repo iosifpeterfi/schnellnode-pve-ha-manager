@@ -60,7 +60,7 @@ sub set_local_status {
     # important: only update if if really changed 
     return if $old->{state} eq $new->{state};
 
-    $haenv->log('info', "CRM status change $old->{state} => $new->{state}");
+    $haenv->log('info', "status change $old->{state} => $new->{state}");
 
     $new->{state_change_time} = $haenv->get_time();
 
