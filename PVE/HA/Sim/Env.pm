@@ -8,6 +8,7 @@ use JSON;
 use IO::File;
 use Fcntl qw(:DEFAULT :flock);
 
+use PVE::HA::Tools;
 use PVE::HA::Env;
 
 sub new {
@@ -40,7 +41,8 @@ sub read_local_status {
 
     my $node = $self->{nodename};
     my $filename = "$self->{statusdir}/local_status_$node";
-    return PVE::Tools::file_read_firstline($filename);  
+    my $default = { state => 'wait_for_quorum' };  
+    return PVE::HA::Tools::read_json_from_file($filename, $default); 
 }
 
 sub write_local_status {
@@ -48,7 +50,8 @@ sub write_local_status {
 
     my $node = $self->{nodename};
     my $filename = "$self->{statusdir}/local_status_$node";
-    PVE::Tools::file_set_contents($filename, $status);
+    
+    PVE::HA::Tools::write_json_to_file($filename, $status);  
 }
 
 sub sim_get_lock {
@@ -60,10 +63,7 @@ sub sim_get_lock {
 
     my $code = sub {
 
-	my $raw = "{}";
-	$raw = PVE::Tools::file_get_contents($filename) if -f $filename; 
-
-	my $data = decode_json($raw);
+	my $data = PVE::HA::Tools::read_json_from_file($filename, {});  
 
 	my $res;
 
@@ -114,8 +114,7 @@ sub sim_get_lock {
 	    }
 	}
 
-	$raw = encode_json($data);
-	PVE::Tools::file_set_contents($filename, $raw);
+	PVE::HA::Tools::write_json_to_file($filename, $data); 
 
 	return $res;
     };
@@ -128,18 +127,15 @@ sub read_manager_status {
     
     my $filename = "$self->{statusdir}/manager_status";
 
-    my $raw = PVE::Tools::file_get_contents($filename);
-
-    return decode_json($raw) || {};
+    return PVE::HA::Tools::read_json_from_file($filename, {});  
 }
 
 sub write_manager_status {
     my ($self, $status_obj) = @_;
 
-    my $data = encode_json($status_obj);
     my $filename = "$self->{statusdir}/manager_status";
 
-    PVE::Tools::file_set_contents($filename, $data);
+    PVE::HA::Tools::write_json_to_file($filename, $status_obj); 
 }
 
 sub manager_status_exists {
@@ -150,60 +146,22 @@ sub manager_status_exists {
     return -f $filename ? 1 : 0;
 }
 
-my $read_service_status = sub {
-    my ($self) = @_;
-
-    my $filename = "$self->{statusdir}/service_status";
-
-    if (-f $filename) {
-	my $raw = PVE::Tools::file_get_contents($filename);
-	return decode_json($raw);
-    } else {
-	return {};
-    }
-};
-
-my $write_service_status = sub {
-    my ($self, $status_obj) = @_;
-
-    my $data = encode_json($status_obj);
-    my $filename = "$self->{statusdir}/service_status";
-
-    PVE::Tools::file_set_contents($filename, $data);
-};
-
 sub read_service_config {
     my ($self) = @_;
 
-    my $conf = {
-	'pvevm:101' => {
-	    type => 'pvevm',
-	    name => '101',
-	    state => 'enabled',
-	},
-	'pvevm:102' => {
-	    type => 'pvevm',
-	    name => '102',
-	    state => 'disabled',
-	},
-	'pvevm:103' => {
-	    type => 'pvevm',
-	    name => '103',
-	    state => 'enabled',
-	},
-    };
-
-    my $rl = &$read_service_status($self);
+    my $filename = "$self->{statusdir}/service_config";
+    my $conf = PVE::HA::Tools::read_json_from_file($filename); 
 
     foreach my $sid (keys %$conf) {
-	die "service '$sid' does not exists\n" 
-	    if !($rl->{$sid} && $rl->{$sid}->{node});
-    }
-
-    foreach my $sid (keys %$rl) {
-	next if !$conf->{$sid};
-	$conf->{$sid}->{current_node} = $rl->{$sid}->{node};
-	$conf->{$sid}->{node} = $conf->{$sid}->{current_node};
+	my $d = $conf->{$sid};
+	$d->{current_node} = $d->{node} if !$d->{current_node};
+	if ($sid =~ m/^pvevm:(\d+)$/) {
+	    $d->{type} = 'pvevm'; 
+	    $d->{name} = $1;
+	} else {
+	    die "implement me";
+	}
+	$d->{state} = 'disabled' if !$d->{state};
     }
 
     return $conf;

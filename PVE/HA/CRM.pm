@@ -7,6 +7,7 @@ use warnings;
 
 use PVE::SafeSyslog;
 use PVE::Tools;
+use PVE::HA::Tools;
 
 use PVE::HA::Manager;
 
@@ -40,12 +41,12 @@ sub new {
 	manager => undef,
     }, $class;
 
-    $self->{status} = $haenv->read_local_status() || 'wait_for_quorum';
+    $self->{status} = $haenv->read_local_status();
     # can happen after crash?
-    if ($self->{status} eq 'master') {
-	$self->set_local_status('recover');
+    if ($self->{status}->{state} eq 'master') {
+	$self->set_local_status({ state => 'recover' });
     } else {
-	$self->set_local_status('wait_for_quorum');   
+	$self->set_local_status({ state => 'wait_for_quorum' });   
     }
     
     return $self;
@@ -58,26 +59,25 @@ sub get_local_status {
 }
 
 sub set_local_status {
-    my ($self, $new_status) = @_;
+    my ($self, $new) = @_;
 
-    die "invalid state '$new_status'" 
-	if !$valid_states->{$new_status};
+    die "invalid state '$new->{state}'" if !$valid_states->{$new->{state}};
 
     my $haenv = $self->{haenv};
 
-    my $status = $self->{status};
+    my $old = $self->{status};
 
-    return if $status eq $new_status;
+    return if $old->{state} eq $new->{state}; # important
 
-    $haenv->log('info', "manager status change $status => $new_status");
+    $haenv->log('info', "manager status change $old->{state} => $new->{state}");
 
-    $status = $new_status;
+    $new->{state_change_time} = $haenv->get_time();
 
-    $haenv->write_local_status($status);
+    $haenv->write_local_status($new);
 
-    $self->{status} = $status;
+    $self->{status} = $new;
 
-    if ($status eq 'master') {
+    if ($new->{state} eq 'master') {
 	$self->{manager} = PVE::HA::Manager->new($haenv);
     } else {
 	if ($self->{manager}) {
@@ -139,28 +139,65 @@ sub do_one_iteration {
     my $haenv = $self->{haenv};
 
     my $status = $self->get_local_status();
+    my $state = $status->{state};
 
-    if ($status eq 'recover') {
+    # do state changes first 
 
-	$haenv->log('info', "waiting for 5 seconds");
+    my $ctime = $haenv->get_time();
 
-	$haenv->sleep(5);
+    if ($state eq 'recover') {
 
-	$self->set_local_status('wait_for_quorum');
+	if (($ctime - $status->{state_change_time}) > 5) {
+	    $self->set_local_status({ state => 'wait_for_quorum' });
+	}
 
-    } elsif ($status eq 'wait_for_quorum') {
+    } elsif ($state eq 'wait_for_quorum') {
 
-	$haenv->sleep(5);
-	   
 	if ($haenv->quorate()) {
 	    if ($self->get_manager_locks()) {
-		$self->set_local_status('master');
+		$self->set_local_status({ state => 'master' });
 	    } else {
-		$self->set_local_status('slave');
+		$self->set_local_status({ state => 'slave' });
 	    }
 	}
 
-    } elsif ($status eq 'master') {
+    } elsif ($state eq 'master') {
+
+	if (!$self->get_manager_locks()) {
+	    if ($haenv->quorate()) {
+		$self->set_local_status({ state => 'slave' });
+	    } else {
+		$self->set_local_status({ state => 'wait_for_quorum'});
+		# set_local_status({ state => 'lost_quorum' });
+	    }
+	}
+
+    } elsif ($state eq 'slave') {
+
+	if ($haenv->quorate()) {
+	    if ($self->get_manager_locks()) {
+		$self->set_local_status({ state => 'master' });
+	    }
+	} else {
+	    $self->set_local_status({ state => 'wait_for_quorum' });
+	}
+
+    }
+   
+    $status = $self->get_local_status();
+    $state = $status->{state};
+
+    # do work
+
+    if ($state eq 'recover') {
+
+	$haenv->sleep(5);
+
+    } elsif ($state eq 'wait_for_quorum') {
+
+	$haenv->sleep(5);
+	   
+    } elsif ($state eq 'master') {
 
 	my $manager = $self->{manager};
 
@@ -177,42 +214,23 @@ sub do_one_iteration {
 	};
 	if (my $err = $@) {
 
-	    # fixme: cleanup?
 	    $haenv->log('err', "got unexpected error - $err");
-	    $self->set_local_status('error');
+	    $self->set_local_status({ state => 'error' });
 
 	} else {
 	    $haenv->sleep_until($startime + $max_time);
 	}
 
-	if (!$self->get_manager_locks()) {
-	    if ($haenv->quorate()) {
-		$self->set_local_status('slave');
-	    } else {
-		$self->set_local_status('wait_for_quorum');
-		# set_local_status('lost_quorum');
-	    }
-	}
-    } elsif ($status eq 'slave') {
-
-	$haenv->sleep(5);
-
-	if ($haenv->quorate()) {
-	    if ($self->get_manager_locks()) {
-		$self->set_local_status('master');
-	    }
-	} else {
-	    $self->set_local_status('wait_for_quorum');
-	}
-
-    } elsif ($status eq 'error') {
+    } elsif ($state eq 'slave') {
+	# do nothing
+    } elsif ($state eq 'error') {
 	die "stopping due to errors\n";
-    } elsif ($status eq 'lost_quorum') {
+    } elsif ($state eq 'lost_quorum') {
 	die "lost_quorum\n";
-    } elsif ($status eq 'halt') {
+    } elsif ($state eq 'halt') {
 	die "halt\n";
     } else {
-	die "got unexpected status '$status'\n";
+	die "got unexpected status '$state'\n";
     }
 
     return 1;

@@ -28,7 +28,7 @@ use PVE::HA::CRM;
 # $testdir/cmdlist           Command list for simulation
 # $testdir/hardware_status   Hardware description (number of nodes, ...)
 # $testdir/manager_status    CRM status (start with {})
-# $testdir/service_status    Service status
+# $testdir/service_config    Service configuration
 
 #
 # runtime status for simulation system
@@ -40,8 +40,8 @@ use PVE::HA::CRM;
 # runtime status
 #
 # $testdir/status/local_status_<node>  local CRM Daemon status
-# $testdir/status/manager_status
-# $testdir/status/service_status 
+# $testdir/status/manager_status       CRM status
+# $testdir/status/service_config       Service configuration
 
 sub read_hardware_status_nolock {
     my ($self) = @_;
@@ -87,7 +87,7 @@ sub new {
 
     # copy initial configuartion
     copy("$testdir/manager_status", "$statusdir/manager_status"); # optional
-    copy("$testdir/service_status", "$statusdir/service_status"); # optional
+    copy("$testdir/service_config", "$statusdir/service_config"); # optional
 
     copy("$testdir/hardware_status", "$statusdir/hardware_status") ||
 	die "Copy failed: $!\n";
