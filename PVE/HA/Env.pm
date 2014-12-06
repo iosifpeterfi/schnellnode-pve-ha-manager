@@ -26,18 +26,6 @@ sub nodename {
     return $self->{plug}->nodename();
 }
 
-sub read_local_status {
-    my ($self, $name) = @_;
-
-    return $self->{plug}->read_local_status($name);
-}
-
-sub write_local_status {
-    my ($self, $name, $status) = @_;
-
-    return $self->{plug}->write_local_status($name, $status);
-}
-
 # manager status is stored on cluster, protected by ha_manager_lock
 sub read_manager_status {
     my ($self) = @_;
@@ -139,6 +127,9 @@ sub loop_end_hook {
 
 sub watchdog_open {
     my ($self) = @_;
+
+    # Note: when using /dev/watchdog, make sure perl does not close
+    # the handle automatically at exit!!
 
     return $self->{plug}->watchdog_open();
 }

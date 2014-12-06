@@ -12,23 +12,12 @@ use PVE::HA::Tools;
 use PVE::HA::Manager;
 
 # Server can have several state:
-#
-# wait_for_quorum: cluster is not quorate, waiting
-# recover: fixme?
-# master:
-# slave:
-# lost_quorum:
-# error:
-# halt:
 
 my $valid_states = {
-    wait_for_quorum => 1,
-    recover => 1,
-    master => 1,
-    slave => 1,
-    lost_quorum => 1,
-    error => 1,
-    halt => 1,
+    wait_for_quorum => "cluster is not quorate, waiting",
+    master => "quorate, and we got the ha_manager lock",
+    lost_manager_lock => "we lost the ha_manager lock (watchgog active)",
+    slave => "quorate, but we do not own the ha_manager lock",
 };
 
 sub new {
@@ -39,17 +28,18 @@ sub new {
     my $self = bless {
 	haenv => $haenv,
 	manager => undef,
+	status => { state => 'startup' },
     }, $class;
 
-    $self->{status} = $haenv->read_local_status('crm');
-    # can happen after crash?
-    if ($self->{status}->{state} eq 'master') {
-	$self->set_local_status({ state => 'recover' });
-    } else {
-	$self->set_local_status({ state => 'wait_for_quorum' });   
-    }
+    $self->set_local_status({ state => 'wait_for_quorum' });
     
     return $self;
+}
+
+sub shutdown_request {
+    my ($self) = @_;
+
+    $self->{shutdown_request} = 1;
 }
 
 sub get_local_status {
@@ -67,16 +57,16 @@ sub set_local_status {
 
     my $old = $self->{status};
 
-    return if $old->{state} eq $new->{state}; # important
+    # important: only update if if really changed 
+    return if $old->{state} eq $new->{state};
 
-    $haenv->log('info', "manager status change $old->{state} => $new->{state}");
+    $haenv->log('info', "CRM status change $old->{state} => $new->{state}");
 
     $new->{state_change_time} = $haenv->get_time();
 
-    $haenv->write_local_status('crm', $new);
-
     $self->{status} = $new;
 
+    # fixme: do not use extra class
     if ($new->{state} eq 'master') {
 	$self->{manager} = PVE::HA::Manager->new($haenv);
     } else {
@@ -88,48 +78,34 @@ sub set_local_status {
     }
 }
 
-sub get_manager_locks {
+sub get_protected_ha_manager_lock {
     my ($self) = @_;
 
     my $haenv = $self->{haenv};
 
     my $count = 0;
-    my $agent_lock = 0;
-    my $manager_lock = 0;
+    my $starttime = $haenv->get_time();
 
     for (;;) {
-
-	if (!$manager_lock) {
-	    if ($manager_lock = $haenv->get_ha_manager_lock()) {
-		if ($self->{ha_manager_wd}) {
-		    $haenv->watchdog_update($self->{ha_manager_wd});
-		} else {
-		    my $wfh = $haenv->watchdog_open();
-		    $self->{ha_manager_wd} = $wfh;
-		}
+	
+	if ($haenv->get_ha_manager_lock()) {
+	    if ($self->{ha_manager_wd}) {
+		$haenv->watchdog_update($self->{ha_manager_wd});
+	    } else {
+		my $wfh = $haenv->watchdog_open();
+		$self->{ha_manager_wd} = $wfh;
 	    }
-	}
-
-	if (!$agent_lock) {
-	    if ($agent_lock = $haenv->get_ha_agent_lock()) {
-		if ($self->{ha_agent_wd}) {
-		    $haenv->watchdog_update($self->{ha_agent_wd});
-		} else {
-		    my $wfh = $haenv->watchdog_open();
-		    $self->{ha_agent_wd} = $wfh;
-		}
-	    }
+	    return 1;
 	}
 	    
-	last if ++$count > 5;
+	last if ++$count > 5; # try max 5 time
 
-	last if $manager_lock && $agent_lock;
+	my $delay = $haenv->get_time() - $starttime;
+	last if $delay > 5; # for max 5 seconds
 
 	$haenv->sleep(1);
     }
-
-    return 1 if $manager_lock;
-
+    
     return 0;
 }
 
@@ -143,45 +119,39 @@ sub do_one_iteration {
 
     # do state changes first 
 
-    my $ctime = $haenv->get_time();
-
-    if ($state eq 'recover') {
-
-	if (($ctime - $status->{state_change_time}) > 5) {
-	    $self->set_local_status({ state => 'wait_for_quorum' });
-	}
-
-    } elsif ($state eq 'wait_for_quorum') {
+    if ($state eq 'wait_for_quorum') {
 
 	if ($haenv->quorate()) {
-	    if ($self->get_manager_locks()) {
+	    if ($self->get_protected_ha_manager_lock()) {
 		$self->set_local_status({ state => 'master' });
 	    } else {
 		$self->set_local_status({ state => 'slave' });
-	    }
-	}
-
-    } elsif ($state eq 'master') {
-
-	if (!$self->get_manager_locks()) {
-	    if ($haenv->quorate()) {
-		$self->set_local_status({ state => 'slave' });
-	    } else {
-		$self->set_local_status({ state => 'wait_for_quorum'});
-		# set_local_status({ state => 'lost_quorum' });
 	    }
 	}
 
     } elsif ($state eq 'slave') {
 
 	if ($haenv->quorate()) {
-	    if ($self->get_manager_locks()) {
+	    if ($self->get_protected_ha_manager_lock()) {
 		$self->set_local_status({ state => 'master' });
 	    }
 	} else {
 	    $self->set_local_status({ state => 'wait_for_quorum' });
 	}
 
+    } elsif ($state eq 'lost_manager_lock') {
+
+	if ($haenv->quorate()) {
+	    if ($self->get_protected_ha_manager_lock()) {
+		$self->set_local_status({ state => 'master' });
+	    }
+	}
+
+    } elsif ($state eq 'master') {
+
+	if (!$self->get_protected_ha_manager_lock()) {
+	    $self->set_local_status({ state => 'lost_manager_lock'});
+	}
     }
    
     $status = $self->get_local_status();
@@ -189,11 +159,9 @@ sub do_one_iteration {
 
     # do work
 
-    if ($state eq 'recover') {
+    if ($state eq 'wait_for_quorum') {
 
-	$haenv->sleep(5);
-
-    } elsif ($state eq 'wait_for_quorum') {
+	return 0 if $self->{shutdown_request};
 
 	$haenv->sleep(5);
 	   
@@ -213,23 +181,28 @@ sub do_one_iteration {
 	    $manager->manage();
 	};
 	if (my $err = $@) {
-
 	    $haenv->log('err', "got unexpected error - $err");
-	    $self->set_local_status({ state => 'error' });
-
-	} else {
-	    $haenv->sleep_until($startime + $max_time);
 	}
 
+	$haenv->sleep_until($startime + $max_time);
+
+    } elsif ($state eq 'lost_manager_lock') {
+	
+	if ($self->{ha_manager_wd}) {
+	    $haenv->watchdog_close($self->{ha_manager_wd});
+	    delete $self->{ha_manager_wd};
+	}
+
+	return 0 if $self->{shutdown_request};
+
+	$self->set_local_status({ state => 'wait_for_quorum' });
+
     } elsif ($state eq 'slave') {
-	# do nothing
-    } elsif ($state eq 'error') {
-	die "stopping due to errors\n";
-    } elsif ($state eq 'lost_quorum') {
-	die "lost_quorum\n";
-    } elsif ($state eq 'halt') {
-	die "halt\n";
+
+	# wait until we get master
+
     } else {
+
 	die "got unexpected status '$state'\n";
     }
 
