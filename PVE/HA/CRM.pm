@@ -1,4 +1,6 @@
-package PVE::HA::Server;
+package PVE::HA::CRM;
+
+# Cluster Resource Manager
 
 use strict;
 use warnings;

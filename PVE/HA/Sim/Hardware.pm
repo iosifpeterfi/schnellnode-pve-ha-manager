@@ -19,7 +19,7 @@ use File::Path qw(make_path remove_tree);
 my $max_sim_time = 10000;
 
 use PVE::HA::Sim::Env;
-use PVE::HA::Server;
+use PVE::HA::CRM;
 
 # Status directory layout
 #
@@ -103,10 +103,9 @@ sub new {
 	die "HA is not enabled\n" if !$haenv->manager_status_exists();
 
 	$haenv->log('info', "starting server");
-	my $server = PVE::HA::Server->new($haenv);
 
 	$self->{nodes}->{$node}->{haenv} = $haenv;
-	$self->{nodes}->{$node}->{server} = undef; # create on power on
+	$self->{nodes}->{$node}->{crm} = undef; # create on power on
     }
 
     return $self;
@@ -233,10 +232,11 @@ sub sim_hardware_cmd {
 	if ($cmd eq 'power') {
 	    if ($cstatus->{$node}->{power} ne $action) {
 		if ($action eq 'on') {
-		    my $server = $self->{nodes}->{$node}->{server} = PVE::HA::Server->new($haenv);
-		} elsif ($self->{nodes}->{$node}->{server}) {
+		    my $crm = $self->{nodes}->{$node}->{crm} = 
+			PVE::HA::CRM->new($haenv);
+		} elsif ($self->{nodes}->{$node}->{crm}) {
 		    $haenv->log('info', "server killed by poweroff", $logid);
-		    $self->{nodes}->{$node}->{server} = undef;
+		    $self->{nodes}->{$node}->{crm} = undef;
 		}
 	    }
 
@@ -270,13 +270,13 @@ sub run {
 
 	foreach my $node (@nodes) {
 	    my $haenv = $self->{nodes}->{$node}->{haenv};
-	    my $server = $self->{nodes}->{$node}->{server};
+	    my $crm = $self->{nodes}->{$node}->{crm};
 
-	    next if !$server;
+	    next if !$crm;
 
 	    $haenv->loop_start_hook($self->get_time());
 
-	    die "implement me" if !$server->do_one_iteration();
+	    die "implement me" if !$crm->do_one_iteration();
 
 	    $haenv->loop_end_hook();
 
@@ -287,7 +287,7 @@ sub run {
 		if (!$self->watchdog_check($n)) {
 		    $self->sim_hardware_cmd("power $n off", 'fencedev');
 		    $self->log('info', "server '$n' killed by poweroff (fencing)");
-		    $self->{nodes}->{$n}->{server} = undef;
+		    $self->{nodes}->{$n}->{crm} = undef;
 		}
 	    }
 	}
