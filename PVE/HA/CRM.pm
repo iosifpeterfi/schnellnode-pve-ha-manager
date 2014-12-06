@@ -41,7 +41,7 @@ sub new {
 	manager => undef,
     }, $class;
 
-    $self->{status} = $haenv->read_local_status();
+    $self->{status} = $haenv->read_local_status('crm');
     # can happen after crash?
     if ($self->{status}->{state} eq 'master') {
 	$self->set_local_status({ state => 'recover' });
@@ -73,7 +73,7 @@ sub set_local_status {
 
     $new->{state_change_time} = $haenv->get_time();
 
-    $haenv->write_local_status($new);
+    $haenv->write_local_status('crm', $new);
 
     $self->{status} = $new;
 

@@ -27,15 +27,15 @@ sub nodename {
 }
 
 sub read_local_status {
-    my ($self) = @_;
+    my ($self, $name) = @_;
 
-    return $self->{plug}->read_local_status();
+    return $self->{plug}->read_local_status($name);
 }
 
 sub write_local_status {
-    my ($self, $status) = @_;
+    my ($self, $name, $status) = @_;
 
-    return $self->{plug}->write_local_status($status);
+    return $self->{plug}->write_local_status($name, $status);
 }
 
 # manager status is stored on cluster, protected by ha_manager_lock

@@ -37,19 +37,19 @@ sub nodename {
 }
 
 sub read_local_status {
-    my ($self) = @_;
+    my ($self, $name) = @_;
 
     my $node = $self->{nodename};
-    my $filename = "$self->{statusdir}/local_status_$node";
+    my $filename = "$self->{statusdir}/${name}_status_$node";
     my $default = { state => 'wait_for_quorum' };  
     return PVE::HA::Tools::read_json_from_file($filename, $default); 
 }
 
 sub write_local_status {
-    my ($self, $status) = @_;
+    my ($self, $name, $status) = @_;
 
     my $node = $self->{nodename};
-    my $filename = "$self->{statusdir}/local_status_$node";
+    my $filename = "$self->{statusdir}/${name}_status_$node";
     
     PVE::HA::Tools::write_json_to_file($filename, $status);  
 }
