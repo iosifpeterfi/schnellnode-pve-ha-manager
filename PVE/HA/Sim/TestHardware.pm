@@ -130,6 +130,9 @@ sub run {
 	my $looptime = $nodecount*2;
 	$looptime = 20 if $looptime < 20;
 
+	die "unable to simulate so many nodes. You need to increate watchdog/lock timeouts.\n"
+	    if $looptime >= 60;
+
 	foreach my $node (@nodes) {
 
 	    my $d = $self->{nodes}->{$node};
