@@ -125,6 +125,11 @@ sub run {
 
 	my @nodes = sort keys %{$self->{nodes}};
 
+	my $nodecount = scalar(@nodes);
+
+	my $looptime = $nodecount*2;
+	$looptime = 20 if $looptime < 20;
+
 	foreach my $node (@nodes) {
 
 	    my $d = $self->{nodes}->{$node};
@@ -163,7 +168,9 @@ sub run {
 	    }
 	}
 
-	$self->{cur_time} = $starttime + 20 if ($self->{cur_time} - $starttime) < 20;
+	
+	$self->{cur_time} = $starttime + $looptime 
+	    if ($self->{cur_time} - $starttime) < $looptime;
 
 	die "simulation end\n" if $self->{cur_time} > $max_sim_time;
 

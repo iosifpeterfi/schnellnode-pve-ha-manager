@@ -16,7 +16,7 @@ use Fcntl qw(:DEFAULT :flock);
 use File::Copy;
 use File::Path qw(make_path remove_tree);
 
-my $watchdog_timeout = 180;
+my $watchdog_timeout = 60;
 
 
 # Status directory layout

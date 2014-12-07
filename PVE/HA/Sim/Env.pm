@@ -28,7 +28,7 @@ sub new {
     $self->{cur_time} = 0;
     $self->{loop_delay} = 0;
 
-    $self->{lock_timeout} = 200;
+    $self->{lock_timeout} = 120;
 
     $self->{log_id} = $log_id;
 
@@ -260,7 +260,9 @@ sub loop_end_hook {
 
     die "loop take too long ($delay seconds)\n" if $delay > 30;
 
-    $self->{cur_time} += $delay;
+    # $self->{cur_time} += $delay;
+
+    $self->{cur_time} += 1; # easier for simulation
 }
 
 sub watchdog_open {
