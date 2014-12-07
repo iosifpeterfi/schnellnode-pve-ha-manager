@@ -16,11 +16,10 @@ use Fcntl qw(:DEFAULT :flock);
 use File::Copy;
 use File::Path qw(make_path remove_tree);
 
-use PVE::HA::Sim::Env;
-use PVE::HA::Sim::Hardware;
 use PVE::HA::CRM;
 use PVE::HA::LRM;
 
+use PVE::HA::Sim::TestEnv;
 use base qw(PVE::HA::Sim::Hardware);
 
 my $max_sim_time = 10000;
@@ -43,10 +42,10 @@ sub new {
 	my $d = $self->{nodes}->{$node};
 
 	$d->{crm_env} = 
-	    PVE::HA::Env->new('PVE::HA::Sim::Env', $node, $self, 'crm');
+	    PVE::HA::Env->new('PVE::HA::Sim::TestEnv', $node, $self, 'crm');
 
 	$d->{lrm_env} = 
-	    PVE::HA::Env->new('PVE::HA::Sim::Env', $node, $self, 'lrm');
+	    PVE::HA::Env->new('PVE::HA::Sim::TestEnv', $node, $self, 'lrm');
 
 	$d->{crm} = undef; # create on power on
 	$d->{lrm} = undef; # create on power on
