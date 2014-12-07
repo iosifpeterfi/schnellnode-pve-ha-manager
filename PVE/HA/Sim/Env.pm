@@ -12,11 +12,10 @@ use PVE::HA::Tools;
 use PVE::HA::Env;
 
 sub new {
-    my ($this, $nodename, $hardware, $log_id, $lock_timeout) = @_;
+    my ($this, $nodename, $hardware, $log_id) = @_;
 
     die "missing nodename" if !$nodename;
     die "missing log_id" if !$log_id;
-    die "missing lock_timeout" if !$lock_timeout;
     
     my $class = ref($this) || $this;
 
@@ -29,7 +28,7 @@ sub new {
     $self->{cur_time} = 0;
     $self->{loop_delay} = 0;
 
-    $self->{lock_timeout} = $lock_timeout;
+    $self->{lock_timeout} = 200;
 
     $self->{log_id} = $log_id;
 

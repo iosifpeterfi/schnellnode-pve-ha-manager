@@ -6,7 +6,7 @@ use Getopt::Long;
 use JSON;
 
 use PVE::Tools;
-use PVE::HA::Sim::Hardware;
+use PVE::HA::Sim::TestHardware;
 
 my $opt_interactive;
 
@@ -21,7 +21,7 @@ if (!GetOptions ("intercative"   => \$opt_interactive)) {
 
 my $testdir = shift || show_usage();
 
-my $hardware = PVE::HA::Sim::Hardware->new($testdir);
+my $hardware = PVE::HA::Sim::TestHardware->new($testdir);
 
 $hardware->log('err', "starting simulation");
 
