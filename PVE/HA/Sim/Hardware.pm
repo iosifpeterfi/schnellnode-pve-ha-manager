@@ -129,15 +129,16 @@ sub global_lock {
 	    last;
 	}
 	if (!$success) {
+	    close($fh);
 	    die "can't aquire lock '$lockfile' - $!\n";
 	}
     }
-     
+
     my $res;
 
-    eval { $res = &$code(@param) };
+    eval { $res = &$code($fh, @param) };
     my $err = $@;
-
+    
     close($fh);
 
     die $err if $err;
