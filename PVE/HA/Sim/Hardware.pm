@@ -78,8 +78,17 @@ sub new {
     copy("$testdir/manager_status", "$statusdir/manager_status"); # optional
     copy("$testdir/service_config", "$statusdir/service_config"); # optional
 
-    copy("$testdir/hardware_status", "$statusdir/hardware_status") ||
-	die "Copy failed: $!\n";
+    if (-f "$testdir/hardware_status") {
+	copy("$testdir/hardware_status", "$statusdir/hardware_status") ||
+	    die "Copy failed: $!\n";
+    } else {
+	my $cstatus = {
+	    node1 => { power => 'off', network => 'off' },
+	    node2 => { power => 'off', network => 'off' },
+	    node3 => { power => 'off', network => 'off' },
+	};
+	$self->write_hardware_status_nolock($cstatus);
+    }
 
 
     my $cstatus = $self->read_hardware_status_nolock();
