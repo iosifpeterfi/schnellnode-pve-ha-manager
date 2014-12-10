@@ -13,7 +13,9 @@ use IO::Select;
 use Fcntl qw(:DEFAULT :flock);
 use File::Copy;
 use File::Path qw(make_path remove_tree);
-use Term::ReadLine;
+
+use Glib;
+use Gtk3 '-init';
 
 use PVE::HA::CRM;
 use PVE::HA::LRM;
@@ -35,6 +37,8 @@ sub new {
 	$d->{lrm} = undef; # create on power on
     }
 
+    $self->create_main_window();
+
     return $self;
 }
 
@@ -53,7 +57,10 @@ sub log {
 
     $id = 'hardware' if !$id;
 
-    printf("%-5s %10s %12s: $msg\n", $level, strftime("%H:%M:%S", localtime($time)), $id);
+    my $text = sprintf("%-5s %10s %12s: $msg\n", $level, 
+		       strftime("%H:%M:%S", localtime($time)), $id);
+
+    $self->append_text($text);
 }
 
 sub fork_daemon {
@@ -114,11 +121,13 @@ sub fork_daemon {
 sub sim_hardware_cmd {
     my ($self, $cmdstr, $logid) = @_;
 
+    my $cstatus;
+
     # note: do not fork when we own the lock!
     my $code = sub {
 	my ($lockfh) = @_;
 
-	my $cstatus = $self->read_hardware_status_nolock();
+	$cstatus = $self->read_hardware_status_nolock();
 
 	my ($cmd, $node, $action) = split(/\s+/, $cmdstr);
 
@@ -153,7 +162,7 @@ sub sim_hardware_cmd {
 	    $cstatus->{$node}->{network} = $action;
 
 	} elsif ($cmd eq 'network') {
-		$cstatus->{$node}->{network} = $action;
+	    $cstatus->{$node}->{network} = $action;
 	} else {
 	    die "sim_hardware_cmd: unknown command '$cmd'\n";
 	}
@@ -161,50 +170,157 @@ sub sim_hardware_cmd {
 	$self->write_hardware_status_nolock($cstatus);
     };
 
-    return $self->global_lock($code);
+    my $res = $self->global_lock($code);
+
+    # update GUI outside lock
+
+    foreach my $node (keys %$cstatus) {
+	my $d = $self->{nodes}->{$node};
+	$d->{network_btn}->set_active($cstatus->{$node}->{network} eq 'on');
+	$d->{power_btn}->set_active($cstatus->{$node}->{power} eq 'on');
+    }
+
+    return $res;
 }
 
+sub cleanup {
+    my ($self) = @_;
+
+    my @nodes = sort keys %{$self->{nodes}};
+    foreach my $node (@nodes) {
+	my $d = $self->{nodes}->{$node};
+
+	if ($d->{crm}) {
+	    kill 9, $d->{crm};
+	    delete $d->{crm};
+	}
+	if ($d->{lrm}) {
+	    kill 9, $d->{lrm};
+	    delete $d->{lrm};
+	}
+    }
+}
+
+sub append_text {
+    my ($self, $text) = @_;
+    
+    my $logview = $self->{gui}->{text_view} || die "GUI not ready";
+    my $textbuf = $logview->get_buffer();
+
+    $textbuf->insert_at_cursor($text, -1);
+    my $lines = $textbuf->get_line_count();
+
+    my $history = 102;
+    
+    if ($lines > $history) {
+	my $start = $textbuf->get_iter_at_line(0);
+	my $end =  $textbuf->get_iter_at_line($lines - $history);
+	$textbuf->delete($start, $end);
+    }
+
+    $logview->scroll_to_mark($textbuf->get_insert(), 0.0, 1, 0.0, 1.0);
+}
+
+sub set_power_state {
+    my ($self, $node) = @_;
+
+    my $d = $self->{nodes}->{$node} || die "no such node '$node'";
+
+    my $action = $d->{power_btn}->get_active() ? 'on' : 'off';
+    
+    $self->sim_hardware_cmd("power $node $action"); 
+}
+
+sub set_network_state {
+    my ($self, $node) = @_;
+
+    my $d = $self->{nodes}->{$node} || die "no such node '$node'";
+
+    my $action = $d->{network_btn}->get_active() ? 'on' : 'off';
+    
+    $self->sim_hardware_cmd("network $node $action"); 
+}
+
+sub create_main_window {
+    my ($self) = @_;
+
+    my $w;
+
+    my $window = Gtk3::Window->new();
+    $window->set_title("Proxmox HA Simulator");
+
+    $window->signal_connect( destroy => sub { Gtk3::main_quit(); });
+
+    # create logview
+
+    my $vbox = Gtk3::VBox->new(0, 0);
+    my $f1 = Gtk3::Frame->new('Cluster Log');
+    $vbox->pack_start($f1, 1, 1, 0);
+
+    my $logview = Gtk3::TextView->new();
+    $logview->set_editable(0);
+    $logview->set_cursor_visible(0);
+
+    $self->{gui}->{text_view} = $logview;
+
+    my $swindow = Gtk3::ScrolledWindow->new();
+    $swindow->set_size_request(800, 400);
+    $swindow->add($logview);
+
+    $f1->add($swindow);
+
+    # create node control
+
+    my $hbox = Gtk3::HBox->new(0, 10);
+    $vbox->pack_start($hbox, 0, 0, 0);
+    
+    my $ngrid = Gtk3::Grid->new(); 
+    $hbox->add($ngrid);
+
+    $w = Gtk3::Label->new('Node');
+    $ngrid->attach($w, 0, 0, 1, 1);
+    $w = Gtk3::Label->new('Power');
+    $ngrid->attach($w, 1, 0, 1, 1);
+    $w = Gtk3::Label->new('Network');
+    $ngrid->attach($w, 2, 0, 1, 1);
+   
+    my $row = 1;
+    my @nodes = sort keys %{$self->{nodes}};
+    foreach my $node (@nodes) {
+	my $d = $self->{nodes}->{$node};
+
+	$w = Gtk3::Label->new($node);
+	$ngrid->attach($w, 0, $row, 1, 1);
+	$w = Gtk3::Switch->new();
+	$ngrid->attach($w, 1, $row, 1, 1);
+	$d->{power_btn} = $w;
+	$w->signal_connect('notify::active' => sub {
+	    $self->set_power_state($node);
+	}),
+
+	$w = Gtk3::Switch->new();
+	$ngrid->attach($w, 2, $row, 1, 1);
+	$d->{network_btn} = $w;
+	$w->signal_connect('notify::active' => sub {
+	    $self->set_network_state($node);
+	}),
+
+	$row++;
+    }
+
+
+    $window->add ($vbox);
+
+    $window->show_all;
+    $window->realize ();
+}
 
 sub run {
     my ($self) = @_;
 
-    my $last_command_time = 0;
+    Glib::Timeout->add(1000, sub {
 
-    print "entering HA simulation shell - type 'help' for help\n";
-
-    my $term = new Term::ReadLine ('pve-ha-simulator');
-    my $attribs = $term->Attribs;
-
-    my $select = new IO::Select;    
-
-    $select->add(\*STDIN);
-
-    my $end_simulation = 0;
-    
-    my $input_cb = sub {
-	my $input = shift;
-
-	chomp $input;
-
-	return if $input =~ m/^\s*$/;
-
-	if ($input =~ m/^\s*q(uit)?\s*$/) {
-	    $end_simulation = 1;
-	}
-
-	$term->addhistory($input);
-
-	eval {
-	    $self->sim_hardware_cmd($input);
-	};
-	warn $@ if $@;
-    };
-
-    $term->CallbackHandlerInstall("ha> ", $input_cb);
-
-    while ($select->count) {
-	my @handles = $select->can_read(1);
-
+	# check all watchdogs
 	my @nodes = sort keys %{$self->{nodes}};
 	foreach my $node (@nodes) {
 	    if (!$self->watchdog_check($node)) {
@@ -212,17 +328,11 @@ sub run {
 		$self->log('info', "server '$node' stopped by poweroff (watchdog)");
 	    }
 	}
+    });
 
-	if (scalar(@handles)) {
-	    $term->rl_callback_read_char();
-	}
+    Gtk3->main;
 
-	last if $end_simulation;
-    }
-
-    kill(9, 0); kill whole process group
-
-    $term->rl_deprep_terminal();
+    $self->cleanup();
 }
 
 1;

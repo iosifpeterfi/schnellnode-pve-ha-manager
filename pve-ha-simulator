@@ -30,7 +30,7 @@ if ($opt_interactive) {
     $hardware = PVE::HA::Sim::TestHardware->new($testdir);
 }
 
-$hardware->log('err', "starting simulation");
+$hardware->log('info', "starting simulation");
 
 eval { $hardware->run(); };
 if (my $err = $@) {
