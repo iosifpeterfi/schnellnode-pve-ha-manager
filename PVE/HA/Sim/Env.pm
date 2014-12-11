@@ -85,6 +85,7 @@ sub sim_get_lock {
 		} else {
 		    $self->log('info', "got lock '$lock_name'");
 		    $d->{node} = $nodename;
+		    $d->{time} = $ctime;
 		    $res = 1;
 		}
 
