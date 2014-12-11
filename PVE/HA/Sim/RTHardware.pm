@@ -64,6 +64,15 @@ sub log {
     $self->append_text($text);
 }
 
+# fixme: duplicate code in Env?
+sub read_manager_status {
+    my ($self) = @_;
+    
+    my $filename = "$self->{statusdir}/manager_status";
+
+    return PVE::HA::Tools::read_json_from_file($filename, {});  
+}
+
 sub fork_daemon {
     my ($self, $lockfh, $type, $node) = @_;
 
@@ -335,6 +344,8 @@ sub create_main_window {
     $ngrid->attach($w, 1, 0, 1, 1);
     $w = Gtk3::Label->new('Network');
     $ngrid->attach($w, 2, 0, 1, 1);
+    $w = Gtk3::Label->new('Status');
+    $ngrid->attach($w, 3, 0, 1, 1);
    
     my $row = 1;
     my @nodes = sort keys %{$self->{nodes}};
@@ -356,6 +367,10 @@ sub create_main_window {
 	$w->signal_connect('notify::active' => sub {
 	    $self->set_network_state($node);
 	}),
+
+	$w = Gtk3::Label->new('-');
+	$ngrid->attach($w, 3, $row, 1, 1);
+	$d->{node_status_label} = $w;
 
 	$row++;
     }
@@ -380,6 +395,24 @@ sub run {
 		$self->log('info', "server '$node' stopped by poweroff (watchdog)");
 	    }
 	}
+
+	my $mstatus = $self->read_manager_status();
+	my $node_status = $mstatus->{node_status} || {};
+
+	foreach my $node (@nodes) {
+	    my $ns = $node_status->{$node};
+	    next if !$ns;
+	    my $d = $self->{nodes}->{$node};
+	    next if !$d;
+	    my $sl = $d->{node_status_label};
+	    next if !$sl;
+
+	    $sl->set_text($ns);
+	}
+
+	print Dumper($mstatus);
+
+	#$d->{node_status_label}
     });
 
     Gtk3->main;
