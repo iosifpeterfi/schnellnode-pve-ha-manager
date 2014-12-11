@@ -60,8 +60,31 @@ sub write_hardware_status_nolock {
     PVE::Tools::file_set_contents($filename, encode_json($cstatus));
 };
 
+sub read_service_config {
+    my ($self) = @_;
+
+    my $filename = "$self->{statusdir}/service_config";
+    my $conf = PVE::HA::Tools::read_json_from_file($filename); 
+
+    foreach my $sid (keys %$conf) {
+	my $d = $conf->{$sid};
+	$d->{current_node} = $d->{node} if !$d->{current_node};
+	if ($sid =~ m/^pvevm:(\d+)$/) {
+	    $d->{type} = 'pvevm'; 
+	    $d->{name} = $1;
+	} else {
+	    die "implement me";
+	}
+	$d->{state} = 'disabled' if !$d->{state};
+    }
+
+    return $conf;
+}
+
 sub write_service_config {
     my ($self, $conf) = @_;
+
+    $self->{service_config} = $conf;
 
     my $filename = "$self->{statusdir}/service_config";
     return PVE::HA::Tools::write_json_to_file($filename, $conf);
@@ -113,6 +136,8 @@ sub new {
     foreach my $node (sort keys %$cstatus) {
 	$self->{nodes}->{$node} = {};
     }
+
+    $self->{service_config} = $self->read_service_config();
 
     return $self;
 }

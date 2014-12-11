@@ -336,7 +336,7 @@ sub create_main_window {
     $vbox->pack_start($hbox, 0, 0, 0);
     
     my $ngrid = Gtk3::Grid->new(); 
-    $hbox->add($ngrid);
+    $hbox->pack_start($ngrid, 0, 0, 0);
 
     $w = Gtk3::Label->new('Node');
     $ngrid->attach($w, 0, 0, 1, 1);
@@ -345,6 +345,8 @@ sub create_main_window {
     $w = Gtk3::Label->new('Network');
     $ngrid->attach($w, 2, 0, 1, 1);
     $w = Gtk3::Label->new('Status');
+    $w->set_size_request(150, -1);
+    $w->set_alignment (0, 0.5);
     $ngrid->attach($w, 3, 0, 1, 1);
    
     my $row = 1;
@@ -369,12 +371,61 @@ sub create_main_window {
 	}),
 
 	$w = Gtk3::Label->new('-');
+	$w->set_alignment (0, 0.5);
 	$ngrid->attach($w, 3, $row, 1, 1);
 	$d->{node_status_label} = $w;
 
 	$row++;
     }
 
+    # create service control
+
+    my $sgrid = Gtk3::Grid->new(); 
+    $hbox->pack_end($sgrid, 0, 0, 0);
+
+    $w = Gtk3::Label->new('Service');
+    $sgrid->attach($w, 0, 0, 1, 1);
+    $w = Gtk3::Label->new('Enable');
+    $sgrid->attach($w, 1, 0, 1, 1);
+    $w = Gtk3::Label->new('Node');
+    $sgrid->attach($w, 2, 0, 1, 1);
+    $w = Gtk3::Label->new('Migrate');
+    $sgrid->attach($w, 3, 0, 1, 1);
+    $w = Gtk3::Label->new('Status');
+    $w->set_alignment (0, 0.5);
+    $w->set_size_request(150, -1);
+    $sgrid->attach($w, 4, 0, 1, 1);
+
+    $row = 1;
+    foreach my $sid (sort keys %{$self->{service_config}}) {
+	my $d = $self->{service_config}->{$sid};
+
+	$w = Gtk3::Label->new($sid);
+	$sgrid->attach($w, 0, $row, 1, 1);
+
+	$w = Gtk3::Switch->new();
+	$sgrid->attach($w, 1, $row, 1, 1);
+
+	$w = Gtk3::Label->new($d->{current_node});
+	$sgrid->attach($w, 2, $row, 1, 1);
+
+	$w = Gtk3::ComboBoxText->new();
+	my $active = -1;
+	my $c = 0;
+	foreach my $node (@nodes) {
+	    $w->append_text($node);
+	    $active = $c if $d->{node} && ($d->{node} eq $node);
+	    $c++;
+	}
+	$w->set_active($active);
+	$sgrid->attach($w, 3, $row, 1, 1);
+
+	$w = Gtk3::Label->new('-');
+	$w->set_alignment (0, 0.5);
+	$sgrid->attach($w, 4, $row, 1, 1);
+
+	$row++;
+    }
 
     $window->add ($vbox);
 

@@ -134,22 +134,7 @@ sub manager_status_exists {
 sub read_service_config {
     my ($self) = @_;
 
-    my $filename = "$self->{statusdir}/service_config";
-    my $conf = PVE::HA::Tools::read_json_from_file($filename); 
-
-    foreach my $sid (keys %$conf) {
-	my $d = $conf->{$sid};
-	$d->{current_node} = $d->{node} if !$d->{current_node};
-	if ($sid =~ m/^pvevm:(\d+)$/) {
-	    $d->{type} = 'pvevm'; 
-	    $d->{name} = $1;
-	} else {
-	    die "implement me";
-	}
-	$d->{state} = 'disabled' if !$d->{state};
-    }
-
-    return $conf;
+    return $self->{hardware}->read_service_config();
 }
 
 sub log {
