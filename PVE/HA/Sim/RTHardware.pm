@@ -15,6 +15,7 @@ use File::Copy;
 use File::Path qw(make_path remove_tree);
 
 use Glib;
+
 use Gtk3 '-init';
 
 use PVE::HA::CRM;
@@ -66,6 +67,8 @@ sub log {
 sub fork_daemon {
     my ($self, $lockfh, $type, $node) = @_;
 
+    my @psync = POSIX::pipe();
+
     my $pid = fork();
     die "fork failed" if ! defined($pid);
 
@@ -73,6 +76,37 @@ sub fork_daemon {
 
 	close($lockfh) if defined($lockfh); # unlock global lock
 	
+	POSIX::close($psync[0]);
+
+	my $outfh = $psync[1];
+
+	my $fd = fileno (STDIN);
+	close STDIN;
+	POSIX::close(0) if $fd != 0;
+
+	die "unable to redirect STDIN - $!" 
+	    if !open(STDIN, "</dev/null");
+
+	# redirect STDOUT
+	$fd = fileno(STDOUT);
+	close STDOUT;
+	POSIX::close (1) if $fd != 1;
+
+	die "unable to redirect STDOUT - $!" 
+	    if !open(STDOUT, ">&", $outfh);
+
+	STDOUT->autoflush (1);
+
+	#  redirect STDERR to STDOUT
+	$fd = fileno(STDERR);
+	close STDERR;
+	POSIX::close(2) if $fd != 2;
+
+	die "unable to redirect STDERR - $!" 
+	    if !open(STDERR, ">&1");
+	
+	STDERR->autoflush(1);
+
 	if ($type eq 'crm') {
 
 	    my $haenv = PVE::HA::Env->new('PVE::HA::Sim::RTEnv', $node, $self, 'crm');
@@ -110,7 +144,25 @@ sub fork_daemon {
 
 	exit(-1);
     }
-	
+
+    # parent
+
+    POSIX::close ($psync[1]);
+
+    Glib::IO->add_watch($psync[0], ['in', 'hup'], sub {
+	my ($fd, $cond) = @_;
+	if ($cond eq 'in') {
+	    my $readbuf;
+	    if (my $count = POSIX::read($fd, $readbuf, 8192)) {
+		$self->append_text($readbuf);
+	    }
+	    return 1;
+	} else {
+	    POSIX::close($fd);	
+	    return 0;
+	}
+    });
+    	
     return $pid;
 }
 
