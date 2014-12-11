@@ -407,7 +407,11 @@ sub run {
 	    my $sl = $d->{node_status_label};
 	    next if !$sl;
 
-	    $sl->set_text($ns);
+	    if ($mstatus->{master_node} && ($mstatus->{master_node} eq $node)) {
+		$sl->set_text(uc($ns));
+	    } else {
+		$sl->set_text($ns);
+	    }
 	}
 
 	print Dumper($mstatus);
