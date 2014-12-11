@@ -423,6 +423,7 @@ sub create_main_window {
 	$w = Gtk3::Label->new('-');
 	$w->set_alignment (0, 0.5);
 	$sgrid->attach($w, 4, $row, 1, 1);
+	$self->{service_gui}->{$sid}->{status_label} = $w;
 
 	$row++;
     }
@@ -451,8 +452,7 @@ sub run {
 	my $node_status = $mstatus->{node_status} || {};
 
 	foreach my $node (@nodes) {
-	    my $ns = $node_status->{$node};
-	    next if !$ns;
+	    my $ns = $node_status->{$node} || '-';
 	    my $d = $self->{nodes}->{$node};
 	    next if !$d;
 	    my $sl = $d->{node_status_label};
@@ -463,6 +463,20 @@ sub run {
 	    } else {
 		$sl->set_text($ns);
 	    }
+	}
+
+	my $service_status = $mstatus->{service_status} || {};
+	my @services = sort keys %{$self->{service_config}};
+
+	foreach my $sid (@services) {
+	    my $ss = $service_status->{$sid};
+	    my $sgui = $self->{service_gui}->{$sid};
+	    next if !$sgui;
+	    my $sl = $sgui->{status_label};
+	    next if !$sl;
+
+	    my $text = ($ss && $ss->{state}) ? $ss->{state} : '-';
+	    $sl->set_text($text);
 	}
 
 	print Dumper($mstatus);
