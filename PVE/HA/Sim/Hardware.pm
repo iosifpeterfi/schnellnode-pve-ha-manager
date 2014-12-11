@@ -60,6 +60,13 @@ sub write_hardware_status_nolock {
     PVE::Tools::file_set_contents($filename, encode_json($cstatus));
 };
 
+sub write_service_config {
+    my ($self, $conf) = @_;
+
+    my $filename = "$self->{statusdir}/service_config";
+    return PVE::HA::Tools::write_json_to_file($filename, $conf);
+} 
+
 sub new {
     my ($this, $testdir) = @_;
 
@@ -76,7 +83,17 @@ sub new {
 
     # copy initial configuartion
     copy("$testdir/manager_status", "$statusdir/manager_status"); # optional
-    copy("$testdir/service_config", "$statusdir/service_config"); # optional
+
+    if (-f "$testdir/service_config") {
+	copy("$testdir/service_config", "$statusdir/service_config");
+    } else {
+	my $conf = {
+	    'pvevm:100' => { node => 'node1' },
+	    'pvevm:101' => { node => 'node2' },
+	    'pvevm:102' => { node => 'node3' },
+	};
+	$self->write_service_config($conf);
+    }
 
     if (-f "$testdir/hardware_status") {
 	copy("$testdir/hardware_status", "$statusdir/hardware_status") ||
