@@ -14,6 +14,10 @@ use PVE::RPCEnvironment;
 use PVE::CLIHandler;
 use Data::Dumper;
 
+use PVE::HA::Env;
+use PVE::HA::Env::PVE2;
+use PVE::HA::CRM;
+
 use base qw(PVE::CLIHandler);
 
 my $pve_ha_crm_pidfile = "/var/run/pve-ha-crm.pid";
@@ -92,6 +96,8 @@ sub run_server {
     my $spid;
 
     PVE::Cluster::cfs_update();
+
+    my $haenv = PVE::HA::Env->new('PVE::HA::Env::PVE2', $nodename);
  
     if (!$param->{debug}) {
 	open STDIN,  '</dev/null' || die "can't read /dev/null";
@@ -111,17 +117,35 @@ sub run_server {
 
     writepidfile($pve_ha_crm_pidfile);
 
+    syslog("info", "starting server");
+
+    my $crm = PVE::HA::CRM->new($haenv);
+
     open STDERR, '>&STDOUT' || die "can't close STDERR\n";
  
     $SIG{INT} = $SIG{TERM} = $SIG{QUIT} = sub { 
-	syslog('info' , "server closing");
-
-	# fixme: implement this ?
+	syslog('info' , "got shutdown request");
+	$crm->shutdown_request();
     };
 
+    eval {
+	for (;;) {
+	    $haenv->loop_start_hook();
 
-    print "DO WORK\n";
+	    if (!$crm->do_one_iteration()) {
+		syslog("info", "daemon stopped");
+		last;
+	    }
 
+	    $haenv->loop_end_hook();
+	}
+    };
+    if (my $err = $@) {
+	syslog("err", "daemon stopped - $err");
+	exit(-1);
+    }
+
+    syslog("info", "daemon stopped");
     exit(0);
 }
 
