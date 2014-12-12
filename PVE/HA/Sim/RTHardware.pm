@@ -416,7 +416,9 @@ sub create_service_control {
 sub create_log_view {
     my ($self) = @_;
 
-    my $f1 = Gtk3::Frame->new('Cluster Log');
+    my $nb = Gtk3::Notebook->new();
+
+    my $l1 = Gtk3::Label->new('Cluster Log');
 
     my $logview = Gtk3::TextView->new();
     $logview->set_editable(0);
@@ -428,9 +430,22 @@ sub create_log_view {
     $swindow->set_size_request(640, 400);
     $swindow->add($logview);
 
-    $f1->add($swindow);
+    $nb->insert_page($swindow, $l1, 0);
 
-    return $f1;
+    my $l2 = Gtk3::Label->new('Manager Status');
+
+    my $statview = Gtk3::TextView->new();
+    $statview->set_editable(0);
+    $statview->set_cursor_visible(0);
+
+    $self->{gui}->{stat_view} = $statview;
+
+    $swindow = Gtk3::ScrolledWindow->new();
+    $swindow->set_size_request(640, 400);
+    $swindow->add($statview);
+
+    $nb->insert_page($swindow, $l2, 1);
+    return $nb;
 }
 
 sub create_main_window {
@@ -445,6 +460,7 @@ sub create_main_window {
 
     my $frame = $self->create_log_view();
     $grid->attach($frame, 0, 0, 1, 1);
+    $frame->set('expand', 1);
 
     my $vbox = Gtk3::VBox->new(0, 0);
     $grid->attach($vbox, 1, 0, 1, 1);
@@ -459,7 +475,7 @@ sub create_main_window {
     my $sgrid = $self->create_service_control();
     $vbox->pack_start($sgrid, 0, 0, 0);
 
-    $window->add ($grid);
+    $window->add($grid);
 
     $window->show_all;
     $window->realize ();
@@ -488,7 +504,7 @@ sub run {
 	    next if !$d;
 	    my $sl = $d->{node_status_label};
 	    next if !$sl;
-
+		
 	    if ($mstatus->{master_node} && ($mstatus->{master_node} eq $node)) {
 		$sl->set_text(uc($ns));
 	    } else {
@@ -505,14 +521,18 @@ sub run {
 	    next if !$sgui;
 	    my $sl = $sgui->{status_label};
 	    next if !$sl;
-
+		
 	    my $text = ($ss && $ss->{state}) ? $ss->{state} : '-';
 	    $sl->set_text($text);
 	}
 
-	print Dumper($mstatus);
+	if (my $sv = $self->{gui}->{stat_view}) { 
+	    my $text = Dumper($mstatus);
+	    my $textbuf = $sv->get_buffer();
+	    $textbuf->set_text($text, -1);
+	}
 
-	#$d->{node_status_label}
+	return 1; # repeat
     });
 
     Gtk3->main;
