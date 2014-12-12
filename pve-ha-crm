@@ -132,10 +132,7 @@ sub run_server {
 	for (;;) {
 	    $haenv->loop_start_hook();
 
-	    if (!$crm->do_one_iteration()) {
-		syslog("info", "daemon stopped");
-		last;
-	    }
+	    last if !$crm->do_one_iteration();
 
 	    $haenv->loop_end_hook();
 	}

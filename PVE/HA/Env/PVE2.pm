@@ -5,6 +5,7 @@ use warnings;
 
 use PVE::SafeSyslog;
 use PVE::Tools;
+use PVE::Cluster;
 
 use PVE::HA::Tools;
 use PVE::HA::Env;
@@ -78,7 +79,23 @@ sub log {
 sub get_ha_manager_lock {
     my ($self) = @_;
 
-    die "implement me";
+    my $lockid = "ha_manager";
+
+    my $lockdir = "/etc/pve/priv/lock";
+    my $filename = "$lockdir/$lockid";
+
+    my $res = 0;
+
+    eval {
+
+	mkdir $lockdir;
+
+	return if ! -d $lockdir; # pve cluster filesystem not online
+
+	# fixme: ?
+    };
+
+    return $res;
 }
 
 sub get_ha_agent_lock {
@@ -96,7 +113,12 @@ sub test_ha_agent_lock {
 sub quorate {
     my ($self) = @_;
 
-    die "implement me";
+    my $quorate = 0;
+    eval { 
+	$quorate = PVE::Cluster::check_cfs_quorum(); 
+    };
+   
+    return $quorate;
 }
 
 sub get_time {
@@ -126,6 +148,8 @@ sub sleep_until {
 sub loop_start_hook {
     my ($self) = @_;
 
+    PVE::Cluster::cfs_update();
+    
     $self->{loop_start} = $self->get_time();
 }
 
