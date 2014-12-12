@@ -199,6 +199,8 @@ sub do_one_iteration {
 
     } elsif ($state eq 'slave') {
 
+	return 0 if $self->{shutdown_request};
+
 	# wait until we get master
 
     } else {
