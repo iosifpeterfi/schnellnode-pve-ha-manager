@@ -111,9 +111,9 @@ sub new {
 	copy("$testdir/service_config", "$statusdir/service_config");
     } else {
 	my $conf = {
-	    'pvevm:100' => { node => 'node1' },
-	    'pvevm:101' => { node => 'node2' },
-	    'pvevm:102' => { node => 'node3' },
+	    'pvevm:101' => { node => 'node1' },
+	    'pvevm:102' => { node => 'node2' },
+	    'pvevm:103' => { node => 'node3' },
 	};
 	$self->write_service_config($conf);
     }

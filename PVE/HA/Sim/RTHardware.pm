@@ -302,6 +302,20 @@ sub set_network_state {
     $self->sim_hardware_cmd("network $node $action"); 
 }
 
+sub set_service_state {
+    my ($self, $sid) = @_;
+
+    my $d = $self->{service_gui}->{$sid} || die "no such service '$sid'";
+
+    my $state = $d->{enable_btn}->get_active() ? 'enable' : 'disable';
+    
+    $d = $self->{service_config}->{$sid} || die "no such service '$sid'";
+
+    $d->{state} = $state;
+
+    $self->write_service_config($self->{service_config});
+}
+
 sub create_node_control {
     my ($self) = @_;
 
@@ -387,6 +401,12 @@ sub create_service_control {
 
 	$w = Gtk3::Switch->new();
 	$sgrid->attach($w, 1, $row, 1, 1);
+	$w->set_active(1) if $d->{state} eq 'enable';
+	$self->{service_gui}->{$sid}->{enable_btn} = $w;
+	$w->signal_connect('notify::active' => sub {
+	    $self->set_service_state($sid);
+	}),
+
 
 	$w = Gtk3::Label->new($d->{current_node});
 	$sgrid->attach($w, 2, $row, 1, 1);
