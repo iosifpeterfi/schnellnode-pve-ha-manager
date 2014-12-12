@@ -172,9 +172,37 @@ __PACKAGE__->register_method ({
 	return undef;
     }});
 
+__PACKAGE__->register_method ({
+    name => 'stop',
+    path => 'stop',
+    method => 'POST',
+    description => "Stop firewall. This removes all Proxmox VE related iptable rules. The host is unprotected afterwards.",
+    parameters => {
+    	additionalProperties => 0,
+	properties => {},
+    },
+    returns => { type => 'null' },
+
+    code => sub {
+	my ($param) = @_;
+
+	my $pid = int(PVE::Tools::file_read_firstline($pve_ha_crm_pidfile) || 0);
+
+	if ($pid) {
+	    if (PVE::ProcFSTools::check_process_running($pid)) {
+		kill(15, $pid); # send TERM signal
+		# wait untils erver shuts down
+		for (;;) {
+		    last if !PVE::ProcFSTools::check_process_running($pid);
+		    sleep (1);
+		}
+	    }
+	}
+    }});
 
 my $cmddef = {
     start => [ __PACKAGE__, 'start', []],
+    stop => [ __PACKAGE__, 'stop', []],
 };
 
 my $cmd = shift;
