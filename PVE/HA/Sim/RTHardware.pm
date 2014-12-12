@@ -302,43 +302,12 @@ sub set_network_state {
     $self->sim_hardware_cmd("network $node $action"); 
 }
 
-sub create_main_window {
+sub create_node_control {
     my ($self) = @_;
 
-    my $w;
-
-    my $window = Gtk3::Window->new();
-    $window->set_title("Proxmox HA Simulator");
-
-    $window->signal_connect( destroy => sub { Gtk3::main_quit(); });
-
-    # create logview
-
-    my $vbox = Gtk3::VBox->new(0, 0);
-    my $f1 = Gtk3::Frame->new('Cluster Log');
-    $vbox->pack_start($f1, 1, 1, 0);
-
-    my $logview = Gtk3::TextView->new();
-    $logview->set_editable(0);
-    $logview->set_cursor_visible(0);
-
-    $self->{gui}->{text_view} = $logview;
-
-    my $swindow = Gtk3::ScrolledWindow->new();
-    $swindow->set_size_request(800, 400);
-    $swindow->add($logview);
-
-    $f1->add($swindow);
-
-    # create node control
-
-    my $hbox = Gtk3::HBox->new(0, 10);
-    $vbox->pack_start($hbox, 0, 0, 0);
-    
     my $ngrid = Gtk3::Grid->new(); 
-    $hbox->pack_start($ngrid, 0, 0, 0);
 
-    $w = Gtk3::Label->new('Node');
+    my $w = Gtk3::Label->new('Node');
     $ngrid->attach($w, 0, 0, 1, 1);
     $w = Gtk3::Label->new('Power');
     $ngrid->attach($w, 1, 0, 1, 1);
@@ -350,7 +319,9 @@ sub create_main_window {
     $ngrid->attach($w, 3, 0, 1, 1);
    
     my $row = 1;
+
     my @nodes = sort keys %{$self->{nodes}};
+
     foreach my $node (@nodes) {
 	my $d = $self->{nodes}->{$node};
 
@@ -378,12 +349,15 @@ sub create_main_window {
 	$row++;
     }
 
-    # create service control
+    return $ngrid;
+}
+
+sub create_service_control {
+    my ($self) = @_;
 
     my $sgrid = Gtk3::Grid->new(); 
-    $hbox->pack_end($sgrid, 0, 0, 0);
 
-    $w = Gtk3::Label->new('Service');
+    my $w = Gtk3::Label->new('Service');
     $sgrid->attach($w, 0, 0, 1, 1);
     $w = Gtk3::Label->new('Enable');
     $sgrid->attach($w, 1, 0, 1, 1);
@@ -396,7 +370,9 @@ sub create_main_window {
     $w->set_size_request(150, -1);
     $sgrid->attach($w, 4, 0, 1, 1);
 
-    $row = 1;
+    my $row = 1;
+    my @nodes = keys %{$self->{nodes}};
+
     foreach my $sid (sort keys %{$self->{service_config}}) {
 	my $d = $self->{service_config}->{$sid};
 
@@ -427,6 +403,53 @@ sub create_main_window {
 
 	$row++;
     }
+
+    return $sgrid;
+}
+
+sub create_log_view {
+    my ($self) = @_;
+
+    my $f1 = Gtk3::Frame->new('Cluster Log');
+
+    my $logview = Gtk3::TextView->new();
+    $logview->set_editable(0);
+    $logview->set_cursor_visible(0);
+
+    $self->{gui}->{text_view} = $logview;
+
+    my $swindow = Gtk3::ScrolledWindow->new();
+    $swindow->set_size_request(800, 400);
+    $swindow->add($logview);
+
+    $f1->add($swindow);
+
+    return $f1;
+}
+
+sub create_main_window {
+    my ($self) = @_;
+
+    my $w;
+
+    my $window = Gtk3::Window->new();
+    $window->set_title("Proxmox HA Simulator");
+
+    $window->signal_connect( destroy => sub { Gtk3::main_quit(); });
+
+    my $vbox = Gtk3::VBox->new(0, 0);
+
+    my $frame = $self->create_log_view();
+    $vbox->pack_start($frame, 1, 1, 0);
+
+    my $hbox = Gtk3::HBox->new(0, 10);
+    $vbox->pack_start($hbox, 0, 0, 0);
+    
+    my $ngrid = $self->create_node_control(); 
+    $hbox->pack_start($ngrid, 0, 0, 0);
+
+    my $sgrid = $self->create_service_control();
+    $hbox->pack_end($sgrid, 0, 0, 0);
 
     $window->add ($vbox);
 
