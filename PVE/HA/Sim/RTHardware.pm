@@ -306,6 +306,9 @@ sub create_node_control {
     my ($self) = @_;
 
     my $ngrid = Gtk3::Grid->new(); 
+    $ngrid->set_row_spacing(2);
+    $ngrid->set_column_spacing(5);
+    $ngrid->set('margin-left', 5);
 
     my $w = Gtk3::Label->new('Node');
     $ngrid->attach($w, 0, 0, 1, 1);
@@ -356,6 +359,9 @@ sub create_service_control {
     my ($self) = @_;
 
     my $sgrid = Gtk3::Grid->new(); 
+    $sgrid->set_row_spacing(2);
+    $sgrid->set_column_spacing(5);
+    $sgrid->set('margin', 5);
 
     my $w = Gtk3::Label->new('Service');
     $sgrid->attach($w, 0, 0, 1, 1);
@@ -419,7 +425,7 @@ sub create_log_view {
     $self->{gui}->{text_view} = $logview;
 
     my $swindow = Gtk3::ScrolledWindow->new();
-    $swindow->set_size_request(800, 400);
+    $swindow->set_size_request(640, 400);
     $swindow->add($logview);
 
     $f1->add($swindow);
@@ -430,28 +436,30 @@ sub create_log_view {
 sub create_main_window {
     my ($self) = @_;
 
-    my $w;
-
     my $window = Gtk3::Window->new();
     $window->set_title("Proxmox HA Simulator");
 
     $window->signal_connect( destroy => sub { Gtk3::main_quit(); });
 
-    my $vbox = Gtk3::VBox->new(0, 0);
+    my $grid = Gtk3::Grid->new(); 
 
     my $frame = $self->create_log_view();
-    $vbox->pack_start($frame, 1, 1, 0);
+    $grid->attach($frame, 0, 0, 1, 1);
 
-    my $hbox = Gtk3::HBox->new(0, 10);
-    $vbox->pack_start($hbox, 0, 0, 0);
+    my $vbox = Gtk3::VBox->new(0, 0);
+    $grid->attach($vbox, 1, 0, 1, 1);
     
     my $ngrid = $self->create_node_control(); 
-    $hbox->pack_start($ngrid, 0, 0, 0);
+    $vbox->pack_start($ngrid, 0, 0, 0);
+
+    my $sep = Gtk3::HSeparator->new;
+    $sep->set('margin-top', 10);
+    $vbox->pack_start ($sep, 0, 0, 0);
 
     my $sgrid = $self->create_service_control();
-    $hbox->pack_end($sgrid, 0, 0, 0);
+    $vbox->pack_start($sgrid, 0, 0, 0);
 
-    $window->add ($vbox);
+    $window->add ($grid);
 
     $window->show_all;
     $window->realize ();
