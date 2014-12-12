@@ -114,6 +114,9 @@ sub new {
 	    'pvevm:101' => { node => 'node1' },
 	    'pvevm:102' => { node => 'node2' },
 	    'pvevm:103' => { node => 'node3' },
+	    'pvevm:104' => { node => 'node1' },
+	    'pvevm:105' => { node => 'node2' },
+	    'pvevm:106' => { node => 'node3' },
 	};
 	$self->write_service_config($conf);
     }
