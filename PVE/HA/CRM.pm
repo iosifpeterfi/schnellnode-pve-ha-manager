@@ -39,6 +39,9 @@ sub new {
 sub shutdown_request {
     my ($self) = @_;
 
+    syslog('info' , "server received shutdown request")
+	if !$self->{shutdown_request};
+
     $self->{shutdown_request} = 1;
 }
 

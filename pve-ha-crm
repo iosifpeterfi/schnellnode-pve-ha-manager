@@ -3,147 +3,43 @@
 use strict;
 use warnings;
 use PVE::SafeSyslog;
-use POSIX ":sys_wait_h";
-use Fcntl ':flock';
-use Getopt::Long;
-use Time::HiRes qw (gettimeofday);
-use PVE::Tools qw(dir_glob_foreach file_read_firstline);
-use PVE::INotify;
-use PVE::Cluster qw(cfs_read_file);
-use PVE::RPCEnvironment;
-use PVE::CLIHandler;
+use PVE::Daemon;
 use Data::Dumper;
 
 use PVE::HA::Env;
 use PVE::HA::Env::PVE2;
 use PVE::HA::CRM;
 
-use base qw(PVE::CLIHandler);
+use base qw(PVE::Daemon);
 
-my $pve_ha_crm_pidfile = "/var/run/pve-ha-crm.pid";
+my $cmdline = [$0, @ARGV];
 
-$SIG{'__WARN__'} = sub {
-    my $err = $@;
-    my $t = $_[0];
-    chomp $t;
-    print "$t\n";
-    syslog('warning', "WARNING: %s", $t);
-    $@ = $err;
-};
+my $daemon = __PACKAGE__->new('pve-ha-crm', $cmdline);
 
-initlog('pve-ha-crm');
+sub init {
+    my ($self) = @_;
 
-$ENV{'PATH'} = '/sbin:/bin:/usr/sbin:/usr/bin';
+    $self->{haenv} = PVE::HA::Env->new('PVE::HA::Env::PVE2', $self->{nodename});
 
-die "please run as root\n" if $> != 0;
+    $self->{crm} = PVE::HA::CRM->new($self->{haenv});
+}
 
-PVE::INotify::inotify_init();
+sub run {
+    my ($self) = @_;
 
-my $rpcenv = PVE::RPCEnvironment->init('cli');
+    for (;;) {
+	$self->{haenv}->loop_start_hook();
 
-$rpcenv->init_request();
-$rpcenv->set_language($ENV{LANG});
-$rpcenv->set_user('root@pam');
+	last if !$self->{crm}->do_one_iteration();
 
-my $nodename = PVE::INotify::nodename();
-
-my $commandline = [$0, @ARGV];
-
-$0 = "pve-ha-crm";
-
-sub lockpidfile {
-    my $pidfile = shift;
-    my $lkfn = "$pidfile.lock";
-
-    if (!open (FLCK, ">>$lkfn")) {
-	my $msg = "can't aquire lock on file '$lkfn' - $!";
-	syslog ('err', $msg);
-	die "ERROR: $msg\n";
-    }
-
-    if (!flock (FLCK, LOCK_EX|LOCK_NB)) {
-	close (FLCK);
-        my $msg = "can't aquire lock '$lkfn' - $!";
-	syslog ('err', $msg);
-	die "ERROR: $msg\n";
+	$self->{haenv}->loop_end_hook();
     }
 }
 
-sub writepidfile {
-    my $pidfile = shift;
+sub shutdown {
+    my ($self) = @_;
 
-    if (!open (PIDFH, ">$pidfile")) {
-	my $msg = "can't open pid file '$pidfile' - $!";
-	syslog ('err', $msg);
-	die "ERROR: $msg\n";
-    } 
-    print PIDFH "$$\n";
-    close (PIDFH);
-}
-
-sub cleanup {
-    unlink "$pve_ha_crm_pidfile.lock";
-    unlink $pve_ha_crm_pidfile;
-}
-
-sub run_server {
-    my ($param) = @_;
-
-    # try to get the lock
-    lockpidfile($pve_ha_crm_pidfile);
-
-    # run in background
-    my $spid;
-
-    PVE::Cluster::cfs_update();
-
-    my $haenv = PVE::HA::Env->new('PVE::HA::Env::PVE2', $nodename);
- 
-    if (!$param->{debug}) {
-	open STDIN,  '</dev/null' || die "can't read /dev/null";
-	open STDOUT, '>/dev/null' || die "can't write /dev/null";
-    }
-
-    if (!$param->{debug}) {
-	$spid = fork();
-	if (!defined ($spid)) {
-	    my $msg =  "can't put server into background - fork failed";
-	    syslog('err', $msg);
-	    die "ERROR: $msg\n";
-	} elsif ($spid) { # parent
-	    exit (0);
-	}
-    } 
-
-    writepidfile($pve_ha_crm_pidfile);
-
-    syslog("info", "starting server");
-
-    my $crm = PVE::HA::CRM->new($haenv);
-
-    open STDERR, '>&STDOUT' || die "can't close STDERR\n";
- 
-    $SIG{INT} = $SIG{TERM} = $SIG{QUIT} = sub { 
-	syslog('info' , "got shutdown request");
-	$crm->shutdown_request();
-    };
-
-    eval {
-	for (;;) {
-	    $haenv->loop_start_hook();
-
-	    last if !$crm->do_one_iteration();
-
-	    $haenv->loop_end_hook();
-	}
-    };
-    if (my $err = $@) {
-	syslog("err", "daemon stopped - $err");
-	exit(-1);
-    }
-
-    syslog("info", "daemon stopped");
-    exit(0);
+    $self->{crm}->shutdown_request();
 }
 
 __PACKAGE__->register_method ({
@@ -167,7 +63,7 @@ __PACKAGE__->register_method ({
     code => sub {
 	my ($param) = @_;
 
-	run_server($param);
+	$daemon->start($param->{debug});
 
 	return undef;
     }});
@@ -176,7 +72,7 @@ __PACKAGE__->register_method ({
     name => 'stop',
     path => 'stop',
     method => 'POST',
-    description => "Stop firewall. This removes all Proxmox VE related iptable rules. The host is unprotected afterwards.",
+    description => "Stop the Proxmox HA CRM service.",
     parameters => {
     	additionalProperties => 0,
 	properties => {},
@@ -186,23 +82,34 @@ __PACKAGE__->register_method ({
     code => sub {
 	my ($param) = @_;
 
-	my $pid = int(PVE::Tools::file_read_firstline($pve_ha_crm_pidfile) || 0);
+	$daemon->stop();
 
-	if ($pid) {
-	    if (PVE::ProcFSTools::check_process_running($pid)) {
-		kill(15, $pid); # send TERM signal
-		# wait untils erver shuts down
-		for (;;) {
-		    last if !PVE::ProcFSTools::check_process_running($pid);
-		    sleep (1);
-		}
-	    }
-	}
+	return undef;
+    }});
+
+__PACKAGE__->register_method ({
+    name => 'status',
+    path => 'status',
+    method => 'GET',
+    description => "Get Proxmox HA CRM status.",
+    parameters => {
+    	additionalProperties => 0,
+	properties => {},
+    },
+    returns => { 
+	type => 'string',
+	enum => ['stopped', 'running'],
+    },
+    code => sub {
+	my ($param) = @_;
+
+	return $daemon->running() ? 'running' : 'stopped';
     }});
 
 my $cmddef = {
     start => [ __PACKAGE__, 'start', []],
     stop => [ __PACKAGE__, 'stop', []],
+    status => [ __PACKAGE__, 'status', [], undef, sub { print shift . "\n";} ],
 };
 
 my $cmd = shift;
