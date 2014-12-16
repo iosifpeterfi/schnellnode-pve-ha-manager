@@ -127,15 +127,19 @@ my $server_run = sub {
     
     if ($err) {
 	syslog ('err', "ERROR: $err");
-	$self->restart_daemon(5);
-	exit (0);
+	if (my $wait_time = $self->{restart_on_error}) {
+	    $self->restart_daemon($wait_time);
+	    exit(0);
+	} else {
+	    exit(-1);
+	}
     }
 
     syslog("info", "server stopped");
 };
 
 sub new {
-    my ($this, $name, $cmdline) = @_;
+    my ($this, $name, $cmdline, %params) = @_;
 
     die "please run as root\n" if $> != 0;
 
@@ -165,6 +169,15 @@ sub new {
     $self->{cmdline} = $cmdline;
 
     $0 = $name;
+
+    foreach my $opt (keys %params) {
+	my $value = $params{$opt};
+	if ($opt eq 'restart_on_error') {
+	    $self->{$opt} = $value;
+	} else {
+	    die "unknown option '$opt'";
+	}
+    }
 
     return $self;
 }
