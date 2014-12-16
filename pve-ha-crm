@@ -5,6 +5,7 @@ use warnings;
 use PVE::SafeSyslog;
 use PVE::Daemon;
 use Data::Dumper;
+use PVE::RPCEnvironment;
 
 use PVE::HA::Env;
 use PVE::HA::Env::PVE2;
@@ -14,25 +15,31 @@ use base qw(PVE::Daemon);
 
 my $cmdline = [$0, @ARGV];
 
-my $daemon = __PACKAGE__->new('pve-ha-crm', $cmdline);
+my %daemon_options = (stop_wait_time => 5);
 
-sub init {
+my $daemon = __PACKAGE__->new('pve-ha-crm', $cmdline, %daemon_options);
+
+my $rpcenv = PVE::RPCEnvironment->init('cli');
+
+$rpcenv->init_request();
+$rpcenv->set_language($ENV{LANG});
+$rpcenv->set_user('root@pam');
+
+sub run {
     my ($self) = @_;
 
     $self->{haenv} = PVE::HA::Env->new('PVE::HA::Env::PVE2', $self->{nodename});
 
     $self->{crm} = PVE::HA::CRM->new($self->{haenv});
-}
-
-sub run {
-    my ($self) = @_;
 
     for (;;) {
 	$self->{haenv}->loop_start_hook();
 
-	last if !$self->{crm}->do_one_iteration();
+	my $repeat = $self->{crm}->do_one_iteration();
 
 	$self->{haenv}->loop_end_hook();
+
+	last if !$repeat;
     }
 }
 
@@ -42,69 +49,9 @@ sub shutdown {
     $self->{crm}->shutdown_request();
 }
 
-__PACKAGE__->register_method ({
-    name => 'start',
-    path => 'start',
-    method => 'POST',
-    description => "Start the Proxmox HA CRM service.",
-    parameters => {
-    	additionalProperties => 0,
-	properties => {
-	    debug => {
-		description => "Debug mode - stay in foreground",
-		type => "boolean",
-		optional => 1,
-		default => 0,
-	    },
-	},
-    },
-    returns => { type => 'null' },
-
-    code => sub {
-	my ($param) = @_;
-
-	$daemon->start($param->{debug});
-
-	return undef;
-    }});
-
-__PACKAGE__->register_method ({
-    name => 'stop',
-    path => 'stop',
-    method => 'POST',
-    description => "Stop the Proxmox HA CRM service.",
-    parameters => {
-    	additionalProperties => 0,
-	properties => {},
-    },
-    returns => { type => 'null' },
-
-    code => sub {
-	my ($param) = @_;
-
-	$daemon->stop();
-
-	return undef;
-    }});
-
-__PACKAGE__->register_method ({
-    name => 'status',
-    path => 'status',
-    method => 'GET',
-    description => "Get Proxmox HA CRM status.",
-    parameters => {
-    	additionalProperties => 0,
-	properties => {},
-    },
-    returns => { 
-	type => 'string',
-	enum => ['stopped', 'running'],
-    },
-    code => sub {
-	my ($param) = @_;
-
-	return $daemon->running() ? 'running' : 'stopped';
-    }});
+$daemon->register_start_command();
+$daemon->register_stop_command();
+$daemon->register_status_command();
 
 my $cmddef = {
     start => [ __PACKAGE__, 'start', []],
