@@ -6,7 +6,7 @@ The current HA manager has a bunch of drawbacks:
 
 - no more development (redhat moved to pacemaker)
 
-- highly depend on corosync (old version)
+- highly depend on old version of corosync
 
 - complicated code (cause by compatibility layer with 
   older cluster stack (cman)
@@ -18,11 +18,11 @@ be possible to move to newest corosync, or even a totally different
 cluster stack. So we want:
 
 - possible to run with any distributed key/value store which provides
-  some kind of locking (with timeouts).
+  some kind of locking with timeouts.
 
-- self fencing using linux watchdog device
+- self fencing using Linux watchdog device
 
-- implemented in perl, so thatw e can use PVE framework
+- implemented in Perl, so that we can use PVE framework
 
 - only works with simply resources like VMs
 
@@ -37,14 +37,68 @@ The Proxmox 'pmxcfs' implements this on top of corosync.
 
 == Self fencing ==
 
-A node needs to aquire a special 'agent_lock' (one separate lock for
-each node) before starting HA resources, and the node updates the
-watchdog device once it get that lock. If the node loose quorum, or is
-unable to get the 'agent_lock', the watchdog is no longer updated. The
-node can release the lock if there are no running HA resources.
+A node needs to aquire a special 'ha_agent_${node}_lock' (one separate
+lock for each node) before starting HA resources, and the node updates
+the watchdog device once it get that lock. If the node loose quorum,
+or is unable to get the 'ha_agent_${node}_lock', the watchdog is no
+longer updated. The node can release the lock if there are no running
+HA resources.
 
-This makes sure that the node holds the 'agent_lock' as long as there
-are running services on that node.
+This makes sure that the node holds the 'ha_agent_${node}_lock' as
+long as there are running services on that node.
 
 The HA manger can assume that the watchdog triggered a reboot when he
-is able to aquire the 'agent_lock' for that node.
+is able to aquire the 'ha_agent_${node}_lock' for that node.
+
+== Testing requirements ==
+
+We want to be able to simulate HA cluster, using a GUI. This makes it easier
+to learn how the system behaves. We also need a way to run regression tests.
+
+= Implementation details =
+
+== Cluster Resource Manager (class PVE::HA::CRM) ==
+
+The Cluster Resource Manager (CRM) daemon runs one each node, but
+locking makes sure only one CRM daemon act in 'master' role. That
+'master' daemon reads the service configuration file, and request new
+service states by writing the global 'manager_status'. That data
+structure is read by the Local Resource Manager, which performs the
+real work (start/stop/migrate) services.
+
+== Local Resource Manager (class PVE::HA::LRM) ==
+
+The Local Resource Manager (LRM) daemon runs one each node, and
+performs service commands (start/stop/migrate) for services assigned
+to the local node. It should be mentioned that each LRM holds a
+cluster wide 'ha_agent_${node}_lock' lock, and the CRM is not allowed
+to assign the service to another node while the LRM holds that lock.
+
+The LRM reads the requested service state from 'manager_status', and
+tries to bring the local service into that state. The actial service
+status is written back to the 'service_${node}_status', and can be
+read by the CRM.
+
+== Pluggable Interface for cluster environment (class PVE::HA::Env) ==
+
+This class defines an interface to the actual cluster environment:
+
+* get node membership and quorum information
+
+* get/release cluster wide locks
+
+* get system time
+
+* watchdog interface
+
+* read/write cluster wide status files 
+
+We have plugins for several different environments:
+
+* PVE::HA::Sim::TestEnv: the regression test environment
+
+* PVE::HA::Sim::RTEnv: the graphical simulator
+
+* PVE::HA::Env::PVE2: the real Proxmox VE cluster
+
+
