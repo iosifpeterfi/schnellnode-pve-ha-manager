@@ -305,6 +305,8 @@ sub set_network_state {
 sub set_service_state {
     my ($self, $sid) = @_;
 
+    $self->{service_config} = $self->read_service_config();
+
     my $d = $self->{service_gui}->{$sid} || die "no such service '$sid'";
 
     my $state = $d->{enable_btn}->get_active() ? 'enabled' : 'disabled';
@@ -410,6 +412,7 @@ sub create_service_control {
 
 	$w = Gtk3::Label->new($d->{node});
 	$sgrid->attach($w, 2, $row, 1, 1);
+	$self->{service_gui}->{$sid}->{node_label} = $w;
 
 	$w = Gtk3::ComboBoxText->new();
 	my $active = -1;
@@ -515,6 +518,8 @@ sub run {
 
     Glib::Timeout->add(1000, sub {
 
+	$self->{service_config} = $self->read_service_config();
+
 	# check all watchdogs
 	my @nodes = sort keys %{$self->{nodes}};
 	foreach my $node (@nodes) {
@@ -545,9 +550,14 @@ sub run {
 	my @services = sort keys %{$self->{service_config}};
 
 	foreach my $sid (@services) {
+	    my $sc = $self->{service_config}->{$sid};
 	    my $ss = $service_status->{$sid};
 	    my $sgui = $self->{service_gui}->{$sid};
 	    next if !$sgui;
+	    my $nl = $sgui->{node_label};
+	    $nl->set_text($sc->{node});
+	    print "TEST:$sid:$sc->{node}\n";
+ 
 	    my $sl = $sgui->{status_label};
 	    next if !$sl;
 		

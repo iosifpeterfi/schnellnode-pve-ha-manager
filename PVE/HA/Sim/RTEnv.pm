@@ -78,6 +78,12 @@ sub exec_resource_agent {
 
     my $nodename = $self->{nodename};
 
+    my $sc = $hardware->read_service_config($nodename);
+
+    # fixme: return valid_exit code (instead of using die)
+    die "no such service" if !$sc->{$sid};
+    die "service '$sid' not on this node" if $sc->{$sid}->{node} ne $nodename;
+
     my $ss = $hardware->read_service_status($nodename);
 
     if ($cmd eq 'started') {
