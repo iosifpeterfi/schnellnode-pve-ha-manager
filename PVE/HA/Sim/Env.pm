@@ -131,6 +131,22 @@ sub manager_status_exists {
     return -f $filename ? 1 : 0;
 }
 
+sub read_lrm_status {
+    my ($self, $node) = @_;
+
+    $node = $self->{nodename} if !defined($node);
+
+    return $self->{hardware}->read_lrm_status($node);
+}
+
+sub write_lrm_status {
+    my ($self, $status_obj) = @_;
+
+    my $node = $self->{nodename};
+
+    return $self->{hardware}->write_lrm_status($node, $status_obj);
+}
+
 sub read_service_config {
     my ($self) = @_;
 
@@ -241,6 +257,12 @@ sub watchdog_close {
     my ($self, $wfh) = @_;
 
     return $self->{hardware}->watchdog_close($wfh);
+}
+
+sub exec_resource_agent {
+    my ($self, $sid, $cmd, @params) = @_;
+
+    die "implement me";
 }
 
 1;

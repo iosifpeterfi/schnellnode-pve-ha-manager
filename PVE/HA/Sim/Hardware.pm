@@ -27,6 +27,7 @@ my $watchdog_timeout = 60;
 # $testdir/hardware_status   Hardware description (number of nodes, ...)
 # $testdir/manager_status    CRM status (start with {})
 # $testdir/service_config    Service configuration
+# $testdir/service_status    Service status
 
 #
 # runtime status for simulation system
@@ -37,9 +38,26 @@ my $watchdog_timeout = 60;
 #
 # runtime status
 #
-# $testdir/status/local_status_<node>  local CRM Daemon status
+# $testdir/status/lrm_status_<node>    LRM status
 # $testdir/status/manager_status       CRM status
 # $testdir/status/service_config       Service configuration
+# $testdir/status/service_status       Service status
+
+sub read_lrm_status {
+    my ($self, $node) = @_;
+
+    my $filename = "$self->{statusdir}/lrm_status_$node";
+
+    return PVE::HA::Tools::read_json_from_file($filename, {});  
+}
+
+sub write_lrm_status {
+    my ($self, $node, $status_obj) = @_;
+
+    my $filename = "$self->{statusdir}/lrm_status_$node";
+
+    PVE::HA::Tools::write_json_to_file($filename, $status_obj); 
+}
 
 sub read_hardware_status_nolock {
     my ($self) = @_;
@@ -90,6 +108,20 @@ sub write_service_config {
     return PVE::HA::Tools::write_json_to_file($filename, $conf);
 } 
 
+sub read_service_status {
+    my ($self) = @_;
+
+    my $filename = "$self->{statusdir}/service_status";
+    return PVE::HA::Tools::read_json_from_file($filename); 
+}
+
+sub write_service_status {
+    my ($self, $data) = @_;
+
+    my $filename = "$self->{statusdir}/service_status";
+    return PVE::HA::Tools::write_json_to_file($filename, $data);
+} 
+
 sub new {
     my ($this, $testdir) = @_;
 
@@ -119,6 +151,12 @@ sub new {
 	    'pvevm:106' => { node => 'node3' },
 	};
 	$self->write_service_config($conf);
+    }
+
+    if (-f "$testdir/service_status") {
+	copy("$testdir/service_status", "$statusdir/service_status");
+    } else {	
+ 	$self->write_service_status({});
     }
 
     if (-f "$testdir/hardware_status") {

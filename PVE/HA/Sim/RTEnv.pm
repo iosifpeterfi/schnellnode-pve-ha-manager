@@ -71,4 +71,59 @@ sub loop_end_hook {
     die "loop take too long ($delay seconds)\n" if $delay > 30;
 }
 
+sub exec_resource_agent {
+    my ($self, $sid, $cmd, @params) = @_;
+
+    my $hardware = $self->{hardware};
+
+    my $ss = $hardware->read_service_status();
+
+    if ($cmd eq 'request_stop') {
+
+	if (!$ss->{$sid}) {
+	    print "WORKER status $sid: stopped\n";
+	    return 0;
+	} else {
+	    print "WORKER status $sid: running\n";
+	    return 1;
+	}
+
+    } elsif ($cmd eq 'start') {
+
+	if ($ss->{$sid}) {
+	    print "WORKER status $sid: running\n";
+	    return 0;
+	}
+	print "START WORKER $sid\n";
+	
+	$self->sleep(2);
+
+	$ss->{$sid} = 1;
+	$hardware->write_service_status($ss);
+
+	print "END WORKER $sid\n";
+
+	return 0;
+
+    } elsif ($cmd eq 'stop') {
+
+	if (!$ss->{$sid}) {
+	    print "WORKER status $sid: stopped\n";
+	    return 0;
+	}
+	print "STOP WORKER $sid\n";
+	
+	$self->sleep(2);
+
+	$ss->{$sid} = 0;
+	$hardware->write_service_status($ss);
+
+	print "END WORKER $sid\n";
+
+	return 0;
+    } 
+
+    die "implement me";
+}
+
 1;

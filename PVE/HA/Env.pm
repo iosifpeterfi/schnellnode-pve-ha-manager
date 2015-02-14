@@ -39,6 +39,21 @@ sub write_manager_status {
     return $self->{plug}->write_manager_status($status_obj);
 }
 
+# lrm status is written by LRM, protected by ha_agent_lock,
+# but can be read by any node (CRM)
+
+sub read_lrm_status {
+    my ($self, $node) = @_;
+
+    return $self->{plug}->read_lrm_status($node);
+}
+
+sub write_lrm_status {
+    my ($self, $status_obj) = @_;
+
+    return $self->{plug}->write_lrm_status($status_obj);
+}
+
 # we use this to enable/disbale ha
 sub manager_status_exists {
     my ($self) = @_;
@@ -144,6 +159,12 @@ sub watchdog_close {
     my ($self, $wfh) = @_;
 
     return $self->{plug}->watchdog_close($wfh);
+}
+
+sub exec_resource_agent {
+    my ($self, $sid, $cmd, @params) = @_;
+
+    return $self->{plug}->exec_resource_agent($sid, $cmd, @params)
 }
 
 1;

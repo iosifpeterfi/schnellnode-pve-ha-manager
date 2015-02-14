@@ -48,6 +48,26 @@ sub write_manager_status {
     PVE::HA::Tools::write_json_to_file($filename, $status_obj); 
 }
 
+sub read_lrm_status {
+    my ($self, $node) = @_;
+
+    $node = $self->{nodename} if !defined($node);
+
+    my $filename = "/etc/pve/nodes/$node/lrm_status";
+
+    return PVE::HA::Tools::read_json_from_file($filename, {});  
+}
+
+sub write_lrm_status {
+    my ($self, $status_obj) = @_;
+
+    $node = $self->{nodename};
+
+    my $filename = "/etc/pve/nodes/$node/lrm_status";
+
+    PVE::HA::Tools::write_json_to_file($filename, $status_obj); 
+}
+
 sub manager_status_exists {
     my ($self) = @_;
     
@@ -178,6 +198,12 @@ sub watchdog_update {
 
 sub watchdog_close {
     my ($self, $wfh) = @_;
+
+    die "implement me";
+}
+
+sub exec_resource_agent {
+    my ($self, $sid, $cmd, @params) = @_;
 
     die "implement me";
 }
