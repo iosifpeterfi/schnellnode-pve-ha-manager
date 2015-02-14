@@ -66,6 +66,21 @@ service states by writing the global 'manager_status'. That data
 structure is read by the Local Resource Manager, which performs the
 real work (start/stop/migrate) services.
 
+=== Service Relocation ===
+
+Some services like Qemu Virtual Machines supports live migration.
+So the LRM can migrate those services without stopping them (CRM 
+service state 'migrate'),
+
+Most other service types requires the service to be stopped, and 
+then restarted at the other node. We use the following CRM service 
+states transitions: 'relocate_stop' => 'relocate_move' => 'started'
+
+Stopped services are moved using service state 'move'. It has to be
+noted that service relocation is always done using the LRM (the LRM
+'owns' the service), unless a node is fenced. In that case the CRM
+is allowed to 'steal' the resource and mode it to another node.
+
 === Possible CRM Service States ===
 
 stopped:      Service is stopped (confirmed by LRM)
@@ -78,9 +93,11 @@ started:      Service is active an LRM should start it asap.
 fence:        Wait for node fencing (service node is not inside
 	      quorate cluster partition).
 
-migrate:      Migrate VM to other node
+migrate:      Migrate (live) service to other node.
 
 error:        Service disabled because of LRM errors.
+
+
 
 == Local Resource Manager (class PVE::HA::LRM) ==
 
