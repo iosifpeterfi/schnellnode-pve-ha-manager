@@ -153,6 +153,12 @@ sub read_service_config {
     return $self->{hardware}->read_service_config();
 }
 
+sub change_service_location {
+    my ($self, $sid, $node) = @_;
+
+    return $self->{hardware}->change_service_location($sid, $node);
+}
+
 sub log {
     my ($self, $level, $msg) = @_;
 

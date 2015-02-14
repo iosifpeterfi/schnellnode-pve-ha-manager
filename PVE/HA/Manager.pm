@@ -71,6 +71,7 @@ my $valid_service_states = {
     request_stop => 1,
     started => 1,
     fence => 1,
+    move => 1,
     migrate => 1,
     error => 1,
 };
@@ -152,7 +153,7 @@ sub manage {
 	next if $ss->{$sid}; # already there
 	$haenv->log('info', "Adding new service '$sid'\n");
 	# assume we are running to avoid relocate running service at add
-	$ss->{$sid} = { state => 'started', node => $sc->{$sid}->{current_node}};
+	$ss->{$sid} = { state => 'started', node => $sc->{$sid}->{node}};
     }
 
     for (;;) {
@@ -170,6 +171,9 @@ sub manage {
 		    # do nothing
 		} elsif ($cd->{state} eq 'enabled') {
 		    if (my $node = $self->select_service_node($cd)) {
+			if ($node && ($sd->{node} ne $node)) {
+			    $haenv->change_service_location($sid, $node);
+			}
 			&$change_service_state($self, $sid, 'started', node => $node);
 		    } else {
 			# fixme: warn 
@@ -203,6 +207,10 @@ sub manage {
 	    } elsif ($last_state eq 'migrate') {
 
 		die "implement me";
+
+	    } elsif ($last_state eq 'move') {
+
+		#die "implement me";
 
 	    } elsif ($last_state eq 'fence') {
 

@@ -80,6 +80,12 @@ sub read_service_config {
     die "implement me";
 }
 
+sub change_service_location {
+    my ($self, $sid, $node) = @_;
+
+    die "implement me";
+}
+
 # this should return a hash containing info
 # what nodes are members and online.
 sub get_node_info {

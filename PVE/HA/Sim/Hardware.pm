@@ -23,11 +23,11 @@ my $watchdog_timeout = 60;
 #
 # configuration
 #
-# $testdir/cmdlist           Command list for simulation
-# $testdir/hardware_status   Hardware description (number of nodes, ...)
-# $testdir/manager_status    CRM status (start with {})
-# $testdir/service_config    Service configuration
-# $testdir/service_status    Service status
+# $testdir/cmdlist                    Command list for simulation
+# $testdir/hardware_status            Hardware description (number of nodes, ...)
+# $testdir/manager_status             CRM status (start with {})
+# $testdir/service_config             Service configuration
+# $testdir/service_status_<node>      Service status
 
 #
 # runtime status for simulation system
@@ -38,10 +38,10 @@ my $watchdog_timeout = 60;
 #
 # runtime status
 #
-# $testdir/status/lrm_status_<node>    LRM status
-# $testdir/status/manager_status       CRM status
-# $testdir/status/service_config       Service configuration
-# $testdir/status/service_status       Service status
+# $testdir/status/lrm_status_<node>           LRM status
+# $testdir/status/manager_status              CRM status
+# $testdir/status/service_config              Service configuration
+# $testdir/status/service_status_<node>       Service status
 
 sub read_lrm_status {
     my ($self, $node) = @_;
@@ -86,7 +86,9 @@ sub read_service_config {
 
     foreach my $sid (keys %$conf) {
 	my $d = $conf->{$sid};
-	$d->{current_node} = $d->{node} if !$d->{current_node};
+
+	die "service '$sid' without assigned node!" if !$d->{node};
+
 	if ($sid =~ m/^pvevm:(\d+)$/) {
 	    $d->{type} = 'pvevm'; 
 	    $d->{name} = $1;
@@ -108,18 +110,34 @@ sub write_service_config {
     return PVE::HA::Tools::write_json_to_file($filename, $conf);
 } 
 
-sub read_service_status {
-    my ($self) = @_;
+sub change_service_location {
+    my ($self, $sid, $node) = @_;
 
-    my $filename = "$self->{statusdir}/service_status";
+    my $conf = $self->read_service_config();
+
+    die "no such service '$sid'\n" if !$conf->{$sid};
+
+    $conf->{$sid}->{node} = $node;
+
+    $self->write_service_config($conf);
+}
+
+sub read_service_status {
+    my ($self, $node) = @_;
+
+    my $filename = "$self->{statusdir}/service_status_$node";
     return PVE::HA::Tools::read_json_from_file($filename); 
 }
 
 sub write_service_status {
-    my ($self, $data) = @_;
+    my ($self, $node, $data) = @_;
 
-    my $filename = "$self->{statusdir}/service_status";
-    return PVE::HA::Tools::write_json_to_file($filename, $data);
+    my $filename = "$self->{statusdir}/service_status_$node";
+    my $res = PVE::HA::Tools::write_json_to_file($filename, $data);
+
+    # fixme: add test if a service runs on two nodes!!!
+
+    return $res;
 } 
 
 sub new {
@@ -153,12 +171,6 @@ sub new {
 	$self->write_service_config($conf);
     }
 
-    if (-f "$testdir/service_status") {
-	copy("$testdir/service_status", "$statusdir/service_status");
-    } else {	
- 	$self->write_service_status({});
-    }
-
     if (-f "$testdir/hardware_status") {
 	copy("$testdir/hardware_status", "$statusdir/hardware_status") ||
 	    die "Copy failed: $!\n";
@@ -176,6 +188,12 @@ sub new {
 
     foreach my $node (sort keys %$cstatus) {
 	$self->{nodes}->{$node} = {};
+
+	if (-f "$testdir/service_status_$node") {
+	    copy("$testdir/service_status_$node", "$statusdir/service_status_$node");
+	} else {	
+	    $self->write_service_status($node, {});
+	}
     }
 
     $self->{service_config} = $self->read_service_config();

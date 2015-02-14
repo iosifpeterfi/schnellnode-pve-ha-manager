@@ -76,7 +76,9 @@ sub exec_resource_agent {
 
     my $hardware = $self->{hardware};
 
-    my $ss = $hardware->read_service_status();
+    my $nodename = $self->{nodename};
+
+    my $ss = $hardware->read_service_status($nodename);
 
     if ($cmd eq 'started') {
 
@@ -89,7 +91,7 @@ sub exec_resource_agent {
 	$self->sleep(2);
 
 	$ss->{$sid} = 1;
-	$hardware->write_service_status($ss);
+	$hardware->write_service_status($nodename, $ss);
 
 	print "END WORKER $sid\n";
 
@@ -106,7 +108,7 @@ sub exec_resource_agent {
 	$self->sleep(2);
 
 	$ss->{$sid} = 0;
-	$hardware->write_service_status($ss);
+	$hardware->write_service_status($nodename, $ss);
 
 	print "END WORKER $sid\n";
 

@@ -408,7 +408,7 @@ sub create_service_control {
 	}),
 
 
-	$w = Gtk3::Label->new($d->{current_node});
+	$w = Gtk3::Label->new($d->{node});
 	$sgrid->attach($w, 2, $row, 1, 1);
 
 	$w = Gtk3::ComboBoxText->new();
@@ -420,6 +420,15 @@ sub create_service_control {
 	    $c++;
 	}
 	$w->set_active($active);
+	# fixme: use 'migrate' buttion with dialog instead!
+	$w->signal_connect('notify::active' => sub {
+	    my $w = shift;
+
+	    my $sel = $w->get_active();
+	    return if $sel < 0;
+
+	    die "implement migrate:$sid:$nodes[$sel]";
+	});
 	$sgrid->attach($w, 3, $row, 1, 1);
 
 	$w = Gtk3::Label->new('-');
