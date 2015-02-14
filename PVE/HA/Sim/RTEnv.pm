@@ -78,17 +78,7 @@ sub exec_resource_agent {
 
     my $ss = $hardware->read_service_status();
 
-    if ($cmd eq 'request_stop') {
-
-	if (!$ss->{$sid}) {
-	    print "WORKER status $sid: stopped\n";
-	    return 0;
-	} else {
-	    print "WORKER status $sid: running\n";
-	    return 1;
-	}
-
-    } elsif ($cmd eq 'start') {
+    if ($cmd eq 'started') {
 
 	if ($ss->{$sid}) {
 	    print "WORKER status $sid: running\n";
@@ -105,7 +95,7 @@ sub exec_resource_agent {
 
 	return 0;
 
-    } elsif ($cmd eq 'stop') {
+    } elsif ($cmd eq 'request_stop' || $cmd eq 'stopped') {
 
 	if (!$ss->{$sid}) {
 	    print "WORKER status $sid: stopped\n";
@@ -123,7 +113,7 @@ sub exec_resource_agent {
 	return 0;
     } 
 
-    die "implement me";
+    die "implement me (cmd '$cmd')";
 }
 
 1;

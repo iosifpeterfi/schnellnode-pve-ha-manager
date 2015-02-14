@@ -66,6 +66,22 @@ service states by writing the global 'manager_status'. That data
 structure is read by the Local Resource Manager, which performs the
 real work (start/stop/migrate) services.
 
+=== Possible CRM Service States ===
+
+stopped:      Service is stopped (confirmed by LRM)
+
+request_stop: Service should be stopped. Waiting for 
+	      confirmation from LRM.
+
+started:      Service is active an LRM should start it asap.
+
+fence:        Wait for node fencing (service node is not inside
+	      quorate cluster partition).
+
+migrate:      Migrate VM to other node
+
+error:        Service disabled because of LRM errors.
+
 == Local Resource Manager (class PVE::HA::LRM) ==
 
 The Local Resource Manager (LRM) daemon runs one each node, and

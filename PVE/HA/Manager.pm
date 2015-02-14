@@ -66,6 +66,15 @@ sub select_service_node {
 
 my $uid_counter = 0;
 
+my $valid_service_states = {
+    stopped => 1,
+    request_stop => 1,
+    started => 1,
+    fence => 1,
+    migrate => 1,
+    error => 1,
+};
+
 my $change_service_state = sub {
     my ($self, $sid, $new_state, %params) = @_;
 
@@ -76,6 +85,8 @@ my $change_service_state = sub {
     my $old_state = $sd->{state};
 
     die "no state change" if $old_state eq $new_state; # just to be sure
+
+    die "invalid CRM service state '$new_state'\n" if !$valid_service_states->{$new_state};
 
     my $changes = '';
     foreach my $k (keys %params) {
@@ -199,13 +210,29 @@ sub manage {
 
 	    } elsif ($last_state eq 'request_stop') {
 
-#fixme:		die "implement me";
+		# do nothing here
 
 	    } else {
 
 		die "unknown service state '$last_state'";
 	    }
 
+	    # check results from LRM daemons
+	    my $lrm_res = $sd->{uid} ? $lrm_status->{$sd->{uid}} : undef;
+	    if ($lrm_res) {
+		my $exit_code = $lrm_res->{exit_code};
+		
+		if ($sd->{state} eq 'request_stop') {
+		    if ($exit_code == 0) {
+			&$change_service_state($self, $sid, 'stopped');
+		    } else {
+			&$change_service_state($self, $sid, 'error'); # fixme: what state?
+		    }
+		} elsif ($sd->{state} eq 'started') {
+
+		}
+
+	    }
 
 	    $repeat = 1 if $sd->{state} ne $last_state;
 	}
