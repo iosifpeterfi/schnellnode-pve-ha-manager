@@ -128,6 +128,41 @@ sub read_lrm_status {
     return $res;
 }
 
+# read new crm commands and save them into crm master status
+sub update_crm_commands {
+    my ($self) = @_;
+
+    my ($haenv, $ms, $ns, $ss) = ($self->{haenv}, $self->{ms}, $self->{ns}, $self->{ss});
+
+    my $cmdlist = $haenv->read_crm_commands();
+    
+    foreach my $cmd (split(/\n/, $cmdlist)) {
+	chomp $cmd;
+
+	if ($cmd =~ m/^migrate\s+(\S+)\s+(\S+)$/) {
+	    my ($sid, $node) = ($1, $2); 
+	    if (my $sd = $ss->{$sid}) {
+		if (!$ns->node_is_online($node)) {
+		    $haenv->log('err', "crm command error - node not online: $cmd");
+		} else {
+		    if ($node eq $sd->{node}) {
+			$haenv->log('info', "ignore crm command - service already on target node: $cmd");
+		    } else { 
+			$haenv->log('info', "got crm command: $cmd");
+			$ss->{$sid}->{cmd} = [ 'migrate', $node];
+		    }
+		}
+	    } else {
+		$haenv->log('err', "crm command error - no such service: $cmd");
+	    }
+
+	} else {
+	    $haenv->log('err', "unable to parse crm command: $cmd");
+	}
+    }
+
+}
+
 sub manage {
     my ($self) = @_;
 
@@ -153,6 +188,8 @@ sub manage {
 	# assume we are running to avoid relocate running service at add
 	$ss->{$sid} = { state => 'started', node => $sc->{$sid}->{node}};
     }
+
+    $self->update_crm_commands();
 
     for (;;) {
 	my $repeat = 0;
