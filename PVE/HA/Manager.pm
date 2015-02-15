@@ -108,15 +108,16 @@ my $change_service_state = sub {
     $haenv->log('info', "service '$sid': state changed to '$new_state' $changes\n");
 };
 
-# read LRM status for all nodes (even for offline nodes)
+# read LRM status for all active nodes 
 sub read_lrm_status {
-    my ($self, $node_info) = @_;
+    my ($self) = @_;
 
+    my $nodes = $self->{ns}->list_online_nodes();
     my $haenv = $self->{haenv};
 
     my $res = {};
 
-    foreach my $node (keys %$node_info) {
+    foreach my $node (@$nodes) {
 	my $ls = $haenv->read_lrm_status($node);
 	foreach my $uid (keys %$ls) {
 	    next if $res->{$uid}; # should not happen
@@ -132,17 +133,14 @@ sub manage {
 
     my ($haenv, $ms, $ns, $ss) = ($self->{haenv}, $self->{ms}, $self->{ns}, $self->{ss});
 
-    my ($node_info, $quorate) = $haenv->get_node_info();
-    $ns->update($node_info);
-
-    # fixme: what if $quorate is 0??
+    $ns->update($haenv->get_node_info());
 
     if (!$ns->node_is_online($haenv->nodename())) {
 	$haenv->log('info', "master seems offline\n");
 	return;
     }
 
-    my $lrm_status = $self->read_lrm_status($node_info);
+    my $lrm_status = $self->read_lrm_status();
 
     my $sc = $haenv->read_service_config();
 

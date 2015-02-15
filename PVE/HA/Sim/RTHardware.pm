@@ -556,8 +556,7 @@ sub run {
 	    next if !$sgui;
 	    my $nl = $sgui->{node_label};
 	    $nl->set_text($sc->{node});
-	    print "TEST:$sid:$sc->{node}\n";
- 
+
 	    my $sl = $sgui->{status_label};
 	    next if !$sl;
 		
