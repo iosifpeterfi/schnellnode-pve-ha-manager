@@ -161,46 +161,17 @@ sub manage {
 	    my $sd = $ss->{$sid};
 	    my $cd = $sc->{$sid} || { state => 'disabled' };
 
+	    my $lrm_res = $sd->{uid} ? $lrm_status->{$sd->{uid}} : undef;
+
 	    my $last_state = $sd->{state};
 
 	    if ($last_state eq 'stopped') {
 
-		if ($cd->{state} eq 'disabled') {
-		    # do nothing
-		} elsif ($cd->{state} eq 'enabled') {
-		    if (my $node = $self->select_service_node($cd)) {
-			if ($node && ($sd->{node} ne $node)) {
-			    $haenv->change_service_location($sid, $node);
-			}
-			&$change_service_state($self, $sid, 'started', node => $node);
-		    } else {
-			# fixme: warn 
-		    }
-		} else {
-		    # do nothing - todo: log something?
-		}
+		$self->next_state_stopped($sid, $cd, $sd);
 
 	    } elsif ($last_state eq 'started') {
 
-		if (!$ns->node_is_online($sd->{node})) {
-
-		    &$change_service_state($self, $sid, 'fence');
-
-		} else {
-
-		    if ($cd->{state} eq 'disabled') {
-			&$change_service_state($self, $sid, 'request_stop');
-		    } elsif ($cd->{state} eq 'enabled') {
-			my $node = $self->select_service_node($cd);
-			if ($node && ($sd->{node} ne $node)) {
-			    &$change_service_state($self, $sid, 'migrate');
-			} else {
-			    # do nothing
-			}
-		    } else {
-			# do nothing - todo: log something?
-		    }
-		}
+		$self->next_state_started($sid, $cd, $sd);
 
 	    } elsif ($last_state eq 'migrate') {
 
@@ -216,28 +187,19 @@ sub manage {
 
 	    } elsif ($last_state eq 'request_stop') {
 
-		# do nothing here
-
-	    } else {
-
-		die "unknown service state '$last_state'";
-	    }
-
-	    # check results from LRM daemons
-	    my $lrm_res = $sd->{uid} ? $lrm_status->{$sd->{uid}} : undef;
-	    if ($lrm_res) {
-		my $exit_code = $lrm_res->{exit_code};
-		
-		if ($sd->{state} eq 'request_stop') {
+		# check result from LRM daemon
+		if ($lrm_res) {
+		    my $exit_code = $lrm_res->{exit_code};
 		    if ($exit_code == 0) {
 			&$change_service_state($self, $sid, 'stopped');
 		    } else {
 			&$change_service_state($self, $sid, 'error'); # fixme: what state?
 		    }
-		} elsif ($sd->{state} eq 'started') {
-
 		}
 
+	    } else {
+
+		die "unknown service state '$last_state'";
 	    }
 
 	    $repeat = 1 if $sd->{state} ne $last_state;
@@ -268,5 +230,59 @@ sub manage {
     $self->flush_master_status();
 }
 
+# functions to compute next service states
+# $cd: service configuration data (read only)
+# $sd: service status data (read only)
+#
+# Note: use change_service_state() to alter state
+#
+
+sub next_state_stopped {
+    my ($self, $sid, $cd, $sd) = @_;
+
+    my $haenv = $self->{haenv};
+
+    if ($cd->{state} eq 'disabled') {
+	# do nothing
+    } elsif ($cd->{state} eq 'enabled') {
+	if (my $node = $self->select_service_node($cd)) {
+	    if ($node && ($sd->{node} ne $node)) {
+		$haenv->change_service_location($sid, $node);
+	    }
+	    &$change_service_state($self, $sid, 'started', node => $node);
+	} else {
+	    # fixme: warn 
+	}
+    } else {
+	# do nothing - todo: log something?
+    }
+}
+
+sub next_state_started {
+    my ($self, $sid, $cd, $sd) = @_;
+
+    my $haenv = $self->{haenv};
+    my $ns = $self->{ns};
+
+    if (!$ns->node_is_online($sd->{node})) {
+
+	&$change_service_state($self, $sid, 'fence');
+	
+    } else {
+	
+	if ($cd->{state} eq 'disabled') {
+	    &$change_service_state($self, $sid, 'request_stop');
+	} elsif ($cd->{state} eq 'enabled') {
+	    my $node = $self->select_service_node($cd);
+	    if ($node && ($sd->{node} ne $node)) {
+		&$change_service_state($self, $sid, 'migrate');
+	    } else {
+		# do nothing
+	    }
+	} else {
+	    # do nothing - todo: log something?
+	}
+    }
+}
 
 1;
