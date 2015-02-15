@@ -122,6 +122,44 @@ sub change_service_location {
     $self->write_service_config($conf);
 }
 
+sub queue_crm_commands {
+    my ($self, $cmd) = @_;
+
+    chomp $cmd;
+
+    my $code = sub {
+	my $data = '';
+	my $filename = "$self->{statusdir}/crm_commands";
+	if (-f $filename) {
+	    $data = PVE::Tools::file_get_contents($filename);
+	}
+	$data .= "$cmd\n";
+	PVE::Tools::file_set_contents($filename, $data);
+    };
+ 
+    $self->global_lock($code);
+
+    return undef;
+}
+
+sub read_crm_commands {
+    my ($self) = @_;
+
+    my $code = sub {
+	my $data = '';
+
+ 	my $filename = "$self->{statusdir}/crm_commands";
+	if (-f $filename) {
+	    $data = PVE::Tools::file_get_contents($filename);
+	}
+	PVE::Tools::file_set_contents($filename, '');
+
+	return $data;
+    };
+ 
+    return $self->global_lock($code);
+}
+
 sub read_service_status {
     my ($self, $node) = @_;
 

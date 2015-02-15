@@ -61,6 +61,19 @@ sub manager_status_exists {
     return $self->{plug}->manager_status_exists();
 }
 
+# implement a way to send commands to the CRM master
+sub queue_crm_commands {
+    my ($self, $cmd) = @_;
+
+    return $self->{plug}->queue_crm_commands($cmd);
+}
+
+sub read_crm_commands {
+    my ($self) = @_;
+
+    return $self->{plug}->read_crm_commands();
+}
+
 sub read_service_config {
     my ($self) = @_;
 

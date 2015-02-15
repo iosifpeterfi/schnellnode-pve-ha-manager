@@ -159,6 +159,18 @@ sub change_service_location {
     return $self->{hardware}->change_service_location($sid, $node);
 }
 
+sub queue_crm_commands {
+    my ($self, $cmd) = @_;
+
+    return $self->{hardware}->queue_crm_commands($cmd);
+}
+
+sub read_crm_commands {
+    my ($self) = @_;
+
+    return $self->{hardware}->read_crm_commands();
+}
+
 sub log {
     my ($self, $level, $msg) = @_;
 

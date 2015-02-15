@@ -86,6 +86,18 @@ sub change_service_location {
     die "implement me";
 }
 
+sub queue_crm_commands {
+    my ($self, $cmd) = @_;
+
+    die "implement me";
+}
+
+sub read_crm_commands {
+    my ($self) = @_;
+
+    die "implement me";
+}
+
 # this should return a hash containing info
 # what nodes are members and online.
 sub get_node_info {
