@@ -89,34 +89,34 @@ sub exec_resource_agent {
     if ($cmd eq 'started') {
 
 	if ($ss->{$sid}) {
-	    print "WORKER status $sid: running\n";
+	    $self->log("info", "service status $sid: running");
 	    return 0;
 	}
-	print "START WORKER $sid\n";
+	$self->log("info", "starting service $sid");
 	
 	$self->sleep(2);
 
 	$ss->{$sid} = 1;
 	$hardware->write_service_status($nodename, $ss);
 
-	print "END WORKER $sid\n";
+	$self->log("info", "service $sid started");
 
 	return 0;
 
     } elsif ($cmd eq 'request_stop' || $cmd eq 'stopped') {
 
 	if (!$ss->{$sid}) {
-	    print "WORKER status $sid: stopped\n";
+	    $self->log("info", "service status $sid: stopped");
 	    return 0;
 	}
-	print "STOP WORKER $sid\n";
+	$self->log("info", "stopping service $sid");
 	
 	$self->sleep(2);
 
 	$ss->{$sid} = 0;
 	$hardware->write_service_status($nodename, $ss);
 
-	print "END WORKER $sid\n";
+	$self->log("info", "service $sid stopped");
 
 	return 0;
     } 

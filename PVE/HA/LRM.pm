@@ -343,12 +343,11 @@ sub resource_command_finished {
     my $exit_code = -1;
 
     if ($status == -1) {
-	print "RA $sid finished - failed to execute\n";    
+	$haenv->log('err', "resource agent $sid finished - failed to execute");    
     }  elsif (my $sig = ($status & 127)) {
-	print "RA $sid finished - got signal $sig\n";
+	$haenv->log('err', "resource agent $sid finished - got signal $sig");
     } else {
 	$exit_code = ($status >> 8);
-	print "RA $sid finished - exit code ${exit_code}\n";
     }
 
     $self->{results}->{$uid} = {
