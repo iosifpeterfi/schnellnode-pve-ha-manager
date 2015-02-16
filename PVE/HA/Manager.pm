@@ -212,7 +212,16 @@ sub manage {
 
 	    } elsif ($last_state eq 'migrate') {
 
-		die "implement me";
+		# check result from LRM daemon
+		if ($lrm_res) {
+		    my $exit_code = $lrm_res->{exit_code};
+		    if ($exit_code == 0) {
+			&$change_service_state($self, $sid, 'started', node => $sd->{target});
+		    } else {
+			$haenv->log('err', "service '$sid' - migration failed (exit code $exit_code)");
+			&$change_service_state($self, $sid, 'started', node => $sd->{node});
+		    }
+		}
 
 	    } elsif ($last_state eq 'move') {
 
@@ -233,6 +242,10 @@ sub manage {
 			&$change_service_state($self, $sid, 'error'); # fixme: what state?
 		    }
 		}
+
+	    } elsif ($last_state eq 'error') {
+
+		# fixme: 
 
 	    } else {
 
@@ -278,6 +291,7 @@ sub next_state_stopped {
     my ($self, $sid, $cd, $sd) = @_;
 
     my $haenv = $self->{haenv};
+    my $ns = $self->{ns};
 
     if ($sd->{node} ne $cd->{node}) {
 	# this can happen if we fence a node with active migrations
@@ -293,6 +307,8 @@ sub next_state_stopped {
 	if ($cmd eq 'migrate') {
 	    if (!$ns->node_is_online($target)) {
 		$haenv->log('err', "ignore service '$sid' migrate request - node '$target' not online");
+	    } elsif ($sd->{node} eq $target) {
+		$haenv->log('info', "ignore service '$sid' migrate request - service already on node '$target'");
 	    } else {
 		$haenv->change_service_location($sid, $target);
 		$cd->{node} = $sd->{node} = $target; # fixme: $sd is read-only??!!	    
@@ -305,7 +321,10 @@ sub next_state_stopped {
 
     if ($cd->{state} eq 'disabled') {
 	# do nothing
-    } elsif ($cd->{state} eq 'enabled') {
+	return;
+    } 
+
+    if ($cd->{state} eq 'enabled') {
 	if (my $node = $self->select_service_node($cd)) {
 	    if ($node && ($sd->{node} ne $node)) {
 		$haenv->change_service_location($sid, $node);
@@ -314,9 +333,11 @@ sub next_state_stopped {
 	} else {
 	    # fixme: warn 
 	}
-    } else {
-	# do nothing - todo: log something?
+
+	return;
     }
+
+    $haenv->log('err', "service '$sid' - unknown state '$cd->{state}' in service configuration");
 }
 
 sub next_state_started {
@@ -328,22 +349,45 @@ sub next_state_started {
     if (!$ns->node_is_online($sd->{node})) {
 
 	&$change_service_state($self, $sid, 'fence');
-	
-    } else {
-	
-	if ($cd->{state} eq 'disabled') {
-	    &$change_service_state($self, $sid, 'request_stop');
-	} elsif ($cd->{state} eq 'enabled') {
-	    my $node = $self->select_service_node($cd);
-	    if ($node && ($sd->{node} ne $node)) {
-		&$change_service_state($self, $sid, 'migrate');
-	    } else {
-		# do nothing
-	    }
-	} else {
-	    # do nothing - todo: log something?
-	}
+	return;
     }
+	
+    if ($cd->{state} eq 'disabled') {
+	&$change_service_state($self, $sid, 'request_stop');
+	return;
+    }
+
+    if ($cd->{state} eq 'enabled') {
+	my $node = $self->select_service_node($cd);
+
+	if ($sd->{cmd}) {
+	    my ($cmd, $target) = @{$sd->{cmd}};
+	    delete $sd->{cmd};
+
+	    if ($cmd eq 'migrate') {
+		if (!$ns->node_is_online($target)) {
+		    $haenv->log('err', "ignore service '$sid' migrate request - node '$target' not online");
+		} elsif ($sd->{node} eq $target) {
+		    $haenv->log('info', "ignore service '$sid' migrate request - service already on node '$target'");
+		} else {
+		    $node = $target;
+		}
+	    } else {
+		$haenv->log('err', "unknown command '$cmd' for service '$sid'"); 
+	    }
+	}
+
+	if ($node && ($sd->{node} ne $node)) {
+	    $haenv->log('info', "migrate service '$sid' to node '$node' (running)");
+	    &$change_service_state($self, $sid, 'migrate', node => $sd->{node}, target => $node);
+	} else {
+	    # do nothing
+	}
+
+	return;
+    } 
+
+    $haenv->log('err', "service '$sid' - unknown state '$cd->{state}' in service configuration");
 }
 
 1;

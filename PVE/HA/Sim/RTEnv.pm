@@ -81,12 +81,15 @@ sub exec_resource_agent {
     my $sc = $hardware->read_service_config($nodename);
 
     # fixme: return valid_exit code (instead of using die)
-    die "no such service" if !$sc->{$sid};
-    die "service '$sid' not on this node" if $sc->{$sid}->{node} ne $nodename;
+    my $cd = $sc->{$sid};
+    die "no such service" if !$cd;
 
     my $ss = $hardware->read_service_status($nodename);
 
     if ($cmd eq 'started') {
+
+	# fixme: return valid_exit code
+	die "service '$sid' not on this node" if $cd->{node} ne $nodename;
 
 	if ($ss->{$sid}) {
 	    $self->log("info", "service status $sid: running");
@@ -105,6 +108,9 @@ sub exec_resource_agent {
 
     } elsif ($cmd eq 'request_stop' || $cmd eq 'stopped') {
 
+	# fixme: return valid_exit code
+	die "service '$sid' not on this node" if $cd->{node} ne $nodename;
+
 	if (!$ss->{$sid}) {
 	    $self->log("info", "service status $sid: stopped");
 	    return 0;
@@ -119,7 +125,30 @@ sub exec_resource_agent {
 	$self->log("info", "service $sid stopped");
 
 	return 0;
-    } 
+
+    } elsif ($cmd eq 'migrate') {
+
+	my $target = $params[0];
+	die "migrate '$sid' failed - missing target\n" if !defined($target);
+
+	if ($cd->{node} eq $target) {
+	    # already migrate
+	    return 0;
+	} elsif ($cd->{node} eq $nodename) {
+
+	    $self->log("info", "service $sid - start migrtaion to node '$target'");
+	    $self->sleep(2);
+	    $self->change_service_location($sid, $target);
+	    $self->log("info", "service $sid - end migrtaion to node '$target'");
+
+	    return 0;
+
+	} else {
+	    die "migrate '$sid'  failed - service is not on this node\n";
+	}
+	
+	
+    }
 
     die "implement me (cmd '$cmd')";
 }

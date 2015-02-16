@@ -247,7 +247,7 @@ sub manage_resources {
 	next if !defined($req_state);
 
 	eval {
-	    $self->queue_resource_command($sid, $sd->{uid}, $req_state);
+	    $self->queue_resource_command($sid, $sd->{uid}, $req_state, $sd->{target});
 	};
 	if (my $err = $@) {
 	    warn "unable to run resource agent for '$sid' - $err"; # fixme
@@ -274,7 +274,7 @@ sub manage_resources {
 		    # do work
 		    my $res = -1;
 		    eval {
-			$res = $haenv->exec_resource_agent($sid, $w->{state});
+			$res = $haenv->exec_resource_agent($sid, $w->{state}, $w->{target});
 		    };
 		    if (my $err = $@) {
 			warn $err;
@@ -296,7 +296,7 @@ sub manage_resources {
 
 # fixme: use a queue an limit number of parallel workers?
 sub queue_resource_command {
-    my ($self, $sid, $uid, $state) = @_;
+    my ($self, $sid, $uid, $state, $target) = @_;
 
     if (my $w = $self->{workers}->{$sid}) {
 	return if $w->{pid}; # already started
@@ -309,6 +309,8 @@ sub queue_resource_command {
 	uid => $uid,
 	state => $state,
     };
+
+    $self->{workers}->{$sid}->{target} = $target if $target;
 }
 
 sub check_active_workers {
