@@ -499,7 +499,7 @@ sub create_log_view {
     $self->{gui}->{text_view} = $logview;
 
     my $swindow = Gtk3::ScrolledWindow->new();
-    $swindow->set_size_request(640, 400);
+    $swindow->set_size_request(1024, 768);
     $swindow->add($logview);
 
     $nb->insert_page($swindow, $l1, 0);
