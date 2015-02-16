@@ -71,7 +71,6 @@ my $valid_service_states = {
     request_stop => 1,
     started => 1,
     fence => 1,
-    move => 1,
     migrate => 1,
     error => 1,
 };
@@ -224,10 +223,6 @@ sub manage {
 			&$change_service_state($self, $sid, 'started', node => $sd->{node});
 		    }
 		}
-
-	    } elsif ($last_state eq 'move') {
-
-		#die "implement me";
 
 	    } elsif ($last_state eq 'fence') {
 
