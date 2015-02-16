@@ -371,6 +371,55 @@ sub create_node_control {
     return $ngrid;
 }
 
+sub show_migrate_dialog {
+    my ($self, $sid) = @_;
+
+    my $dialog = Gtk3::Dialog->new();
+
+    $dialog->set_title("Migrate $sid");
+    $dialog->set_modal(1);
+
+    my $grid = Gtk3::Grid->new(); 
+    $grid->set_row_spacing(2);
+    $grid->set_column_spacing(5);
+    $grid->set('margin', 5);
+
+    my $w = Gtk3::Label->new('Target Mode');
+    $grid->attach($w, 0, 0, 1, 1);
+
+    my @nodes = sort keys %{$self->{nodes}};
+    $w = Gtk3::ComboBoxText->new();
+    foreach my $node (@nodes) {
+	$w->append_text($node);
+    }
+
+    my $target = '';
+    $w->signal_connect('notify::active' => sub {
+	my $w = shift;
+		
+	my $sel = $w->get_active();
+	return if $sel < 0;
+
+	$target = $nodes[$sel];
+    });
+    $grid->attach($w, 1, 0, 1, 1);
+
+    my $contarea = $dialog->get_content_area();
+
+    $contarea->add($grid);
+
+    $dialog->add_button("_OK", 1);
+
+    $dialog->show_all();
+    my $res = $dialog->run();
+
+    $dialog->destroy();
+
+    if ($res == 1 && $target) {
+	$self->queue_crm_commands("migrate $sid $target");
+    }
+}
+
 sub create_service_control {
     my ($self) = @_;
 
@@ -384,8 +433,6 @@ sub create_service_control {
     $w = Gtk3::Label->new('Enable');
     $sgrid->attach($w, 1, 0, 1, 1);
     $w = Gtk3::Label->new('Node');
-    $sgrid->attach($w, 2, 0, 1, 1);
-    $w = Gtk3::Label->new('Migrate');
     $sgrid->attach($w, 3, 0, 1, 1);
     $w = Gtk3::Label->new('Status');
     $w->set_alignment (0, 0.5);
@@ -410,29 +457,15 @@ sub create_service_control {
 	}),
 
 
-	$w = Gtk3::Label->new($d->{node});
+	$w = Gtk3::Button->new('Migrate');
 	$sgrid->attach($w, 2, $row, 1, 1);
-	$self->{service_gui}->{$sid}->{node_label} = $w;
-
-	$w = Gtk3::ComboBoxText->new();
-	my $active = -1;
-	my $c = 0;
-	foreach my $node (@nodes) {
-	    $w->append_text($node);
-	    $active = $c if $d->{node} && ($d->{node} eq $node);
-	    $c++;
-	}
-	$w->set_active($active);
-	# fixme: use 'migrate' buttion with dialog instead!
-	$w->signal_connect('notify::active' => sub {
-	    my $w = shift;
-
-	    my $sel = $w->get_active();
-	    return if $sel < 0;
-
-	    die "implement migrate:$sid:$nodes[$sel]";
+	$w->signal_connect(clicked => sub {
+	    $self->show_migrate_dialog($sid);
 	});
+
+	$w = Gtk3::Label->new($d->{node});
 	$sgrid->attach($w, 3, $row, 1, 1);
+	$self->{service_gui}->{$sid}->{node_label} = $w;
 
 	$w = Gtk3::Label->new('-');
 	$w->set_alignment (0, 0.5);
