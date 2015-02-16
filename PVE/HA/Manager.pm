@@ -84,28 +84,30 @@ my $change_service_state = sub {
     my $sd = $ss->{$sid} || die "no such service '$sid";
 
     my $old_state = $sd->{state};
+    my $old_node = $sd->{node};
 
     die "no state change" if $old_state eq $new_state; # just to be sure
 
     die "invalid CRM service state '$new_state'\n" if !$valid_service_states->{$new_state};
 
-    my $changes = '';
+    foreach my $k (keys %$sd) { delete $sd->{$k}; };
+
+    $sd->{state} = $new_state;
+    $sd->{node} = $old_node;
+
+    my $text_state = '';
     foreach my $k (keys %params) {
 	my $v = $params{$k};
-	next if defined($sd->{$k}) && $sd->{$k} eq $v;
-	$changes .= ", " if $changes;
-	$changes .= "$k = $v";
+	$text_state .= ", " if $text_state;
+	$text_state .= "$k = $v";
 	$sd->{$k} = $v;
     }
     
-    $sd->{state} = $new_state;
     $uid_counter++;
     $sd->{uid} = md5_base64($new_state . $$ . time() . $uid_counter);
 
-    # fixme: cleanup state (remove unused values)
-
-    $changes = " ($changes)" if $changes;
-    $haenv->log('info', "service '$sid': state changed to '$new_state' $changes\n");
+    $text_state = " ($text_state)" if $text_state;
+    $haenv->log('info', "service '$sid': state changed from '${old_state}' to '${new_state}' $text_state\n");
 };
 
 # read LRM status for all active nodes 
