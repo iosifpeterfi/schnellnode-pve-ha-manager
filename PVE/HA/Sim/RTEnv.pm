@@ -126,20 +126,28 @@ sub exec_resource_agent {
 
 	return 0;
 
-    } elsif ($cmd eq 'migrate') {
+    } elsif ($cmd eq 'migrate' || $cmd eq 'relocate') {
 
 	my $target = $params[0];
-	die "migrate '$sid' failed - missing target\n" if !defined($target);
+	die "$cmd '$sid' failed - missing target\n" if !defined($target);
 
 	if ($cd->{node} eq $target) {
 	    # already migrate
 	    return 0;
 	} elsif ($cd->{node} eq $nodename) {
 
-	    $self->log("info", "service $sid - start migrtaion to node '$target'");
+	    $self->log("info", "service $sid - start $cmd to node '$target'");
+
+	    if ($cmd eq 'relocate' && $ss->{$sid}) {
+		$self->log("info", "stopping service $sid (relocate)");
+		$self->sleep(1);
+		$ss->{$sid} = 0;
+		$hardware->write_service_status($nodename, $ss);
+	    }
+
 	    $self->sleep(2);
 	    $self->change_service_location($sid, $target);
-	    $self->log("info", "service $sid - end migrtaion to node '$target'");
+	    $self->log("info", "service $sid - end $cmd to node '$target'");
 
 	    return 0;
 
