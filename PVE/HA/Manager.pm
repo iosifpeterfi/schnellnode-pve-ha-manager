@@ -286,6 +286,23 @@ sub next_state_stopped {
 	$sd->{node} = $cd->{node}; 
     }
 
+    if ($sd->{cmd}) {
+	my ($cmd, $target) = @{$sd->{cmd}};
+	delete $sd->{cmd};
+
+	if ($cmd eq 'migrate') {
+	    if (!$ns->node_is_online($target)) {
+		$haenv->log('err', "ignore service '$sid' migrate request - node '$target' not online");
+	    } else {
+		$haenv->change_service_location($sid, $target);
+		$cd->{node} = $sd->{node} = $target; # fixme: $sd is read-only??!!	    
+		$haenv->log('info', "migrate service '$sid' to node '$target' (stopped)");
+	    }
+	} else {
+	    $haenv->log('err', "unknown command '$cmd' for service '$sid'"); 
+	}
+    } 
+
     if ($cd->{state} eq 'disabled') {
 	# do nothing
     } elsif ($cd->{state} eq 'enabled') {
