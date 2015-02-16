@@ -404,6 +404,9 @@ sub show_migrate_dialog {
     });
     $grid->attach($w, 1, 0, 1, 1);
 
+    my $relocate_btn = Gtk3::CheckButton->new_with_label("stop service (relocate)"); 
+    $grid->attach($relocate_btn, 1, 1, 1, 1);
+
     my $contarea = $dialog->get_content_area();
 
     $contarea->add($grid);
@@ -416,7 +419,11 @@ sub show_migrate_dialog {
     $dialog->destroy();
 
     if ($res == 1 && $target) {
-	$self->queue_crm_commands("migrate $sid $target");
+	if ($relocate_btn->get_active()) {
+	    $self->queue_crm_commands("relocate $sid $target");
+	} else {
+	    $self->queue_crm_commands("migrate $sid $target");
+	}
     }
 }
 
