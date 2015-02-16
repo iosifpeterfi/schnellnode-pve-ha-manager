@@ -102,7 +102,7 @@ sub exec_resource_agent {
 	$ss->{$sid} = 1;
 	$hardware->write_service_status($nodename, $ss);
 
-	$self->log("info", "service $sid started");
+	$self->log("info", "service status $sid started");
 
 	return 0;
 
@@ -122,7 +122,7 @@ sub exec_resource_agent {
 	$ss->{$sid} = 0;
 	$hardware->write_service_status($nodename, $ss);
 
-	$self->log("info", "service $sid stopped");
+	$self->log("info", "service status $sid stopped");
 
 	return 0;
 
@@ -143,6 +143,7 @@ sub exec_resource_agent {
 		$self->sleep(1);
 		$ss->{$sid} = 0;
 		$hardware->write_service_status($nodename, $ss);
+		$self->log("info", "service status $sid stopped");
 	    }
 
 	    $self->sleep(2);
