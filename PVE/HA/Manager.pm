@@ -279,6 +279,13 @@ sub next_state_stopped {
 
     my $haenv = $self->{haenv};
 
+    if ($sd->{node} ne $cd->{node}) {
+	# this can happen if we fence a node with active migrations
+	# hack: modify $sd (normally this should be considered read-only)
+	$haenv->log('info', "fixup service '$sid' location ($sd->{node} => $cd->{node}");
+	$sd->{node} = $cd->{node}; 
+    }
+
     if ($cd->{state} eq 'disabled') {
 	# do nothing
     } elsif ($cd->{state} eq 'enabled') {
