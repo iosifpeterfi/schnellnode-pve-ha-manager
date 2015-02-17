@@ -51,17 +51,80 @@ sub flush_master_status {
 
 # Attention: must be idempotent (alway return the same result for same input!)
 sub select_service_node {
-    my ($self, $service_conf) = @_;
+    my ($self, $service_conf, $try_next) = @_;
 
     my $ns = $self->{ns};
-    
-    my $pref_node = $service_conf->{node};
 
-    return $pref_node if $ns->node_is_online($pref_node);
+    my $group = { 'nodes' => $service_conf->{node} }; # default group
+
+    $group =  $self->{groups}->{ids}->{$service_conf->{group}} if $service_conf->{group} && 
+	$self->{groups}->{ids}->{$service_conf->{group}};
+
+    my $pri_groups = {};
+    my $group_members = {};
+    foreach my $entry (PVE::Tools::split_list($group->{nodes})) {
+	my ($node, $pri) = ($entry, 0);
+	if ($entry =~ m/^(\S+):(\d+)$/) {
+	    ($node, $pri) = ($1, $2);
+	}
+	next if !$ns->node_is_online($node);
+	$pri_groups->{$pri}->{$node} = 1;
+	$group_members->{$node} = $pri;
+    }
 
     my $online_nodes = $ns->list_online_nodes();
 
-    return shift @$online_nodes;
+
+    # add non-group members to unrestricted groups (priority -1)
+    if (!$group->{restricted}) {
+	my $pri = -1;
+	foreach my $node (@$online_nodes) {
+	    next if defined($group_members->{$node});
+	    $pri_groups->{$pri}->{$node} = 1;
+	    $group_members->{$node} = -1;
+	}
+    }
+
+    my @pri_list = sort {$b <=> $a} keys %$pri_groups;
+    return undef if !scalar(@pri_list);
+
+    my $current_node = $service_conf->{node};
+    if (!$try_next && $group->{nofailback} && defined($group_members->{$current_node})) {
+	return $current_node;
+    }
+
+    # select node from top priority node list
+
+    my $top_pri = $pri_list[0];
+
+    my @nodes = sort keys %{$pri_groups->{$top_pri}};
+
+    my $found;
+    for (my $i = scalar(@nodes) - 1; $i >= 0; $i--) {
+	my $node = $nodes[$i];
+	if ($node eq $current_node) {
+	    $found = $i;
+	    last;
+	}
+    }
+
+    my $find_next = 0;
+
+    if ($try_next) {
+
+	if (defined($found) && ($found < (scalar(@nodes) - 1))) {
+	    return $nodes[$found + 1];
+	} else {
+	    return $nodes[0];
+	}
+
+    } else {
+
+	return $nodes[$found] if defined($found);
+
+	return $nodes[0];
+
+    }
 }
 
 my $uid_counter = 0;
@@ -181,6 +244,8 @@ sub manage {
 
     my $sc = $haenv->read_service_config();
 
+    $self->{groups} = $haenv->read_group_config(); # update
+
     # compute new service status
 
     # add new service
@@ -206,11 +271,11 @@ sub manage {
 
 	    if ($last_state eq 'stopped') {
 
-		$self->next_state_stopped($sid, $cd, $sd);
+		$self->next_state_stopped($sid, $cd, $sd, $lrm_res);
 
 	    } elsif ($last_state eq 'started') {
 
-		$self->next_state_started($sid, $cd, $sd);
+		$self->next_state_started($sid, $cd, $sd, $lrm_res);
 
 	    } elsif ($last_state eq 'migrate' || $last_state eq 'relocate') {
 
@@ -286,7 +351,7 @@ sub manage {
 #
 
 sub next_state_stopped {
-    my ($self, $sid, $cd, $sd) = @_;
+    my ($self, $sid, $cd, $sd, $lrm_res) = @_;
 
     my $haenv = $self->{haenv};
     my $ns = $self->{ns};
@@ -339,7 +404,7 @@ sub next_state_stopped {
 }
 
 sub next_state_started {
-    my ($self, $sid, $cd, $sd) = @_;
+    my ($self, $sid, $cd, $sd, $lrm_res) = @_;
 
     my $haenv = $self->{haenv};
     my $ns = $self->{ns};
@@ -375,8 +440,13 @@ sub next_state_started {
 	    }
 	} else {
 
-	    my $node = $self->select_service_node($cd);
-	    
+	    my $try_next = 0;
+	    if ($lrm_res && ($lrm_res->{exit_code} != 0)) { # fixme: other exit codes?
+		$try_next = 1;
+	    }
+
+	    my $node = $self->select_service_node($cd, $try_next);
+
 	    if ($node && ($sd->{node} ne $node)) {
 		$haenv->log('info', "migrate service '$sid' to node '$node' (running)");
 		&$change_service_state($self, $sid, 'migrate', node => $sd->{node}, target => $node);

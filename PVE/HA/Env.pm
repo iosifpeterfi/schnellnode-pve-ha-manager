@@ -86,6 +86,12 @@ sub change_service_location {
     return $self->{plug}->change_service_location($sid, $node);
 }
 
+sub read_group_config {
+    my ($self) = @_;
+
+    return $self->{plug}->read_group_config();
+}
+
 # this should return a hash containing info
 # what nodes are members and online.
 sub get_node_info {

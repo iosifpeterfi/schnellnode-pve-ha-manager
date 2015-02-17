@@ -15,6 +15,10 @@ use IO::File;
 use Fcntl qw(:DEFAULT :flock);
 use File::Copy;
 use File::Path qw(make_path remove_tree);
+use PVE::HA::Groups;
+
+PVE::HA::Groups->register();
+PVE::HA::Groups->init();
 
 my $watchdog_timeout = 60;
 
@@ -27,6 +31,7 @@ my $watchdog_timeout = 60;
 # $testdir/hardware_status            Hardware description (number of nodes, ...)
 # $testdir/manager_status             CRM status (start with {})
 # $testdir/service_config             Service configuration
+# $testdir/groups                     HA groups configuration
 # $testdir/service_status_<node>      Service status
 
 #
@@ -40,8 +45,10 @@ my $watchdog_timeout = 60;
 #
 # $testdir/status/lrm_status_<node>           LRM status
 # $testdir/status/manager_status              CRM status
+# $testdir/status/crm_commands                CRM command queue
 # $testdir/status/service_config              Service configuration
 # $testdir/status/service_status_<node>       Service status
+# $testdir/status/groups                      HA groups configuration
 
 sub read_lrm_status {
     my ($self, $node) = @_;
@@ -160,6 +167,16 @@ sub read_crm_commands {
     return $self->global_lock($code);
 }
 
+sub read_group_config {
+    my ($self) = @_;
+
+    my $filename = "$self->{statusdir}/groups";
+    my $raw = '';
+    $raw = PVE::Tools::file_get_contents($filename) if -f $filename;
+
+    return PVE::HA::Groups->parse_config($filename, $raw);
+}
+
 sub read_service_status {
     my ($self, $node) = @_;
 
@@ -178,6 +195,17 @@ sub write_service_status {
     return $res;
 } 
 
+my $default_group_config = <<__EOD;
+group: prefer_node1
+    nodes node1
+
+group: prefer_node2
+    nodes node2
+
+group: prefer_node3
+    nodes node1
+__EOD
+
 sub new {
     my ($this, $testdir) = @_;
 
@@ -195,16 +223,22 @@ sub new {
     # copy initial configuartion
     copy("$testdir/manager_status", "$statusdir/manager_status"); # optional
 
+    if (-f "$testdir/groups") {
+	copy("$testdir/groups", "$statusdir/groups");
+    } else {
+	PVE::Tools::file_set_contents("$statusdir/groups", $default_group_config);
+    }
+
     if (-f "$testdir/service_config") {
 	copy("$testdir/service_config", "$statusdir/service_config");
     } else {
 	my $conf = {
-	    'pvevm:101' => { node => 'node1' },
-	    'pvevm:102' => { node => 'node2' },
-	    'pvevm:103' => { node => 'node3' },
-	    'pvevm:104' => { node => 'node1' },
-	    'pvevm:105' => { node => 'node2' },
-	    'pvevm:106' => { node => 'node3' },
+	    'pvevm:101' => { node => 'node1', group => 'prefer_node1' },
+	    'pvevm:102' => { node => 'node2', group => 'prefer_node2' },
+	    'pvevm:103' => { node => 'node3', group => 'prefer_node3' },
+	    'pvevm:104' => { node => 'node1', group => 'prefer_node1' },
+	    'pvevm:105' => { node => 'node2', group => 'prefer_node2' },
+	    'pvevm:106' => { node => 'node3', group => 'prefer_node3' },
 	};
 	$self->write_service_config($conf);
     }

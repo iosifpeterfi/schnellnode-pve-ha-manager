@@ -5,12 +5,18 @@ use warnings;
 
 use PVE::SafeSyslog;
 use PVE::Tools;
-use PVE::Cluster;
+use PVE::Cluster qw(cfs_register_file cfs_read_file cfs_lock_file);
 
 use PVE::HA::Tools;
 use PVE::HA::Env;
+use PVE::HA::Groups;
 
 my $manager_status_filename = "/etc/pve/manager_status";
+my $ha_groups_config = "ha/groups.cfg";
+
+cfs_register_file($ha_groups_config, 
+		  sub { PVE::HA::Groups->parse_config(@_); },
+		  sub { PVE::HA::Groups->write_config(@_); });
 
 sub new {
     my ($this, $nodename) = @_;
@@ -84,6 +90,12 @@ sub change_service_location {
     my ($self, $sid, $node) = @_;
 
     die "implement me";
+}
+
+sub read_group_config {
+    my ($self) = @_;
+
+    return cfs_read_file($ha_groups_config);
 }
 
 sub queue_crm_commands {
