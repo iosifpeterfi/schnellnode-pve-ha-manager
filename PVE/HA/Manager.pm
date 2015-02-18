@@ -49,16 +49,13 @@ sub flush_master_status {
     $haenv->write_manager_status($ms);
 } 
 
-# Attention: must be idempotent (alway return the same result for same input!)
 sub select_service_node {
-    my ($self, $service_conf, $try_next) = @_;
-
-    my $ns = $self->{ns};
+    my ($groups, $online_node_usage, $service_conf, $current_node, $try_next) = @_;
 
     my $group = { 'nodes' => $service_conf->{node} }; # default group
 
-    $group =  $self->{groups}->{ids}->{$service_conf->{group}} if $service_conf->{group} && 
-	$self->{groups}->{ids}->{$service_conf->{group}};
+    $group =  $groups->{ids}->{$service_conf->{group}} if $service_conf->{group} && 
+	$groups->{ids}->{$service_conf->{group}};
 
     my $pri_groups = {};
     my $group_members = {};
@@ -67,28 +64,26 @@ sub select_service_node {
 	if ($entry =~ m/^(\S+):(\d+)$/) {
 	    ($node, $pri) = ($1, $2);
 	}
-	next if !$ns->node_is_online($node);
+	next if !defined($online_node_usage->{$node}); # offline
 	$pri_groups->{$pri}->{$node} = 1;
 	$group_members->{$node} = $pri;
     }
 
-    my $online_nodes = $ns->list_online_nodes();
-
-
+    
     # add non-group members to unrestricted groups (priority -1)
     if (!$group->{restricted}) {
 	my $pri = -1;
-	foreach my $node (@$online_nodes) {
+	foreach my $node (keys %$online_node_usage) {
 	    next if defined($group_members->{$node});
 	    $pri_groups->{$pri}->{$node} = 1;
 	    $group_members->{$node} = -1;
 	}
     }
 
+
     my @pri_list = sort {$b <=> $a} keys %$pri_groups;
     return undef if !scalar(@pri_list);
-
-    my $current_node = $service_conf->{node};
+    
     if (!$try_next && $group->{nofailback} && defined($group_members->{$current_node})) {
 	return $current_node;
     }
@@ -97,7 +92,7 @@ sub select_service_node {
 
     my $top_pri = $pri_list[0];
 
-    my @nodes = sort keys %{$pri_groups->{$top_pri}};
+    my @nodes = sort { $online_node_usage->{$a} <=> $online_node_usage->{$b} } keys %{$pri_groups->{$top_pri}};
 
     my $found;
     for (my $i = scalar(@nodes) - 1; $i >= 0; $i--) {
@@ -107,8 +102,6 @@ sub select_service_node {
 	    last;
 	}
     }
-
-    my $find_next = 0;
 
     if ($try_next) {
 
@@ -139,6 +132,37 @@ my $valid_service_states = {
     error => 1,
 };
 
+sub recompute_online_node_usage {
+    my ($self) = @_;
+
+    my $online_node_usage = {};
+
+    my $online_nodes = $self->{ns}->list_online_nodes();
+
+    foreach my $node (@$online_nodes) {
+	$online_node_usage->{$node} = 0;
+    }
+
+    foreach my $sid (keys %{$self->{ss}}) {
+	my $sd = $self->{ss}->{$sid};
+	my $state = $sd->{state};
+	if (defined($online_node_usage->{$sd->{node}})) {
+	    if (($state eq 'started') || ($state eq 'request_stop') || 
+		($state eq 'fence') || ($state eq 'error')) {
+		$online_node_usage->{$sd->{node}}++;
+	    } elsif (($state eq 'migrate') || ($state eq 'relocate')) {
+		$online_node_usage->{$sd->{target}}++;
+	    } elsif ($state eq 'stopped') {
+		# do nothing
+	    } else {
+		die "should not be reached";
+	    }
+	}
+    }
+
+    $self->{online_node_usage} = $online_node_usage;
+}
+
 my $change_service_state = sub {
     my ($self, $sid, $new_state, %params) = @_;
 
@@ -165,7 +189,9 @@ my $change_service_state = sub {
 	$text_state .= "$k = $v";
 	$sd->{$k} = $v;
     }
-    
+
+    $self->recompute_online_node_usage();
+
     $uid_counter++;
     $sd->{uid} = md5_base64($new_state . $$ . time() . $uid_counter);
 
@@ -260,6 +286,8 @@ sub manage {
 
     for (;;) {
 	my $repeat = 0;
+	
+	$self->recompute_online_node_usage();
 
 	foreach my $sid (keys %$ss) {
 	    my $sd = $ss->{$sid};
@@ -388,7 +416,7 @@ sub next_state_stopped {
     } 
 
     if ($cd->{state} eq 'enabled') {
-	if (my $node = $self->select_service_node($cd)) {
+	if (my $node = select_service_node($self->{groups}, $self->{online_node_usage}, $cd, $sd->{node})) {
 	    if ($node && ($sd->{node} ne $node)) {
 		$haenv->change_service_location($sid, $node);
 	    }
@@ -445,7 +473,8 @@ sub next_state_started {
 		$try_next = 1;
 	    }
 
-	    my $node = $self->select_service_node($cd, $try_next);
+	    my $node = select_service_node($self->{groups}, $self->{online_node_usage}, 
+					   $cd, $sd->{node}, $try_next);
 
 	    if ($node && ($sd->{node} ne $node)) {
 		$haenv->log('info', "migrate service '$sid' to node '$node' (running)");
