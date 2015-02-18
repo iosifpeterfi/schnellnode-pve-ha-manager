@@ -14,9 +14,9 @@ use PVE::HA::Groups;
 my $manager_status_filename = "/etc/pve/manager_status";
 my $ha_groups_config = "ha/groups.cfg";
 
-cfs_register_file($ha_groups_config, 
-		  sub { PVE::HA::Groups->parse_config(@_); },
-		  sub { PVE::HA::Groups->write_config(@_); });
+#cfs_register_file($ha_groups_config, 
+#		  sub { PVE::HA::Groups->parse_config(@_); },
+#		  sub { PVE::HA::Groups->write_config(@_); });
 
 sub new {
     my ($this, $nodename) = @_;
@@ -67,7 +67,7 @@ sub read_lrm_status {
 sub write_lrm_status {
     my ($self, $status_obj) = @_;
 
-    $node = $self->{nodename};
+    my $node = $self->{nodename};
 
     my $filename = "/etc/pve/nodes/$node/lrm_status";
 
