@@ -203,7 +203,7 @@ group: prefer_node2
     nodes node2
 
 group: prefer_node3
-    nodes node1
+    nodes node3
 __EOD
 
 sub new {
