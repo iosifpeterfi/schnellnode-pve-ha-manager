@@ -307,16 +307,7 @@ sub manage {
 
 	    } elsif ($last_state eq 'migrate' || $last_state eq 'relocate') {
 
-		# check result from LRM daemon
-		if ($lrm_res) {
-		    my $exit_code = $lrm_res->{exit_code};
-		    if ($exit_code == 0) {
-			&$change_service_state($self, $sid, 'started', node => $sd->{target});
-		    } else {
-			$haenv->log('err', "service '$sid' - migration failed (exit code $exit_code)");
-			&$change_service_state($self, $sid, 'started', node => $sd->{node});
-		    }
-		}
+		$self->next_state_migrate_relocate($sid, $cd, $sd, $lrm_res);
 
 	    } elsif ($last_state eq 'fence') {
 
@@ -393,6 +384,32 @@ sub next_state_request_stop {
 	return;
     }
 }
+
+sub next_state_migrate_relocate {
+    my ($self, $sid, $cd, $sd, $lrm_res) = @_;
+
+    my $haenv = $self->{haenv};
+    my $ns = $self->{ns};
+
+    # check result from LRM daemon
+    if ($lrm_res) {
+	my $exit_code = $lrm_res->{exit_code};
+	if ($exit_code == 0) {
+	    &$change_service_state($self, $sid, 'started', node => $sd->{target});
+	    return;
+	} else {
+	    $haenv->log('err', "service '$sid' - migration failed (exit code $exit_code)");
+	    &$change_service_state($self, $sid, 'started', node => $sd->{node});
+	    return;
+	}
+    }
+
+    if (!$ns->node_is_online($sd->{node})) {
+	&$change_service_state($self, $sid, 'fence');
+	return;
+    }
+}
+
 
 sub next_state_stopped {
     my ($self, $sid, $cd, $sd, $lrm_res) = @_;
