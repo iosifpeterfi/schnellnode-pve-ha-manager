@@ -324,15 +324,7 @@ sub manage {
 
 	    } elsif ($last_state eq 'request_stop') {
 
-		# check result from LRM daemon
-		if ($lrm_res) {
-		    my $exit_code = $lrm_res->{exit_code};
-		    if ($exit_code == 0) {
-			&$change_service_state($self, $sid, 'stopped');
-		    } else {
-			&$change_service_state($self, $sid, 'error'); # fixme: what state?
-		    }
-		}
+		$self->next_state_request_stop($sid, $cd, $sd, $lrm_res);
 
 	    } elsif ($last_state eq 'error') {
 
@@ -377,6 +369,30 @@ sub manage {
 #
 # Note: use change_service_state() to alter state
 #
+
+sub next_state_request_stop {
+    my ($self, $sid, $cd, $sd, $lrm_res) = @_;
+
+    my $haenv = $self->{haenv};
+    my $ns = $self->{ns};
+
+    # check result from LRM daemon
+    if ($lrm_res) {
+	my $exit_code = $lrm_res->{exit_code};
+	if ($exit_code == 0) {
+	    &$change_service_state($self, $sid, 'stopped');
+	    return;
+	} else {
+	    &$change_service_state($self, $sid, 'error'); # fixme: what state?
+	    return;
+	}
+    }
+
+    if (!$ns->node_is_online($sd->{node})) {
+	&$change_service_state($self, $sid, 'fence');
+	return;
+    }
+}
 
 sub next_state_stopped {
     my ($self, $sid, $cd, $sd, $lrm_res) = @_;
