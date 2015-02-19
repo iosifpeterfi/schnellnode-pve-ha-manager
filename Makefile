@@ -2,6 +2,7 @@ RELEASE=4.0
 
 VERSION=0.1
 PACKAGE=pve-ha-manager
+SIMPACKAGE=pve-ha-simulator
 PKGREL=1
 
 DESTDIR=
@@ -10,6 +11,7 @@ BINDIR=${PREFIX}/bin
 SBINDIR=${PREFIX}/sbin
 MANDIR=${PREFIX}/share/man
 DOCDIR=${PREFIX}/share/doc/${PACKAGE}
+SIMDOCDIR=${PREFIX}/share/doc/${SIMPACKAGE}
 PODDIR=${DOCDIR}/pod
 MAN1DIR=${MANDIR}/man1/
 export PERLDIR=${PREFIX}/share/perl5
@@ -19,13 +21,14 @@ ARCH=all
 GITVERSION:=$(shell cat .git/refs/heads/master)
 
 DEB=${PACKAGE}_${VERSION}-${PKGREL}_${ARCH}.deb
+SIMDEB=${SIMPACKAGE}_${VERSION}-${PKGREL}_${ARCH}.deb
 
 
-all: ${DEB}
+all: ${DEB} ${SIMDEB}
 
-.PHONY: dinstall
-dinstall: deb
-	dpkg -i ${DEB}
+.PHONY: dinstall simdeb
+dinstall: deb simdeb
+	dpkg -i ${DEB} ${SIMDEB}
 
 %.1.gz: %.1.pod
 	rm -f $@
@@ -50,6 +53,29 @@ install: pve-ha-crm pve-ha-lrm pve-ha-crm.1.pod pve-ha-crm.1.gz pve-ha-lrm.1.pod
 	install -m 0644 pve-ha-lrm.1.gz ${DESTDIR}/usr/share/man/man1/
 	install -m 0644 pve-ha-lrm.1.pod ${DESTDIR}/${PODDIR}
 
+.PHONY: installsim
+installsim: pve-ha-simulator
+	install -d ${DESTDIR}${SBINDIR}
+	install -m 0755 pve-ha-simulator ${DESTDIR}${SBINDIR}
+	make -C PVE installsim
+
+.PHONY: simdeb ${SIMDEB}
+simdeb ${SIMDEB}:
+	rm -rf build
+	mkdir build
+	make DESTDIR=${CURDIR}/build PERLDIR=${PREFIX}/share/${SIMPACKAGE} installsim
+	perl -I. ./pve-ha-crm verifyapi
+	perl -I. ./pve-ha-lrm verifyapi
+	install -d -m 0755 build/DEBIAN
+	sed -e s/@@VERSION@@/${VERSION}/ -e s/@@PKGRELEASE@@/${PKGREL}/ -e s/@@ARCH@@/${ARCH}/ <simcontrol.in >build/DEBIAN/control
+	install -D -m 0644 copyright build/${SIMDOCDIR}/copyright
+	install -m 0644 changelog.Debian build/${SIMDOCDIR}/
+	gzip -9 build/${SIMDOCDIR}/changelog.Debian
+	echo "git clone git://git.proxmox.com/git/pve-storage.git\\ngit checkout ${GITVERSION}" > build/${SIMDOCDIR}/SOURCE
+	dpkg-deb --build build
+	mv build.deb ${SIMDEB}
+	rm -rf debian
+	lintian ${SIMDEB}
 
 .PHONY: deb ${DEB}
 deb ${DEB}:
