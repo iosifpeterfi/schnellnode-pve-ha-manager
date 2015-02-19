@@ -2,6 +2,7 @@
 
 use strict;
 use warnings;
+use lib '/usr/share/pve-ha-simulator';
 use Getopt::Long;
 use JSON;
 
@@ -9,14 +10,14 @@ use PVE::Tools;
 use PVE::HA::Sim::TestHardware;
 use PVE::HA::Sim::RTHardware;
 
-my $opt_interactive;
+my $opt_batch;
 
 sub show_usage {
-    print "usage: $0 <testdir> [--interactive]\n";
+    print "usage: $0 <testdir> [--batch]\n";
     exit(-1);
 };
 
-if (!GetOptions ("intercative"   => \$opt_interactive)) {
+if (!GetOptions ("batch"   => \$opt_batch)) {
     show_usage();
 }
 
@@ -24,10 +25,10 @@ my $testdir = shift || show_usage();
 
 my $hardware; 
 
-if ($opt_interactive) {
-    $hardware = PVE::HA::Sim::RTHardware->new($testdir);
-} else {
+if ($opt_batch) {
     $hardware = PVE::HA::Sim::TestHardware->new($testdir);
+} else {
+    $hardware = PVE::HA::Sim::RTHardware->new($testdir);
 }
 
 $hardware->log('info', "starting simulation");

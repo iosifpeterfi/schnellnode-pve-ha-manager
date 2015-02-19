@@ -2,4 +2,4 @@
 
 rm -rf simtest
 mkdir simtest
-perl -I .. ../pve-ha-simulator -i simtest
+perl -I .. ../pve-ha-simulator simtest
