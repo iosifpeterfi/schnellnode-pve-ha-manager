@@ -1,7 +1,7 @@
 package PVE::HA::Sim::RTHardware;
 
 # Simulate Hardware resources in Realtime by
-# running CRM and LRM in sparate processes
+# running CRM and LRM in separate processes
 
 use strict;
 use warnings;
