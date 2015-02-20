@@ -2,6 +2,8 @@ package PVE::HA::Env::PVE2;
 
 use strict;
 use warnings;
+use POSIX qw(:errno_h :fcntl_h);
+use IO::File;
 
 use PVE::SafeSyslog;
 use PVE::Tools;
@@ -260,29 +262,74 @@ sub loop_end_hook {
     warn "loop take too long ($delay seconds)\n" if $delay > 30;
 }
 
+my $watchdog_fh;
+
+my $WDIOC_GETSUPPORT =  0x80285700;
+my $WDIOC_KEEPALIVE = 0x80045705;
+my $WDIOC_SETTIMEOUT = 0xc0045706;
+my $WDIOC_GETTIMEOUT = 0x80045707;
+
 sub watchdog_open {
     my ($self) = @_;
 
-    system("modprobe -q softdog") if ! -e "/dev/watchdog";
+    system("modprobe -q softdog soft_noboot=1") if ! -e "/dev/watchdog";
 
-    # Note: when using /dev/watchdog, make sure perl does not close
-    # the handle automatically at exit!!
+    die "watchdog already open\n" if defined($watchdog_fh);
 
+    $watchdog_fh = IO::File->new(">/dev/watchdog") ||
+	die "unable to open watchdog device - $!\n";
+    
+    eval {
+	my $timeoutbuf = pack('I', 100);
+	my $res = ioctl($watchdog_fh, $WDIOC_SETTIMEOUT, $timeoutbuf) ||
+	    die "unable to set watchdog timeout - $!\n";
+	my $timeout = unpack("I", $timeoutbuf);
+	die "got wrong watchdog timeout '$timeout'\n" if $timeout != 100;
 
+	my $wdinfo = "\x00" x 40;
+	$res = ioctl($watchdog_fh, $WDIOC_GETSUPPORT, $wdinfo) ||
+	    die "unable to get watchdog info - $!\n";
 
-    die "implement me";
+	my ($options, $firmware_version, $indentity) = unpack("lla32", $wdinfo);
+	die "watchdog does not support magic close\n" if !($options & 0x0100);
+
+    };
+    if (my $err = $@) {
+	$self->watchdog_close();
+	die $err;
+    }
+
+    # fixme: use ioctl to setup watchdog timeout (requires C interface)
+  
+    $self->log('info', "watchdog active");
 }
 
 sub watchdog_update {
     my ($self, $wfh) = @_;
 
-    die "implement me";
+    my $res = $watchdog_fh->syswrite("\0", 1);
+    if (!defined($res)) {
+	$self->log('err', "watchdog update failed - $!\n");
+	return 0;
+    }
+    if ($res != 1) {
+	$self->log('err', "watchdog update failed - write $res bytes\n");
+	return 0;
+    }
+
+    return 1;
 }
 
 sub watchdog_close {
     my ($self, $wfh) = @_;
 
-    die "implement me";
+    $watchdog_fh->syswrite("V", 1); # magic watchdog close
+    if (!$watchdog_fh->close()) {
+	$self->log('err', "watchdog close failed - $!");
+    } else {
+	$watchdog_fh = undef;
+	$self->log('info', "watchdog closed (disabled)");
+    }
 }
 
 sub exec_resource_agent {
