@@ -120,6 +120,7 @@ sub get_ha_agent_lock {
     return $self->{plug}->get_ha_agent_lock();
 }
 
+# same as get_ha_agent_lock(), but immeditaley release the lock on success
 sub test_ha_agent_lock {
     my ($self, $node) = @_;
 

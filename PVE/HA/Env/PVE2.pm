@@ -11,6 +11,8 @@ use PVE::HA::Tools;
 use PVE::HA::Env;
 use PVE::HA::Groups;
 
+my $lockdir = "/etc/pve/priv/lock";
+
 my $manager_status_filename = "/etc/pve/manager_status";
 my $ha_groups_config = "ha/groups.cfg";
 
@@ -126,38 +128,85 @@ sub log {
     syslog($level, $msg);
 }
 
-sub get_ha_manager_lock {
-    my ($self) = @_;
+my $last_lock_status = {};
 
-    my $lockid = "ha_manager";
+sub get_pve_lock {
+    my ($self, $lockid) = @_;
 
-    my $lockdir = "/etc/pve/priv/lock";
+    my $got_lock = 0;
+
     my $filename = "$lockdir/$lockid";
 
-    my $res = 0;
+    my $last = $last_lock_status->{$lockid} || 0;
+
+    my $ctime = time();
 
     eval {
 
 	mkdir $lockdir;
 
-	return if ! -d $lockdir; # pve cluster filesystem not online
+	# pve cluster filesystem not online
+	die "can't create '$lockdir' (pmxcfs not mounted?)\n" if ! -d $lockdir;
 
-	# fixme: ?
+	if ($last && (($ctime - $last) < 100)) { # fixme: what timeout
+	    utime(0, $ctime, $filename) || # cfs lock update request
+		die "cfs lock update failed - $!\n";
+	} else {
+
+	    # fixme: wait some time?
+	    if (!(mkdir $filename)) {
+		utime 0, 0, $filename; # cfs unlock request
+		die "can't get cfs lock\n";
+	    }
+	}
+
+	$got_lock = 1;
     };
 
-    return $res;
+    my $err = $@;
+
+    $last_lock_status->{$lockid} = $got_lock ? $ctime : 0;
+
+    if ($got_lock != $last) {
+	if ($got_lock) {
+	    $self->log('info', "successfully aquired lock '$lockid'");
+	} else {
+	    my $msg = "lost lock '$lockid";
+	    $msg .= " - $err" if $err; 
+	    $self->log('err', $msg);
+	}
+    }
+
+    return $got_lock;
+}
+
+sub get_ha_manager_lock {
+    my ($self) = @_;
+
+    my $lockid = "ha_manager_lock";
+
+    my $filename = "$lockdir/$lockid";
+
+    return $self->get_pve_lock("ha_manager_lock");
 }
 
 sub get_ha_agent_lock {
     my ($self) = @_;
+    
+    my $node = $self->nodename();
 
-    die "implement me";
+    return $self->get_pve_lock("ha_agent_${node}_lock");
 }
 
 sub test_ha_agent_lock {
     my ($self, $node) = @_;
+    
+    my $lockid = "ha_agent_${node}_lock";
+    my $filename = "$lockdir/$lockid";
+    my $res = $self->get_pve_lock($lockid);
+    rmdir $filename if $res; # cfs unlock
 
-    die "implement me";
+    return $res;
 }
 
 sub quorate {
@@ -214,8 +263,12 @@ sub loop_end_hook {
 sub watchdog_open {
     my ($self) = @_;
 
+    system("modprobe -q softdog") if ! -e "/dev/watchdog";
+
     # Note: when using /dev/watchdog, make sure perl does not close
     # the handle automatically at exit!!
+
+
 
     die "implement me";
 }
