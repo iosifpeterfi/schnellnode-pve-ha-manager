@@ -50,6 +50,14 @@ long as there are running services on that node.
 The HA manger can assume that the watchdog triggered a reboot when he
 is able to aquire the 'ha_agent_${node}_lock' for that node.
 
+
+=== Problems with "two_node" Clusters ===
+
+This corosync options depends on a fence race condition, and only
+works using reliable HW fence devices.
+
+Above 'self fencing' algorithm does not work if you use this option!
+
 == Testing requirements ==
 
 We want to be able to simulate HA cluster, using a GUI. This makes it easier
