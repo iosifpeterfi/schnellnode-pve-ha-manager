@@ -18,7 +18,7 @@ be possible to move to newest corosync, or even a totally different
 cluster stack. So we want:
 
 - possible to run with any distributed key/value store which provides
-  some kind of locking with timeouts.
+  some kind of locking with timeouts (zookeeper, consul, etcd, ..) 
 
 - self fencing using Linux watchdog device
 
@@ -35,6 +35,18 @@ cluster stack. So we want:
 The cluster stack must provide cluster wide locks with timeouts.
 The Proxmox 'pmxcfs' implements this on top of corosync.
 
+=== Watchdog ===
+
+We need a reliable watchdog mechanism, which is able to provide hard
+timeouts. It must be guaranteed that the node reboot withing specified
+timeout if we do not update the watchdog. For me it looks that neither
+systemd nor the standard watchdog(8) daemon provides such guarantees.
+
+We could use the /dev/watchdog directly, but unfortunately this only
+allows one user. We need to protect at least two daemons, so we write
+our own watchdog daemon. This daemon work on /dev/watchdog, but
+provides that service to several other daemons using a local socket.
+
 == Self fencing ==
 
 A node needs to aquire a special 'ha_agent_${node}_lock' (one separate
@@ -49,7 +61,6 @@ long as there are running services on that node.
 
 The HA manger can assume that the watchdog triggered a reboot when he
 is able to aquire the 'ha_agent_${node}_lock' for that node.
-
 
 === Problems with "two_node" Clusters ===
 
