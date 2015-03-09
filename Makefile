@@ -16,12 +16,11 @@ PODDIR=${DOCDIR}/pod
 MAN1DIR=${MANDIR}/man1/
 export PERLDIR=${PREFIX}/share/perl5
 
-#ARCH:=$(shell dpkg-architecture -qDEB_BUILD_ARCH)
-ARCH=all
+ARCH:=$(shell dpkg-architecture -qDEB_BUILD_ARCH)
 GITVERSION:=$(shell cat .git/refs/heads/master)
 
 DEB=${PACKAGE}_${VERSION}-${PKGREL}_${ARCH}.deb
-SIMDEB=${SIMPACKAGE}_${VERSION}-${PKGREL}_${ARCH}.deb
+SIMDEB=${SIMPACKAGE}_${VERSION}-${PKGREL}_all.deb
 
 
 all: ${DEB} ${SIMDEB}
