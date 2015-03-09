@@ -15,7 +15,7 @@
 
 #include <systemd/sd-daemon.h>
 
-#define MY_SOCK_PATH "/var/run/pve_watchdog"
+#define MY_SOCK_PATH "/run/watchdog-mux.sock"
 #define LISTEN_BACKLOG 50
 #define MAX_EVENTS 10
 
@@ -79,7 +79,7 @@ main(void)
 
     if (socket_count > 1) {
 
-        perror("Too many file descriptors received.\n");
+        perror("too many file descriptors received.\n");
         goto err;
 	    
     } else if (socket_count == 1) {

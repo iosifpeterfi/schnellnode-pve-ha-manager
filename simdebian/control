@@ -1,0 +1,14 @@
+Source: pve-ha-manager
+Section: perl
+Priority: extra
+Maintainer: Proxmox Support Team <support@proxmox.com>
+Build-Depends: debhelper (>= 7.0.50~), libpve-common-perl, libglib-perl, libgtk3-perl
+Standards-Version: 3.8.4
+
+Package: pve-ha-simulator
+Section: perl
+Priority: optional
+Architecture: all
+Depends: ${perl:Depends}, ${misc:Depends}, libpve-common-perl, libglib-perl, libgtk3-perl
+Description: Proxmox VE HA Simulator
+ This is a simple GUI to simulate the bebavior of a Proxmox VE HA cluster.

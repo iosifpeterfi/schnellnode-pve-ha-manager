@@ -1,0 +1,2 @@
+[Service]
+ExecStart=/usr/sbin/watchdog-mux

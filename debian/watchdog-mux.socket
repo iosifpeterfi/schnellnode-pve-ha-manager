@@ -1,0 +1,5 @@
+[Socket]
+ListenStream=/run/watchdog-mux.sock
+
+[Install]
+WantedBy=sockets.target

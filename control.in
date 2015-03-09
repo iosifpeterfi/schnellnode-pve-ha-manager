@@ -1,9 +1,0 @@
-Package: pve-ha-manager
-Version: @@VERSION@@-@@PKGRELEASE@@
-Section: perl
-Priority: optional
-Architecture: @@ARCH@@
-Depends: perl (>= 5.14.2-21), libpve-common-perl, pve-cluster (>= 3.0-17)
-Maintainer: Proxmox Support Team <support@proxmox.com>
-Description: Proxmox VE HA Manager
- HA Manager Proxmox VE.
