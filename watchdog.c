@@ -12,6 +12,8 @@
 #include <linux/types.h>
 #include <linux/watchdog.h>
 
+#include "sd-daemon.h"
+
 #define MY_SOCK_PATH "/var/run/pve_watchdog"
 #define LISTEN_BACKLOG 50
 #define MAX_EVENTS 10
@@ -43,7 +45,7 @@ main(void)
     struct sockaddr_un my_addr, peer_addr;
     socklen_t peer_addr_size;
     struct epoll_event ev, events[MAX_EVENTS];
-    int listen_sock, conn_sock, nfds, epollfd;
+    int socket_count, listen_sock, conn_sock, nfds, epollfd;
 
     struct stat fs;
     if (stat(WATCHDOG_DEV, &fs) == -1) {
@@ -73,30 +75,43 @@ main(void)
     fprintf(stderr, "Watchdog driver '%s', version %x\n",
             wdinfo.identity, wdinfo.firmware_version);
 
+    socket_count = sd_listen_fds(0);
 
-    unlink(MY_SOCK_PATH);
+    if (socket_count > 1) {
 
-    listen_sock = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (listen_sock == -1) {
-        perror("socket create");
-        exit(EXIT_FAILURE);
-    }
-
-    memset(&my_addr, 0, sizeof(struct sockaddr_un));
-    my_addr.sun_family = AF_UNIX;
-    strncpy(my_addr.sun_path, MY_SOCK_PATH, sizeof(my_addr.sun_path) - 1);
-
-    if (bind(listen_sock, (struct sockaddr *) &my_addr,
-             sizeof(struct sockaddr_un)) == -1) {
-        perror("socket bind");
-        exit(EXIT_FAILURE);
-    }
-   
-    if (listen(listen_sock, LISTEN_BACKLOG) == -1) {
-        perror("socket listen");
+        perror("Too many file descriptors received.\n");
         goto err;
-    }
+	    
+    } else if (socket_count == 1) {
 
+        listen_sock = SD_LISTEN_FDS_START + 0;
+	    
+    } else {
+
+        unlink(MY_SOCK_PATH);
+
+        listen_sock = socket(AF_UNIX, SOCK_STREAM, 0);
+        if (listen_sock == -1) {
+            perror("socket create");
+            exit(EXIT_FAILURE);
+        }
+
+        memset(&my_addr, 0, sizeof(struct sockaddr_un));
+        my_addr.sun_family = AF_UNIX;
+        strncpy(my_addr.sun_path, MY_SOCK_PATH, sizeof(my_addr.sun_path) - 1);
+	    
+        if (bind(listen_sock, (struct sockaddr *) &my_addr,
+                 sizeof(struct sockaddr_un)) == -1) {
+	    perror("socket bind");
+	    exit(EXIT_FAILURE);
+        }
+   
+        if (listen(listen_sock, LISTEN_BACKLOG) == -1) {
+	    perror("socket listen");
+	    goto err;
+        }
+    }
+    
     epollfd = epoll_create(10);
     if (epollfd == -1) {
         perror("epoll_create");
