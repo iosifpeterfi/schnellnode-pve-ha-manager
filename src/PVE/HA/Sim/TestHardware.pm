@@ -179,7 +179,7 @@ sub run {
 	# apply new comand after 5 loop iterations
 
 	if (($self->{loop_count} % 5) == 0) {
-	    my $list = shift $self->{cmdlist};
+	    my $list = shift @{$self->{cmdlist}};
 	    if (!$list) {
 		# end sumulation (500 seconds after last command)
 		return if (($self->{cur_time} - $last_command_time) > 500);
