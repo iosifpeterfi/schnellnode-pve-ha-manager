@@ -47,43 +47,6 @@ installsim: pve-ha-simulator
 	install -m 0755 pve-ha-simulator ${DESTDIR}${SBINDIR}
 	make -C PVE PERLDIR=${PREFIX}/share/${SIMPACKAGE} installsim
 
-.PHONY: simdeb ${SIMDEB}
-simdeb ${SIMDEB}:
-	rm -rf build
-	mkdir build
-	make DESTDIR=${CURDIR}/build PERLDIR=${PREFIX}/share/${SIMPACKAGE} installsim
-	perl -I. ./pve-ha-crm verifyapi
-	perl -I. ./pve-ha-lrm verifyapi
-	install -d -m 0755 build/DEBIAN
-	sed -e s/@@VERSION@@/${VERSION}/ -e s/@@PKGRELEASE@@/${PKGREL}/ -e s/@@ARCH@@/${ARCH}/ <simcontrol.in >build/DEBIAN/control
-	install -D -m 0644 copyright build/${SIMDOCDIR}/copyright
-	install -m 0644 changelog.Debian build/${SIMDOCDIR}/
-	gzip -9 build/${SIMDOCDIR}/changelog.Debian
-	echo "git clone git://git.proxmox.com/git/pve-storage.git\\ngit checkout ${GITVERSION}" > build/${SIMDOCDIR}/SOURCE
-	dpkg-deb --build build
-	mv build.deb ${SIMDEB}
-	rm -rf debian
-	lintian ${SIMDEB}
-
-.PHONY: deb ${DEB}
-deb ${DEB}:
-	rm -rf build
-	mkdir build
-	make DESTDIR=${CURDIR}/build install
-	perl -I. ./pve-ha-crm verifyapi
-	perl -I. ./pve-ha-lrm verifyapi
-	install -d -m 0755 build/DEBIAN
-	sed -e s/@@VERSION@@/${VERSION}/ -e s/@@PKGRELEASE@@/${PKGREL}/ -e s/@@ARCH@@/${ARCH}/ <control.in >build/DEBIAN/control
-	install -D -m 0644 copyright build/${DOCDIR}/copyright
-	install -m 0644 changelog.Debian build/${DOCDIR}/
-	gzip -9 build/${DOCDIR}/changelog.Debian
-	echo "git clone git://git.proxmox.com/git/pve-storage.git\\ngit checkout ${GITVERSION}" > build/${DOCDIR}/SOURCE
-	dpkg-deb --build build
-	mv build.deb ${DEB}
-	rm -rf debian
-	lintian ${DEB}
-
-
 .PHONY: test
 test: 
 #	make -C test test
