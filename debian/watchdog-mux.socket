@@ -1,5 +1,9 @@
+[Unit]
+Description=Proxmox VE watchdog multiplexer socket
+
 [Socket]
 ListenStream=/run/watchdog-mux.sock
+SocketMode=0600
 
 [Install]
 WantedBy=sockets.target
