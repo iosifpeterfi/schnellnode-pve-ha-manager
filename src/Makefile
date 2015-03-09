@@ -28,6 +28,8 @@ watchdog-mux: watchdog-mux.c
 
 .PHONY: install
 install: pve-ha-crm pve-ha-lrm pve-ha-crm.1.pod pve-ha-crm.1.gz pve-ha-lrm.1.pod pve-ha-lrm.1.gz
+	perl -I. ./pve-ha-crm verifyapi
+	perl -I. ./pve-ha-lrm verifyapi
 	install -d ${DESTDIR}${SBINDIR}
 	install -m 0755 pve-ha-crm ${DESTDIR}${SBINDIR}
 	install -m 0755 pve-ha-lrm ${DESTDIR}${SBINDIR}
