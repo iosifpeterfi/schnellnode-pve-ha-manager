@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
+#include <errno.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -126,10 +127,22 @@ main(void)
     }
 
     for (;;) {
-        nfds = epoll_wait(epollfd, events, MAX_EVENTS, -1); //fixme: timeout
+        nfds = epoll_wait(epollfd, events, MAX_EVENTS, 1000);
         if (nfds == -1) {
+            if (errno == EINTR)
+                continue;
+            
             perror("epoll_pwait");
             goto err;
+        }
+
+        if (nfds == 0) { // timeout
+
+            if (ioctl(watchdog_fd, WDIOC_KEEPALIVE, 0) == -1) {
+                perror("watchdog update failed");
+            }
+            
+            continue;
         }
 
         int n;
