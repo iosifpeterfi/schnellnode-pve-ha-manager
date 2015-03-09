@@ -25,6 +25,41 @@
 int watchdog_fd = -1;
 int watchdog_timeout = 20;
 
+
+typedef struct {
+    int fd;
+    int time;
+} wd_client_t;
+
+#define MAX_CLIENTS 100
+
+static wd_client_t client_list[MAX_CLIENTS];
+
+static wd_client_t *
+alloc_client(int fd)
+{
+    int i;
+
+    for (i = 0; i < MAX_CLIENTS; i++) {
+        if (client_list[i].fd == 0) {
+            memset(&client_list[i], 1, sizeof(wd_client_t));
+            client_list[i].fd = fd;
+            return &client_list[i];
+        }
+    }
+
+    return NULL;
+}
+
+static void
+free_client(wd_client_t *wd_client)
+{
+    if (!wd_client)
+        return;
+
+    wd_client->fd = 0;
+}
+
 static void 
 watchdog_close(void)
 {
@@ -120,7 +155,7 @@ main(void)
     }
 
     ev.events = EPOLLIN;
-    ev.data.fd = listen_sock;
+    ev.data.ptr = alloc_client(listen_sock);
     if (epoll_ctl(epollfd, EPOLL_CTL_ADD, listen_sock, &ev) == -1) {
         perror("epoll_ctl: listen_sock");
         goto err;
@@ -147,7 +182,8 @@ main(void)
 
         int n;
         for (n = 0; n < nfds; ++n) {
-            if (events[n].data.fd == listen_sock) {
+            wd_client_t *wd_client = events[n].data.ptr;
+            if (wd_client->fd == listen_sock) {
                 int conn_sock = accept(listen_sock, (struct sockaddr *) &peer_addr, &peer_addr_size);
                 if (conn_sock == -1) {
                     perror("accept");
@@ -158,22 +194,27 @@ main(void)
                     goto err; // fixme
                 }
 
+                wd_client_t *new_client = alloc_client(conn_sock);
+                if (new_client == NULL) {
+                    fprintf(stderr, "unable to alloc wd_client structure\n");
+                    goto err; // fixme;
+                }
                 ev.events = EPOLLIN;
-                ev.data.fd = conn_sock;
+                ev.data.ptr = new_client;
                 if (epoll_ctl(epollfd, EPOLL_CTL_ADD, conn_sock, &ev) == -1) {
                     perror("epoll_ctl: add conn_sock");
                     goto err; // fixme                   
                 }
             } else {
                 char buf[4096];
-                int cfd = events[n].data.fd;
+                int cfd = wd_client->fd;
 
                 ssize_t bytes = read(cfd, buf, sizeof(buf));
                 if (bytes == -1) {
                     perror("read");
                     goto err; // fixme                   
                 } else if (bytes > 0) {
-                    printf("GOT %zd bytes\n", bytes);
+                    fprintf(stderr, "GOT %zd bytes\n", bytes);
                 } else {
                     if (events[n].events & EPOLLHUP || events[n].events & EPOLLERR) {
                         printf("GOT %016x event\n", events[n].events);
@@ -185,6 +226,8 @@ main(void)
                             perror("close conn_sock");
                             goto err; // fixme                   
                         }
+                        fprintf(stderr, "close client connection\n");
+                        free_client(wd_client);
                     }
                 }
             }
