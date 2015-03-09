@@ -39,6 +39,9 @@ pve-ha-crm.1.pod: pve-ha-crm
 pve-ha-lrm.1.pod: pve-ha-lrm
 	perl -I. ./pve-ha-lrm printmanpod >$@
 
+watchdog-mux: watchdog-mux.c
+	gcc watchdog-mux.c -o watchdog-mux -Wall $$(pkg-config --libs --cflags libsystemd-daemon)
+
 .PHONY: install
 install: pve-ha-crm pve-ha-lrm pve-ha-crm.1.pod pve-ha-crm.1.gz pve-ha-lrm.1.pod pve-ha-lrm.1.gz
 	install -d ${DESTDIR}${SBINDIR}

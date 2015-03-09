@@ -4,7 +4,8 @@
 #include <fcntl.h>
 #include <string.h>
 #include <sys/ioctl.h>
-#include <sys/types.h> 
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sys/epoll.h>
@@ -12,7 +13,7 @@
 #include <linux/types.h>
 #include <linux/watchdog.h>
 
-#include "sd-daemon.h"
+#include <systemd/sd-daemon.h>
 
 #define MY_SOCK_PATH "/var/run/pve_watchdog"
 #define LISTEN_BACKLOG 50
@@ -41,11 +42,10 @@ watchdog_close(void)
 int 
 main(void)
 {
-
     struct sockaddr_un my_addr, peer_addr;
     socklen_t peer_addr_size;
     struct epoll_event ev, events[MAX_EVENTS];
-    int socket_count, listen_sock, conn_sock, nfds, epollfd;
+    int socket_count, listen_sock, nfds, epollfd;
 
     struct stat fs;
     if (stat(WATCHDOG_DEV, &fs) == -1) {
@@ -160,7 +160,7 @@ main(void)
                     perror("read");
                     goto err; // fixme                   
                 } else if (bytes > 0) {
-                    printf("GOT %d bytes\n", bytes);
+                    printf("GOT %zd bytes\n", bytes);
                 } else {
                     if (events[n].events & EPOLLHUP || events[n].events & EPOLLERR) {
                         printf("GOT %016x event\n", events[n].events);
@@ -180,7 +180,7 @@ main(void)
 
     printf("DONE\n");
 
-out:
+// out:
 
     watchdog_close();
     unlink(MY_SOCK_PATH);
