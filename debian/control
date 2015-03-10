@@ -10,5 +10,6 @@ Section: perl
 Priority: optional
 Architecture: any
 Depends: ${shlibs:Depends}, ${perl:Depends}, ${misc:Depends}, libpve-common-perl, pve-cluster (>= 3.0-17)
+Conflicts: watchdog
 Description: Proxmox VE HA Manager
  HA Manager Proxmox VE.
