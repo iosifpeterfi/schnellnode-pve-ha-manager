@@ -4,12 +4,15 @@
 #include <fcntl.h>
 #include <string.h>
 #include <errno.h>
+#include <time.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sys/epoll.h>
+#include <signal.h>
+#include <sys/signalfd.h>
 
 #include <linux/types.h>
 #include <linux/watchdog.h>
@@ -17,6 +20,8 @@
 #include <systemd/sd-daemon.h>
 
 #define MY_SOCK_PATH "/run/watchdog-mux.sock"
+#define WD_ACTIVE_MARKER "/run/watchdog-mux.active"
+
 #define LISTEN_BACKLOG 50
 #define MAX_EVENTS 10
 
@@ -28,7 +33,7 @@ int watchdog_timeout = 20;
 
 typedef struct {
     int fd;
-    int time;
+    time_t time;
 } wd_client_t;
 
 #define MAX_CLIENTS 100
@@ -36,14 +41,14 @@ typedef struct {
 static wd_client_t client_list[MAX_CLIENTS];
 
 static wd_client_t *
-alloc_client(int fd)
+alloc_client(int fd, time_t time)
 {
     int i;
 
     for (i = 0; i < MAX_CLIENTS; i++) {
         if (client_list[i].fd == 0) {
-            memset(&client_list[i], 1, sizeof(wd_client_t));
             client_list[i].fd = fd;
+            client_list[i].time = time;
             return &client_list[i];
         }
     }
@@ -57,7 +62,22 @@ free_client(wd_client_t *wd_client)
     if (!wd_client)
         return;
 
+    wd_client->time = 0;
     wd_client->fd = 0;
+}
+
+static int
+active_client_count(void)
+{
+    int i, count = 0;
+
+    for (i = 0; i < MAX_CLIENTS; i++) {
+        if (client_list[i].fd != 0 && client_list[i].time != 0) {
+            count++;
+        }
+    }
+    
+    return count;
 }
 
 static void 
@@ -81,9 +101,16 @@ main(void)
     struct sockaddr_un my_addr, peer_addr;
     socklen_t peer_addr_size;
     struct epoll_event ev, events[MAX_EVENTS];
-    int socket_count, listen_sock, nfds, epollfd;
+    int socket_count, listen_sock, nfds, epollfd, sigfd;
 
+    
     struct stat fs;
+
+    if (stat(WD_ACTIVE_MARKER, &fs) == 0) {
+        fprintf(stderr, "watchdog active - unable to restart watchdog-mux\n");
+        exit(EXIT_FAILURE);       
+    }
+    
     if (stat(WATCHDOG_DEV, &fs) == -1) {
         system("modprobe -q softdog soft_noboot=1"); // fixme
     }
@@ -155,12 +182,32 @@ main(void)
     }
 
     ev.events = EPOLLIN;
-    ev.data.ptr = alloc_client(listen_sock);
+    ev.data.ptr = alloc_client(listen_sock, 0);
     if (epoll_ctl(epollfd, EPOLL_CTL_ADD, listen_sock, &ev) == -1) {
-        perror("epoll_ctl: listen_sock");
+        perror("epoll_ctl add listen_sock");
         goto err;
     }
 
+    sigset_t mask;
+    sigemptyset(&mask);
+    sigaddset(&mask, SIGINT);
+    sigaddset(&mask, SIGTERM);
+    sigaddset(&mask, SIGHUP);
+    
+    sigprocmask(SIG_BLOCK, &mask, NULL);
+   
+    if ((sigfd = signalfd(-1, &mask, SFD_NONBLOCK)) < 0) {
+        perror("unable to open signalfd");
+        goto err;
+    }
+
+    ev.events = EPOLLIN;
+    ev.data.ptr = alloc_client(sigfd, 0);
+    if (epoll_ctl(epollfd, EPOLL_CTL_ADD, sigfd, &ev) == -1) {
+        perror("epoll_ctl add sigfd");
+        goto err;
+    }
+  
     for (;;) {
         nfds = epoll_wait(epollfd, events, MAX_EVENTS, 1000);
         if (nfds == -1) {
@@ -180,6 +227,8 @@ main(void)
             continue;
         }
 
+        int terminate = 0;
+        
         int n;
         for (n = 0; n < nfds; ++n) {
             wd_client_t *wd_client = events[n].data.ptr;
@@ -194,21 +243,40 @@ main(void)
                     goto err; // fixme
                 }
 
-                wd_client_t *new_client = alloc_client(conn_sock);
+                wd_client_t *new_client = alloc_client(conn_sock, time(NULL));
                 if (new_client == NULL) {
                     fprintf(stderr, "unable to alloc wd_client structure\n");
                     goto err; // fixme;
                 }
+                
+                mkdir(WD_ACTIVE_MARKER, 0600);
+                
                 ev.events = EPOLLIN;
                 ev.data.ptr = new_client;
                 if (epoll_ctl(epollfd, EPOLL_CTL_ADD, conn_sock, &ev) == -1) {
                     perror("epoll_ctl: add conn_sock");
                     goto err; // fixme                   
                 }
+            } else if (wd_client->fd == sigfd) {
+
+                /* signal handling */
+
+                int rv = 0;
+                struct signalfd_siginfo si;
+
+                if ((rv = read(sigfd, &si, sizeof(si))) && rv >= 0) {
+                    if (si.ssi_signo == SIGHUP) {
+                        perror("got SIGHUP - ignored");
+                    } else {
+                        terminate = 1;
+                        fprintf(stderr, "got terminate request\n");
+                    }
+                }
+                
             } else {
                 char buf[4096];
                 int cfd = wd_client->fd;
-
+                
                 ssize_t bytes = read(cfd, buf, sizeof(buf));
                 if (bytes == -1) {
                     perror("read");
@@ -228,17 +296,26 @@ main(void)
                         }
                         fprintf(stderr, "close client connection\n");
                         free_client(wd_client);
+
+                        if (!active_client_count()) {
+                            rmdir(WD_ACTIVE_MARKER);
+                        }
                     }
                 }
             }
         }
+        if (terminate)
+            break;
     }
 
-    printf("DONE\n");
-
-// out:
-
-    watchdog_close();
+    int active_count = active_client_count();
+    if (active_count > 0) {
+        fprintf(stderr, "exit watchdog-mux with active connections\n");
+    } else {
+        fprintf(stderr, "clean exit\n");
+        watchdog_close();
+    }
+    
     unlink(MY_SOCK_PATH);
     exit(EXIT_SUCCESS);
 
