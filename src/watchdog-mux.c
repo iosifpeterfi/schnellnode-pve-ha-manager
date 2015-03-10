@@ -28,8 +28,9 @@
 #define WATCHDOG_DEV "/dev/watchdog"
 
 int watchdog_fd = -1;
-int watchdog_timeout = 20;
-
+int watchdog_timeout = 10;
+int client_watchdog_timeout = 60;
+int update_watchdog = 1; 
 
 typedef struct {
     int fd;
@@ -223,8 +224,23 @@ main(void)
 
         if (nfds == 0) { // timeout
 
-            if (ioctl(watchdog_fd, WDIOC_KEEPALIVE, 0) == -1) {
-                perror("watchdog update failed");
+            // check for timeouts
+            if (update_watchdog) {
+                int i;
+                time_t ctime = time(NULL);
+                for (i = 0; i < MAX_CLIENTS; i++) {
+                    if (client_list[i].fd != 0 && client_list[i].time != 0 &&
+                        ((ctime - client_list[i].time) > client_watchdog_timeout)) {
+                        update_watchdog = 0;
+                        fprintf(stderr, "client watchdog expired - disable watchdog updates\n"); 
+                    }
+                }
+            }
+
+            if (update_watchdog) {
+                if (ioctl(watchdog_fd, WDIOC_KEEPALIVE, 0) == -1) {
+                    perror("watchdog update failed");
+                }
             }
             
             continue;
@@ -307,7 +323,8 @@ main(void)
                         }
 
                         if (!wd_client->magic_close) {
-                            fprintf(stderr, "client did not stop watchdog\n");
+                            fprintf(stderr, "client did not stop watchdog - disable watchdog updates\n");
+                            update_watchdog = 0;
                         } else {
                             free_client(wd_client);
                         }
