@@ -58,6 +58,8 @@ sub write_lrm_status {
 sub manager_status_exists {
     my ($self) = @_;
 
+    die "this is not used?!"; # fixme:
+    
     return $self->{plug}->manager_status_exists();
 }
 
