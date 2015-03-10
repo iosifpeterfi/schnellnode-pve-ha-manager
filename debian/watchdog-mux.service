@@ -3,3 +3,4 @@ Description=Proxmox VE watchdog multiplexer
 
 [Service]
 ExecStart=/usr/sbin/watchdog-mux
+OOMScoreAdjust=-1000
