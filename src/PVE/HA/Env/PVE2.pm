@@ -120,7 +120,22 @@ sub read_crm_commands {
 sub get_node_info {
     my ($self) = @_;
 
-    die "implement me";
+    my ($node_info, $quorate) = ({}, 0);
+   
+    my $nodename = $self->{nodename};
+
+    $quorate = PVE::Cluster::check_cfs_quorum(1) || 0;
+
+    my $members = PVE::Cluster::get_members();
+
+    foreach my $node (keys %$members) {
+	my $d = $members->{$node};
+	$node_info->{$node}->{online} = $d->{online}; 
+    }
+	
+    $node_info->{$nodename}->{online} = 1; # local node is always up
+    
+    return ($node_info, $quorate);
 }
 
 sub log {
