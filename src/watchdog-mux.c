@@ -246,6 +246,9 @@ main(void)
             continue;
         }
 
+        if (!update_watchdog)
+            break;
+            
         int terminate = 0;
         
         int n;

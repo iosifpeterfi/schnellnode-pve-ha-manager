@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use POSIX qw(:errno_h :fcntl_h);
 use IO::File;
+use IO::Socket::UNIX;
 
 use PVE::SafeSyslog;
 use PVE::Tools;
@@ -264,43 +265,16 @@ sub loop_end_hook {
 
 my $watchdog_fh;
 
-my $WDIOC_GETSUPPORT =  0x80285700;
-my $WDIOC_KEEPALIVE = 0x80045705;
-my $WDIOC_SETTIMEOUT = 0xc0045706;
-my $WDIOC_GETTIMEOUT = 0x80045707;
-
 sub watchdog_open {
     my ($self) = @_;
 
-    system("modprobe -q softdog soft_noboot=1") if ! -e "/dev/watchdog";
-
     die "watchdog already open\n" if defined($watchdog_fh);
 
-    $watchdog_fh = IO::File->new(">/dev/watchdog") ||
-	die "unable to open watchdog device - $!\n";
-    
-    eval {
-	my $timeoutbuf = pack('I', 100);
-	my $res = ioctl($watchdog_fh, $WDIOC_SETTIMEOUT, $timeoutbuf) ||
-	    die "unable to set watchdog timeout - $!\n";
-	my $timeout = unpack("I", $timeoutbuf);
-	die "got wrong watchdog timeout '$timeout'\n" if $timeout != 100;
-
-	my $wdinfo = "\x00" x 40;
-	$res = ioctl($watchdog_fh, $WDIOC_GETSUPPORT, $wdinfo) ||
-	    die "unable to get watchdog info - $!\n";
-
-	my ($options, $firmware_version, $indentity) = unpack("lla32", $wdinfo);
-	die "watchdog does not support magic close\n" if !($options & 0x0100);
-
-    };
-    if (my $err = $@) {
-	$self->watchdog_close();
-	die $err;
-    }
-
-    # fixme: use ioctl to setup watchdog timeout (requires C interface)
-  
+    $watchdog_fh = IO::Socket::UNIX->new(
+	Type => SOCK_STREAM(),
+	Peer => "/run/watchdog-mux.sock") ||
+	die "unable to open watchdog socket - $!\n";
+      
     $self->log('info', "watchdog active");
 }
 
