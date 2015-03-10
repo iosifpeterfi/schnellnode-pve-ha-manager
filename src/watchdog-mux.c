@@ -34,6 +34,7 @@ int watchdog_timeout = 20;
 typedef struct {
     int fd;
     time_t time;
+    int magic_close;
 } wd_client_t;
 
 #define MAX_CLIENTS 100
@@ -49,6 +50,7 @@ alloc_client(int fd, time_t time)
         if (client_list[i].fd == 0) {
             client_list[i].fd = fd;
             client_list[i].time = time;
+            client_list[i].magic_close = 0;
             return &client_list[i];
         }
     }
@@ -64,6 +66,7 @@ free_client(wd_client_t *wd_client)
 
     wd_client->time = 0;
     wd_client->fd = 0;
+    wd_client->magic_close = 0;
 }
 
 static int
@@ -282,10 +285,18 @@ main(void)
                     perror("read");
                     goto err; // fixme                   
                 } else if (bytes > 0) {
-                    fprintf(stderr, "GOT %zd bytes\n", bytes);
+                    int i;
+                    for (i = 0; i < bytes; i++) {
+                        if (buf[i] == 'V') {
+                            wd_client->magic_close = 1;
+                        } else {
+                            wd_client->magic_close = 0;
+                        }
+                    }
+                    wd_client->time = time(NULL);
                 } else {
                     if (events[n].events & EPOLLHUP || events[n].events & EPOLLERR) {
-                        printf("GOT %016x event\n", events[n].events);
+                        //printf("GOT %016x event\n", events[n].events);
                         if (epoll_ctl(epollfd, EPOLL_CTL_DEL, cfd, NULL) == -1) {
                             perror("epoll_ctl: del conn_sock");
                             goto err; // fixme                   
@@ -294,9 +305,13 @@ main(void)
                             perror("close conn_sock");
                             goto err; // fixme                   
                         }
-                        fprintf(stderr, "close client connection\n");
-                        free_client(wd_client);
 
+                        if (!wd_client->magic_close) {
+                            fprintf(stderr, "client did not stop watchdog\n");
+                        } else {
+                            free_client(wd_client);
+                        }
+                        
                         if (!active_client_count()) {
                             rmdir(WD_ACTIVE_MARKER);
                         }
