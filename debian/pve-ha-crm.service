@@ -1,0 +1,16 @@
+[Unit]
+Description=PVE Cluster Ressource Manager Daemon
+ConditionPathExists=/usr/sbin/pve-ha-crm
+Requires=pve-cluster.service
+Wants=pvedaemon.service
+After=pve-cluster.service
+After=pvedaemon.service
+
+[Service]
+ExecStart=/usr/sbin/pve-ha-crm start
+ExecStop=/usr/sbin/pve-ha-crm stop
+PIDFile=/var/run/pve-ha-crm.pid
+Type=forking
+
+[Install]
+WantedBy=multi-user.target
