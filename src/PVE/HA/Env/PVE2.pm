@@ -12,12 +12,13 @@ use PVE::Cluster qw(cfs_register_file cfs_read_file cfs_lock_file);
 
 use PVE::HA::Tools;
 use PVE::HA::Env;
-use PVE::HA::Groups;
+use PVE::HA::Config;
 
 my $lockdir = "/etc/pve/priv/lock";
 
-my $manager_status_filename = "/etc/pve/manager_status";
+my $manager_status_filename = "/etc/pve/ha/manager_status";
 my $ha_groups_config = "ha/groups.cfg";
+my $ha_resources_config = "ha/resources.cfg";
 
 #cfs_register_file($ha_groups_config, 
 #		  sub { PVE::HA::Groups->parse_config(@_); },
@@ -88,7 +89,39 @@ sub manager_status_exists {
 sub read_service_config {
     my ($self) = @_;
 
-    die "implement me";
+    # fixme: use cfs_read_file
+    
+    my $raw = '';
+
+    $raw = PVE::Tools::file_get_contents($ha_resources_config)
+	if -f $ha_resources_config;
+    
+    my $res = PVE::HA::Config::parse_resources_config($ha_resources_config, $raw);
+
+    my $vmlist = PVE::Cluster::get_vmlist();
+    my $conf = {};
+
+    foreach my $sid (keys %{$res->{ids}}) {
+	my $d = $res->{ids}->{$sid};
+	if ($d->{type} eq 'pvevm') {
+	    if (my $vmd = $vmlist->{ids}->{$d->{name}}) {
+		if (!$vmd) {
+		    warn "no such VM '$d->{name}'\n";
+		} else {
+		    $d->{node} = $vmd->{node};
+		    $conf->{$sid} = $d;
+		}
+	    } else {
+		if (defined($d->{node})) {
+		    $conf->{$sid} = $d;
+		} else {
+		    warn "service '$sid' without node\n";
+		}
+	    }
+	}
+    }
+    
+    return $conf;
 }
 
 sub change_service_location {
@@ -100,19 +133,56 @@ sub change_service_location {
 sub read_group_config {
     my ($self) = @_;
 
-    return cfs_read_file($ha_groups_config);
+    # fixme: use cfs_read_file
+    
+    my $raw = '';
+
+    $raw = PVE::Tools::file_get_contents($ha_groups_config)
+	if -f $ha_groups_config;
+    
+    return PVE::HA::Config::parse_groups_config($ha_groups_config, $raw);
 }
 
 sub queue_crm_commands {
     my ($self, $cmd) = @_;
 
-    die "implement me";
+    chomp $cmd;
+
+    my $code = sub {
+	my $data = '';
+	my $filename = "/etc/pve/ha/crm_commands";
+	if (-f $filename) {
+	    $data = PVE::Tools::file_get_contents($filename);
+	}
+	$data .= "$cmd\n";
+	PVE::Tools::file_set_contents($filename, $data);
+    };
+
+    # fixme: do not use cfs_lock_storage (replace with cfs_lock_ha)
+    my $res = PVE::Cluster::cfs_lock_storage("_ha_crm_commands", undef, $code);
+    die $@ if $@;
+    return $res;
 }
 
 sub read_crm_commands {
     my ($self) = @_;
 
-    die "implement me";
+    my $code = sub {
+	my $data = '';
+
+ 	my $filename = "/etc/pve/ha/crm_commands";
+	if (-f $filename) {
+	    $data = PVE::Tools::file_get_contents($filename);
+	    PVE::Tools::file_set_contents($filename, '');
+	}
+
+	return $data;
+    };
+
+    # fixme: do not use cfs_lock_storage (replace with cfs_lock_ha)
+    my $res = PVE::Cluster::cfs_lock_storage("_ha_crm_commands", undef, $code);
+    die $@ if $@;
+    return $res;
 }
 
 # this should return a hash containing info
@@ -200,10 +270,6 @@ sub get_pve_lock {
 
 sub get_ha_manager_lock {
     my ($self) = @_;
-
-    my $lockid = "ha_manager_lock";
-
-    my $filename = "$lockdir/$lockid";
 
     return $self->get_pve_lock("ha_manager_lock");
 }
