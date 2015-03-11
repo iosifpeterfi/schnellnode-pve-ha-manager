@@ -1,0 +1,16 @@
+[Unit]
+Description=PVE Local HA Ressource Manager Daemon
+ConditionPathExists=/usr/sbin/pve-ha-lrm
+Requires=pve-cluster.service
+Wants=pvedaemon.service
+After=pve-cluster.service
+After=pvedaemon.service
+
+[Service]
+ExecStart=/usr/sbin/pve-ha-lrm start
+ExecStop=/usr/sbin/pve-ha-lrm stop
+PIDFile=/var/run/pve-ha-lrm.pid
+Type=forking
+
+[Install]
+WantedBy=multi-user.target
