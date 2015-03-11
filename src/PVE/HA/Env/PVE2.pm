@@ -255,7 +255,7 @@ sub get_pve_lock {
 
     $last_lock_status->{$lockid} = $got_lock ? $ctime : 0;
 
-    if ($got_lock != $last) {
+    if (!!$got_lock != !!$last) {
 	if ($got_lock) {
 	    $self->log('info', "successfully aquired lock '$lockid'");
 	} else {
