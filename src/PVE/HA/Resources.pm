@@ -18,6 +18,12 @@ my $defaultData = {
 	    type => 'string',
 	    optional => 1,
 	},
+	state => {
+	    description => "Resource state.",
+	    type => 'string',
+	    enum => ['enabled', 'disabled'],
+	    optional => 1,
+	},
 	group => get_standard_option('pve-ha-group-id'),
 	comment => {
 	    description => "Description.",

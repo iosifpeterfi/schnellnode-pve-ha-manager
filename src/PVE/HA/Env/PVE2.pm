@@ -17,8 +17,8 @@ use PVE::HA::Config;
 my $lockdir = "/etc/pve/priv/lock";
 
 my $manager_status_filename = "/etc/pve/ha/manager_status";
-my $ha_groups_config = "ha/groups.cfg";
-my $ha_resources_config = "ha/resources.cfg";
+my $ha_groups_config = "/etc/pve/ha/groups.cfg";
+my $ha_resources_config = "/etc/pve/ha/resources.cfg";
 
 #cfs_register_file($ha_groups_config, 
 #		  sub { PVE::HA::Groups->parse_config(@_); },
@@ -103,6 +103,7 @@ sub read_service_config {
 
     foreach my $sid (keys %{$res->{ids}}) {
 	my $d = $res->{ids}->{$sid};
+	$d->{state} = 'enabled' if !defined($d->{state});
 	if ($d->{type} eq 'pvevm') {
 	    if (my $vmd = $vmlist->{ids}->{$d->{name}}) {
 		if (!$vmd) {
