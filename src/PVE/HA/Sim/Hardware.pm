@@ -15,10 +15,7 @@ use IO::File;
 use Fcntl qw(:DEFAULT :flock);
 use File::Copy;
 use File::Path qw(make_path remove_tree);
-use PVE::HA::Groups;
-
-PVE::HA::Groups->register();
-PVE::HA::Groups->init();
+use PVE::HA::Config;
 
 my $watchdog_timeout = 60;
 
@@ -174,7 +171,7 @@ sub read_group_config {
     my $raw = '';
     $raw = PVE::Tools::file_get_contents($filename) if -f $filename;
 
-    return PVE::HA::Groups->parse_config($filename, $raw);
+    return PVE::HA::Config::parse_groups_config($filename, $raw);
 }
 
 sub read_service_status {
