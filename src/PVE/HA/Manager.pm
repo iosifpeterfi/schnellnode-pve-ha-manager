@@ -122,6 +122,13 @@ sub select_service_node {
 
 my $uid_counter = 0;
 
+sub compute_new_uuid {
+    my ($state) = @_;
+    
+    $uid_counter++;
+    return md5_base64($state . $$ . time() . $uid_counter);
+}
+
 my $valid_service_states = {
     stopped => 1,
     request_stop => 1,
@@ -192,8 +199,8 @@ my $change_service_state = sub {
 
     $self->recompute_online_node_usage();
 
-    $uid_counter++;
-    $sd->{uid} = md5_base64($new_state . $$ . time() . $uid_counter);
+    $sd->{uid} = compute_new_uuid($new_state);
+    
 
     $text_state = " ($text_state)" if $text_state;
     $haenv->log('info', "service '$sid': state changed from '${old_state}' to '${new_state}' $text_state\n");
@@ -279,7 +286,8 @@ sub manage {
 	next if $ss->{$sid}; # already there
 	$haenv->log('info', "Adding new service '$sid'\n");
 	# assume we are running to avoid relocate running service at add
-	$ss->{$sid} = { state => 'started', node => $sc->{$sid}->{node}};
+	$ss->{$sid} = { state => 'started', node => $sc->{$sid}->{node},
+			uid => compute_new_uuid('started') };
     }
 
     $self->update_crm_commands();

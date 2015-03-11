@@ -13,6 +13,15 @@ use PVE::HA::LRM;
 
 use base qw(PVE::Daemon);
 
+$SIG{'__WARN__'} = sub {
+    my $err = $@;
+    my $t = $_[0];
+    chomp $t;
+    print STDERR "$t\n";
+    syslog('warning', "%s", $t);
+    $@ = $err;
+};
+
 my $cmdline = [$0, @ARGV];
 
 my %daemon_options = (stop_wait_time => 60);
