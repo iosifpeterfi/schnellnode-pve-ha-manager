@@ -1,0 +1,69 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use PVE::INotify;
+use PVE::JSONSchema;
+use PVE::CLIHandler;
+use PVE::Cluster;
+
+use base qw(PVE::CLIHandler);
+
+$ENV{'PATH'} = '/sbin:/bin:/usr/sbin:/usr/bin';
+$ENV{LC_ALL} = 'C';
+
+die "please run as root\n" if $> != 0;
+
+my $nodename = PVE::INotify::nodename();
+
+__PACKAGE__->register_method ({
+    name => 'test', 
+    path => 'test',
+    method => 'GET',
+    description => "A stupid test.",
+    parameters => {
+    	additionalProperties => 0,
+	properties => {
+	},
+    },
+    returns => { type => 'null' },
+    code => sub {
+	my ($param) = @_;
+
+	print "TEST\n";
+	
+	return undef;
+    }});
+
+my $cmddef = {
+    test => [ __PACKAGE__, 'test', []],
+};
+my $cmd = shift;
+
+if ($cmd && $cmd ne 'printmanpod' && $cmd ne 'verifyapi') {
+    PVE::Cluster::check_cfs_is_mounted();
+    PVE::Cluster::cfs_update();
+}
+
+PVE::CLIHandler::handle_cmd($cmddef, "ha-manager", $cmd, \@ARGV, undef, $0);
+
+exit 0;
+
+__END__
+
+=head1 NAME
+
+pvecm - Proxmox VE HA Command Line Interface
+
+=head1 SYNOPSIS
+
+=include synopsis
+
+=head1 DESCRIPTION
+
+ha-manager is a program to manage the HA configuration.
+
+=include pve_copyright
+
+
