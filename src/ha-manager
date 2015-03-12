@@ -8,6 +8,8 @@ use PVE::JSONSchema;
 use PVE::CLIHandler;
 use PVE::Cluster;
 
+use PVE::API2::HA::Resources;
+
 use base qw(PVE::CLIHandler);
 
 $ENV{'PATH'} = '/sbin:/bin:/usr/sbin:/usr/bin';
@@ -38,7 +40,19 @@ __PACKAGE__->register_method ({
 
 my $cmddef = {
     test => [ __PACKAGE__, 'test', []],
+    config => [ 'PVE::API2::HA::Resources', 'index', [], {}, sub {
+	my $res = shift;
+	foreach my $rec (@$res) {
+	    print "$rec->{type}: $rec->{name}\n";
+	    foreach my $k (keys %$rec) {
+		next if $k eq 'digest' || $k eq 'sid' || 
+		    $k eq 'type' || $k eq 'name';
+		print "\t$k $rec->{$k}\n";
+	    }
+	    print "\n";
+	}}],
 };
+
 my $cmd = shift;
 
 if ($cmd && $cmd ne 'printmanpod' && $cmd ne 'verifyapi') {
