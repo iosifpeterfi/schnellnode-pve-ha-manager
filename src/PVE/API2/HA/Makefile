@@ -1,4 +1,4 @@
-SOURCES=Resources.pm
+SOURCES=Resources.pm Groups.pm
 
 .PHONY: install
 install:

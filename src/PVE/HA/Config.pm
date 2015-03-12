@@ -18,7 +18,7 @@ PVE::HA::Resources->init();
 sub parse_groups_config {
     my ($filename, $raw) = @_;
 
-    return PVE::HA::Groups->parse_config($filename, $raw);
+     return PVE::HA::Groups->parse_config($filename, $raw);
 }
 
 sub parse_resources_config {
