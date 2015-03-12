@@ -178,14 +178,30 @@ sub do_one_iteration {
 
 	my $max_time = 10;
 
+	my $shutdown = 0;
+
 	# do work (max_time seconds)
 	eval {
 	    # fixme: set alert timer
-	    $manager->manage();
+
+	    if ($self->{shutdown_request}) {
+
+		if ($self->{ha_manager_wd}) {
+		    $haenv->watchdog_close($self->{ha_manager_wd});
+		    delete $self->{ha_manager_wd};
+		}
+
+		$shutdown = 1;
+
+	    } else {
+		$manager->manage();
+	    }
 	};
 	if (my $err = $@) {
 	    $haenv->log('err', "got unexpected error - $err");
 	}
+
+	return 0 if $shutdown;
 
 	$haenv->sleep_until($startime + $max_time);
 

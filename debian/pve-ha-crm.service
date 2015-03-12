@@ -10,6 +10,7 @@ After=pvedaemon.service
 ExecStart=/usr/sbin/pve-ha-crm start
 ExecStop=/usr/sbin/pve-ha-crm stop
 PIDFile=/var/run/pve-ha-crm.pid
+TimeoutStopSec=60
 Type=forking
 
 [Install]
