@@ -9,10 +9,15 @@ use IO::Socket::UNIX;
 use PVE::SafeSyslog;
 use PVE::Tools;
 use PVE::Cluster qw(cfs_register_file cfs_read_file cfs_lock_file);
+use PVE::INotify;
+use PVE::RPCEnvironment;
 
 use PVE::HA::Tools;
 use PVE::HA::Env;
 use PVE::HA::Config;
+
+use PVE::QemuServer;
+use PVE::API2::Qemu;
 
 my $lockdir = "/etc/pve/priv/lock";
 
@@ -388,10 +393,104 @@ sub watchdog_close {
     }
 }
 
+sub upid_wait {
+    my ($self, $upid) = @_;
+
+    my $task = PVE::Tools::upid_decode($upid);
+
+    CORE::sleep(1);
+    while (PVE::ProcFSTools::check_process_running($task->{pid}, $task->{pstart})) {
+	$self->log('debug', "Task still active, waiting");
+	CORE::sleep(1);
+    }
+}
+
 sub exec_resource_agent {
     my ($self, $sid, $service_config, $cmd, @params) = @_;
 
-    die "implement me";
+    # setup execution environment
+    
+    $ENV{'PATH'} = '/sbin:/bin:/usr/sbin:/usr/bin';
+
+    PVE::INotify::inotify_close();
+    
+    PVE::INotify::inotify_init();
+
+    PVE::Cluster::cfs_update();
+ 
+    my $nodename = $self->{nodename};
+
+    # fixme: return valid_exit code (instead of using die) ?
+
+    my $service_type = $service_config->{type};
+    
+    die "service type '$service_type'not implemented" if $service_type ne 'pvevm';
+
+    my $vmid = $service_config->{name};
+
+    my $running = PVE::QemuServer::check_running($vmid, 1);
+ 
+    if ($cmd eq 'started') {
+
+	# fixme: return valid_exit code
+	die "service '$sid' not on this node" if $service_config->{node} ne $nodename;
+
+	# fixme: count failures
+	
+	return 0 if $running;
+
+	$self->log("info", "starting service $sid");
+
+	my $upid = PVE::API2::Qemu->vm_start({node => $nodename, vmid => $vmid});
+	$self->upid_wait($upid);
+
+	$running = PVE::QemuServer::check_running($vmid, 1);
+
+	if ($running) {
+	    $self->log("info", "service status $sid started");
+	    return 0;
+	} else {
+	    $self->log("info", "unable to start service $sid");
+	    return 1;
+	}
+
+    } elsif ($cmd eq 'request_stop' || $cmd eq 'stopped') {
+
+	# fixme: return valid_exit code
+	die "service '$sid' not on this node" if $service_config->{node} ne $nodename;
+
+	return 0 if !$running;
+
+	$self->log("info", "stopping service $sid");
+
+	my $timeout = 60; # fixme: make this configurable
+	
+	my $param = {
+	    node => $nodename, 
+	    vmid => $vmid, 
+	    timeout => $timeout,
+	    forceStop => 1,
+	};
+
+	my $upid = PVE::API2::Qemu->vm_shutdown($param);
+	$self->upid_wait($upid);
+
+	$running = PVE::QemuServer::check_running($vmid, 1);
+
+	if (!$running) {
+	    $self->log("info", "service status $sid stopped");
+	    return 0;
+	} else {
+	    return 1;
+	}
+
+    } elsif ($cmd eq 'migrate' || $cmd eq 'relocate') {
+
+	# implement me
+	
+    }
+
+    die "implement me (cmd '$cmd')";
 }
 
 1;
