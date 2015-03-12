@@ -44,6 +44,7 @@ deb ${DEB}:
 
 .PHONY: clean
 clean:
+	make -C src clean
 	rm -rf build *.deb ${PACKAGE}-*.tar.gz *.changes 
 	find . -name '*~' -exec rm {} ';'
 
