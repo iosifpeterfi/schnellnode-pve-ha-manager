@@ -72,17 +72,13 @@ sub loop_end_hook {
 }
 
 sub exec_resource_agent {
-    my ($self, $sid, $cmd, @params) = @_;
+    my ($self, $sid, $cd, $cmd, @params) = @_;
 
     my $hardware = $self->{hardware};
 
     my $nodename = $self->{nodename};
 
-    my $sc = $hardware->read_service_config($nodename);
-
     # fixme: return valid_exit code (instead of using die)
-    my $cd = $sc->{$sid};
-    die "no such service" if !$cd;
 
     my $ss = $hardware->read_service_status($nodename);
 

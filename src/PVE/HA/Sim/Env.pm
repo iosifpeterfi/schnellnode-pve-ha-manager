@@ -284,7 +284,7 @@ sub watchdog_close {
 }
 
 sub exec_resource_agent {
-    my ($self, $sid, $cmd, @params) = @_;
+    my ($self, $sid, $service_config, $cmd, @params) = @_;
 
     die "implement me";
 }

@@ -190,9 +190,9 @@ sub watchdog_close {
 }
 
 sub exec_resource_agent {
-    my ($self, $sid, $cmd, @params) = @_;
+    my ($self, $sid, $service_config, $cmd, @params) = @_;
 
-    return $self->{plug}->exec_resource_agent($sid, $cmd, @params)
+    return $self->{plug}->exec_resource_agent($sid, $service_config, $cmd, @params)
 }
 
 1;

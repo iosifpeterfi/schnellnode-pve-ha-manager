@@ -259,12 +259,19 @@ sub manage_resources {
     # start workers
     my $max_workers = 4;
 
+    my $sc = $haenv->read_service_config();
+    
     while ((time() - $starttime) < 5) {
 	my $count =  $self->check_active_workers();
 
 	foreach my $sid (keys %{$self->{workers}}) {
 	    last if $count >= $max_workers;
 	    my $w = $self->{workers}->{$sid};
+	    my $cd = $sc->{$sid};
+	    if (!$cd) {
+		warn "missing resource configuration for '$sid'\n";
+		next;
+	    }
 	    if (!$w->{pid}) {
 		my $pid = fork();
 		if (!defined($pid)) {
@@ -274,7 +281,7 @@ sub manage_resources {
 		    # do work
 		    my $res = -1;
 		    eval {
-			$res = $haenv->exec_resource_agent($sid, $w->{state}, $w->{target});
+			$res = $haenv->exec_resource_agent($sid, $cd, $w->{state}, $w->{target});
 		    };
 		    if (my $err = $@) {
 			warn $err;
