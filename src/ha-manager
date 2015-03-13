@@ -92,6 +92,9 @@ my $cmddef = {
     remove => [ "PVE::API2::HA::Resources", 'delete', ['sid'] ],
     set => [ "PVE::API2::HA::Resources", 'update', ['sid'] ],
 
+    migrate => [ "PVE::API2::HA::Resources", 'migrate', ['sid', 'node'] ],
+    relocate => [ "PVE::API2::HA::Resources", 'relocate', ['sid', 'node'] ],
+
 };
 
 my $cmd = shift;

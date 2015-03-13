@@ -231,4 +231,48 @@ __PACKAGE__->register_method ({
 	return undef;
     }});
 
+__PACKAGE__->register_method ({
+    name => 'migrate',
+    protected => 1,
+    path => '{sid}/migrate',
+    method => 'POST',
+    description => "Request resource migration (online) to another node.",
+    parameters => {
+    	additionalProperties => 0,
+	properties => {
+	    sid => get_standard_option('pve-ha-resource-id'),
+	    node => get_standard_option('pve-node'),
+	},
+    },
+    returns => { type => 'null' },
+    code => sub {
+	my ($param) = @_;
+
+	PVE::HA::Env::PVE2->queue_crm_commands("migrate $param->{sid} $param->{node}");
+	    
+	return undef;
+    }});
+
+__PACKAGE__->register_method ({
+    name => 'relocate',
+    protected => 1,
+    path => '{sid}/relocate',
+    method => 'POST',
+    description => "Request resource relocatzion to another node. This stops the service on the old node, and restarts it on the target node.",
+    parameters => {
+    	additionalProperties => 0,
+	properties => {
+	    sid => get_standard_option('pve-ha-resource-id'),
+	    node => get_standard_option('pve-node'),
+	},
+    },
+    returns => { type => 'null' },
+    code => sub {
+	my ($param) = @_;
+
+	PVE::HA::Env::PVE2->queue_crm_commands("relocate $param->{sid} $param->{node}");
+	    
+	return undef;
+    }});
+
 1;
