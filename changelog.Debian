@@ -1,3 +1,11 @@
+pve-ha-manager (0.2-1) unstable; urgency=medium
+
+  * add ha-manager command line tool
+
+  * start implementing resources and groups API
+
+ -- Proxmox Support Team <support@proxmox.com>  Fri, 13 Mar 2015 09:26:12 +0100
+
 pve-ha-manager (0.1-1) unstable; urgency=low
 
   * first package
