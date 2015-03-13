@@ -133,11 +133,12 @@ sub read_service_config {
 
     foreach my $sid (keys %{$res->{ids}}) {
 	my $d = $res->{ids}->{$sid};
+	my $name = PVE::HA::Tools::parse_sid($sid);
 	$d->{state} = 'enabled' if !defined($d->{state});
 	if ($d->{type} eq 'pvevm') {
-	    if (my $vmd = $vmlist->{ids}->{$d->{name}}) {
+	    if (my $vmd = $vmlist->{ids}->{$name}) {
 		if (!$vmd) {
-		    warn "no such VM '$d->{name}'\n";
+		    warn "no such VM '$name'\n";
 		} else {
 		    $d->{node} = $vmd->{node};
 		    $conf->{$sid} = $d;
@@ -441,11 +442,11 @@ sub exec_resource_agent {
 
     # fixme: return valid_exit code (instead of using die) ?
 
-    my $service_type = $service_config->{type};
-    
+    my ($service_type, $service_name) = PVE::HA::Tools::parse_sid($sid);
+
     die "service type '$service_type'not implemented" if $service_type ne 'pvevm';
 
-    my $vmid = $service_config->{name};
+    my $vmid = $service_name;
 
     my $running = PVE::QemuServer::check_running($vmid, 1);
  

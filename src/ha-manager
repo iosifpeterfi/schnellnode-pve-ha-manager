@@ -4,10 +4,11 @@ use strict;
 use warnings;
 
 use PVE::INotify;
-use PVE::JSONSchema;
+use PVE::JSONSchema qw(get_standard_option);
 use PVE::CLIHandler;
 use PVE::Cluster;
 
+use PVE::HA::Tools;
 use PVE::API2::HA::Resources;
 use PVE::API2::HA::Groups;
 
@@ -21,31 +22,54 @@ die "please run as root\n" if $> != 0;
 my $nodename = PVE::INotify::nodename();
 
 __PACKAGE__->register_method ({
-    name => 'test', 
-    path => 'test',
-    method => 'GET',
-    description => "A stupid test.",
+    name => 'enable', 
+    path => 'enable',
+    method => 'POST',
+    description => "Enable a HA resource.",
     parameters => {
     	additionalProperties => 0,
 	properties => {
+	    sid => get_standard_option('pve-ha-resource-id'),
 	},
     },
     returns => { type => 'null' },
     code => sub {
 	my ($param) = @_;
 
-	print "TEST\n";
+	# delete state (default is 'enabled')
+	PVE::API2::HA::Resources->update({ sid => $param->{sid}, delete => 'state' });
+	
+	return undef;
+    }});
+
+__PACKAGE__->register_method ({
+    name => 'disable', 
+    path => 'disable',
+    method => 'POST',
+    description => "Disable a HA resource.",
+    parameters => {
+    	additionalProperties => 0,
+	properties => {
+	    sid => get_standard_option('pve-ha-resource-id'),
+	},
+    },
+    returns => { type => 'null' },
+    code => sub {
+	my ($param) = @_;
+
+	PVE::API2::HA::Resources->update({ sid => $param->{sid}, state => 'disabled' });
 	
 	return undef;
     }});
 
 my $cmddef = {
-    test => [ __PACKAGE__, 'test', []],
+    enable => [ __PACKAGE__, 'enable', ['sid']],
+    disable => [ __PACKAGE__, 'disable', ['sid']],
     config => [ 'PVE::API2::HA::Resources', 'index', [], {}, sub {
 	my $res = shift;
 	foreach my $rec (sort { $a->{sid} cmp $b->{sid} } @$res) {
 	    my ($type, $name) = split(':', $rec->{sid}, 2);
-	    print "$type: $name\n";
+	    print "$type:$name\n";
 	    foreach my $k (sort keys %$rec) {
 		next if $k eq 'digest' || $k eq 'sid' || 
 		    $k eq 'type';

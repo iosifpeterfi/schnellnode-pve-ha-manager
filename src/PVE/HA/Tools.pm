@@ -45,6 +45,14 @@ PVE::JSONSchema::register_standard_option('pve-ha-group-id', {
     type => 'string', format => 'pve-configid',
 });
 
+sub parse_sid {
+    my ($sid) = @_;
+
+    my ($type, $name) = split(':', $sid, 2);
+
+    return wantarray ? ($type, $name) : $name;
+}
+
 sub read_json_from_file {
     my ($filename, $default) = @_;
 

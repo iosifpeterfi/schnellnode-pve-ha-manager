@@ -110,7 +110,7 @@ __PACKAGE__->register_method ({
 	my ($param) = @_;
 
 	my $sid = extract_param($param, 'sid');
-	my ($type, $name) = split(':', $sid, 2);
+	my ($type, $name) = PVE::HA::Tools::parse_sid($sid);
 
 	if (my $param_type = extract_param($param, 'type')) {
 	    # useless, but do it anyway
@@ -155,7 +155,7 @@ __PACKAGE__->register_method ({
 	my $delete = extract_param($param, 'delete');
 
 	my $sid = extract_param($param, 'sid');
-	my ($type, $name) = split(':', $sid, 2);
+	my ($type, $name) = PVE::HA::Tools::parse_sid($sid);
 
 	if (my $param_type = extract_param($param, 'type')) {
 	    # useless, but do it anyway
