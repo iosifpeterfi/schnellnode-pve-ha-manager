@@ -117,10 +117,10 @@ sub write_lrm_status {
     PVE::HA::Tools::write_json_to_file($filename, $status_obj); 
 }
 
-sub manager_status_exists {
+sub service_config_exists {
     my ($self) = @_;
-    
-    return -f $manager_status_filename ? 1 : 0;
+
+    return -f $ha_resources_config ? 1 : 0;
 }
 
 sub read_service_config {

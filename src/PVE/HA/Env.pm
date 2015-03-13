@@ -54,15 +54,6 @@ sub write_lrm_status {
     return $self->{plug}->write_lrm_status($status_obj);
 }
 
-# we use this to enable/disbale ha
-sub manager_status_exists {
-    my ($self) = @_;
-
-    die "this is not used?!"; # fixme:
-    
-    return $self->{plug}->manager_status_exists();
-}
-
 # implement a way to send commands to the CRM master
 sub queue_crm_commands {
     my ($self, $cmd) = @_;
@@ -74,6 +65,13 @@ sub read_crm_commands {
     my ($self) = @_;
 
     return $self->{plug}->read_crm_commands();
+}
+
+# we use this to enable/disbale ha
+sub service_config_exists {
+    my ($self) = @_;
+
+    return $self->{plug}->service_config_exists();
 }
 
 sub read_service_config {

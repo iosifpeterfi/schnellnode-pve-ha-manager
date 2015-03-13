@@ -123,14 +123,6 @@ sub write_manager_status {
     PVE::HA::Tools::write_json_to_file($filename, $status_obj); 
 }
 
-sub manager_status_exists {
-    my ($self) = @_;
-
-    my $filename = "$self->{statusdir}/manager_status";
- 
-    return -f $filename ? 1 : 0;
-}
-
 sub read_lrm_status {
     my ($self, $node) = @_;
 
@@ -145,6 +137,12 @@ sub write_lrm_status {
     my $node = $self->{nodename};
 
     return $self->{hardware}->write_lrm_status($node, $status_obj);
+}
+
+sub service_config_exists {
+    my ($self) = @_;
+
+    return 1; # assume ha is always enabled here
 }
 
 sub read_service_config {
