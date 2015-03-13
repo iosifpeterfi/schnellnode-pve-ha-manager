@@ -14,7 +14,6 @@ use PVE::HA::Tools;
 # Server can have several states:
 
 my $valid_states = {
-    disabled => "HA is disabled (no resource configuration)",
     wait_for_agent_lock => "waiting for agent lock",
     active => "got agent_lock",
     lost_agent_lock => "lost agent_lock",
@@ -32,10 +31,7 @@ sub new {
 	results => {},
     }, $class;
 
-    my $next_state = $haenv->service_config_exists() ?
-	'wait_for_agent_lock' : 'disabled';
-    
-    $self->set_local_status({ state => $next_state });   
+    $self->set_local_status({ state => 	'wait_for_agent_lock' });   
     
     return $self;
 }
@@ -114,13 +110,7 @@ sub do_one_iteration {
 
     my $ctime = $haenv->get_time();
 
-    if ($state eq 'disabled') {
-
-	if ($haenv->service_config_exists()) {
-	    $self->set_local_status({ state => 'wait_for_agent_lock' });
-	}
-	
-    } if ($state eq 'wait_for_agent_lock') {
+    if ($state eq 'wait_for_agent_lock') {
 
 	my $service_count = 1; # todo: correctly compute
 
@@ -227,10 +217,9 @@ sub do_one_iteration {
 
 	    return 0;
 	}
-    } elsif ($state eq 'disabled') {
 
-	# do nothing
-	
+	$haenv->sleep(5);
+
     } else {
 
 	die "got unexpected status '$state'\n";

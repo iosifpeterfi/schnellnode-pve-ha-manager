@@ -1,6 +1,7 @@
 [Unit]
 Description=PVE Cluster Ressource Manager Daemon
 ConditionPathExists=/usr/sbin/pve-ha-crm
+ConditionPathExists=/etc/pve/ha/resources.cfg
 Requires=pve-cluster.service
 Wants=pvedaemon.service
 After=pve-cluster.service

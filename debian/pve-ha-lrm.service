@@ -1,6 +1,7 @@
 [Unit]
 Description=PVE Local HA Ressource Manager Daemon
 ConditionPathExists=/usr/sbin/pve-ha-lrm
+ConditionPathExists=/etc/pve/ha/resources.cfg
 Requires=pve-cluster.service
 Wants=pvedaemon.service
 After=pve-cluster.service
