@@ -6,6 +6,23 @@ use JSON;
 use PVE::JSONSchema;
 use PVE::Tools;
 
+PVE::JSONSchema::register_format('pve-ha-resource-id', \&pve_verify_ha_resource_id);
+sub pve_verify_ha_resource_id {
+    my ($sid, $noerr) = @_;
+
+    if ($sid !~ m/^[a-z]+:\S+$/) {
+	return undef if $noerr;
+	die "value does not look like a valid ha resource id\n";
+    }
+    return $sid;
+}
+
+PVE::JSONSchema::register_standard_option('pve-ha-resource-id', {
+    description => "HA resource ID. This consists of a resource type followed by a resource specific name, separated with collon (example: pvevm:100).",
+    typetext => "<type>:<name>",
+    type => 'string', format => 'pve-ha-resource-id',					 
+});
+
 PVE::JSONSchema::register_format('pve-ha-group-node', \&pve_verify_ha_group_node);
 sub pve_verify_ha_group_node {
     my ($node, $noerr) = @_;

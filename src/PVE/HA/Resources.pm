@@ -12,19 +12,16 @@ use base qw(PVE::SectionConfig);
 
 my $defaultData = {
     propertyList => {
-	type => { description => "Resource type." },
-	name => {
-	    description => "Resource name.",
-	    type => 'string',
-	    optional => 1,
-	},
+	type => { description => "Resource type.", optional => 1 },
+	sid => get_standard_option('pve-ha-resource-id'),
 	state => {
 	    description => "Resource state.",
 	    type => 'string',
 	    enum => ['enabled', 'disabled'],
 	    optional => 1,
+	    default => 'enabled',
 	},
-	group => get_standard_option('pve-ha-group-id'),
+	group => get_standard_option('pve-ha-group-id', { optional => 1 }),
 	comment => {
 	    description => "Description.",
 	    type => 'string',
@@ -44,6 +41,14 @@ sub private {
     return $defaultData;
 }
 
+sub format_section_header {
+    my ($class, $type, $sectionId) = @_;
+
+    my (undef, $name) = split(':', $sectionId, 2);
+    
+    return "$type: $name\n";
+}
+
 sub parse_section_header {
     my ($class, $line) = @_;
 
@@ -54,13 +59,9 @@ sub parse_section_header {
 	    if (my $plugin = $defaultData->{plugins}->{$type}) {
 		$plugin->verify_name($name);
 	    }
-	    # fixme: ?
-	    #PVE::JSONSchema::pve_verify_configid($name);
 	};
 	$errmsg = $@ if $@;
-	my $config = {
-	    name => $name,
-	}; # to return additional attributes
+	my $config = {}; # to return additional attributes
 	return ($type, "$type:$name", $errmsg, $config);
     }
     return undef;
@@ -80,12 +81,12 @@ sub type {
 sub verify_name {
     my ($class, $name) = @_;
 
-    die "invalid VMID\n" if $name !~ m/^[1-9][0-0]+$/;
+    die "invalid VMID\n" if $name !~ m/^[1-9][0-9]+$/;
 }
 
 sub options {
     return {
-	name => {},
+	state => { optional => 1 },
 	group => { optional => 1 },
 	comment => { optional => 1 },
     };
@@ -111,7 +112,7 @@ sub verify_name {
 
 sub options {
     return {
-	name => {},
+	state => { optional => 1 },
 	group => { optional => 1 },
 	comment => { optional => 1 },
     };

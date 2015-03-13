@@ -25,9 +25,41 @@ my $manager_status_filename = "/etc/pve/ha/manager_status";
 my $ha_groups_config = "/etc/pve/ha/groups.cfg";
 my $ha_resources_config = "/etc/pve/ha/resources.cfg";
 
+# fixme:
 #cfs_register_file($ha_groups_config, 
 #		  sub { PVE::HA::Groups->parse_config(@_); },
 #		  sub { PVE::HA::Groups->write_config(@_); });
+#cfs_register_file($ha_resources_config, 
+#		  sub { PVE::HA::Resources->parse_config(@_); },
+#		  sub { PVE::HA::Resources->write_config(@_); });
+
+sub read_resources_config {
+    my $raw = '';
+
+    $raw = PVE::Tools::file_get_contents($ha_resources_config)
+	if -f $ha_resources_config;
+    
+    return PVE::HA::Config::parse_resources_config($ha_resources_config, $raw);
+}
+
+sub write_resources_config {
+    my ($cfg) = @_;
+
+    my $raw = PVE::HA::Resources->write_config($ha_resources_config, $cfg);
+    PVE::Tools::file_set_contents($ha_resources_config, $raw);
+}
+
+sub lock_ha_config {
+    my ($code, $errmsg) = @_;
+
+    # fixme: do not use cfs_lock_storage (replace with cfs_lock_ha)
+    my $res = PVE::Cluster::cfs_lock_storage("_ha_crm_commands", undef, $code);
+    my $err = $@;
+    if ($err) {
+	$errmsg ? die "$errmsg: $err" : die $err;
+    }
+    return $res;
+}
 
 sub new {
     my ($this, $nodename) = @_;
@@ -94,14 +126,7 @@ sub manager_status_exists {
 sub read_service_config {
     my ($self) = @_;
 
-    # fixme: use cfs_read_file
-    
-    my $raw = '';
-
-    $raw = PVE::Tools::file_get_contents($ha_resources_config)
-	if -f $ha_resources_config;
-    
-    my $res = PVE::HA::Config::parse_resources_config($ha_resources_config, $raw);
+    my $res = read_resources_config();
 
     my $vmlist = PVE::Cluster::get_vmlist();
     my $conf = {};
@@ -164,10 +189,7 @@ sub queue_crm_commands {
 	PVE::Tools::file_set_contents($filename, $data);
     };
 
-    # fixme: do not use cfs_lock_storage (replace with cfs_lock_ha)
-    my $res = PVE::Cluster::cfs_lock_storage("_ha_crm_commands", undef, $code);
-    die $@ if $@;
-    return $res;
+    return lock_ha_config($code);
 }
 
 sub read_crm_commands {
@@ -185,10 +207,7 @@ sub read_crm_commands {
 	return $data;
     };
 
-    # fixme: do not use cfs_lock_storage (replace with cfs_lock_ha)
-    my $res = PVE::Cluster::cfs_lock_storage("_ha_crm_commands", undef, $code);
-    die $@ if $@;
-    return $res;
+    return lock_ha_config($code);
 }
 
 # this should return a hash containing info

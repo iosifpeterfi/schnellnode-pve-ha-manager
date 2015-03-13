@@ -43,11 +43,12 @@ my $cmddef = {
     test => [ __PACKAGE__, 'test', []],
     config => [ 'PVE::API2::HA::Resources', 'index', [], {}, sub {
 	my $res = shift;
-	foreach my $rec (sort { $a->{name} cmp $b->{name} } @$res) {
-	    print "$rec->{type}: $rec->{name}\n";
+	foreach my $rec (sort { $a->{sid} cmp $b->{sid} } @$res) {
+	    my ($type, $name) = split(':', $rec->{sid}, 2);
+	    print "$type: $name\n";
 	    foreach my $k (sort keys %$rec) {
 		next if $k eq 'digest' || $k eq 'sid' || 
-		    $k eq 'type' || $k eq 'name';
+		    $k eq 'type';
 		print "\t$k $rec->{$k}\n";
 	    }
 	    print "\n";
@@ -63,6 +64,10 @@ my $cmddef = {
 	    }
 	    print "\n";
 	}}],
+    add => [ "PVE::API2::HA::Resources", 'create', ['sid'] ],
+    remove => [ "PVE::API2::HA::Resources", 'delete', ['sid'] ],
+    set => [ "PVE::API2::HA::Resources", 'update', ['sid'] ],
+
 };
 
 my $cmd = shift;
