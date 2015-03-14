@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use lib '.';
+use lib '..';
 use PVE::HA::Manager;
 
 use Data::Dumper;

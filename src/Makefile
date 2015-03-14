@@ -57,7 +57,7 @@ installsim: pve-ha-simulator
 
 .PHONY: test
 test: 
-#	make -C test test
+	make -C test test
 
 .PHONY: clean
 clean: 	
