@@ -5,7 +5,7 @@ use warnings;
 use Digest::MD5 qw(md5_base64);
 
 use Data::Dumper;
-
+use PVE::Tools;
 use PVE::HA::NodeStatus;
 
 sub new {
@@ -92,7 +92,9 @@ sub select_service_node {
 
     my $top_pri = $pri_list[0];
 
-    my @nodes = sort { $online_node_usage->{$a} <=> $online_node_usage->{$b} } keys %{$pri_groups->{$top_pri}};
+    my @nodes = sort { 
+	$online_node_usage->{$a} <=> $online_node_usage->{$b} || $a cmp $b
+    } keys %{$pri_groups->{$top_pri}};
 
     my $found;
     for (my $i = scalar(@nodes) - 1; $i >= 0; $i--) {
