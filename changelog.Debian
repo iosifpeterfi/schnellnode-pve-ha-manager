@@ -1,3 +1,17 @@
+pve-ha-manager (0.3-1) unstable; urgency=medium
+
+  * really activate softdog
+
+  * correctly count active services
+
+  * implement fence_delay to avoid immediate fencing
+
+  * pve-ha-simulator: reset watchdog with poweroff
+
+  * pve-ha-simulator: use option nofailback for default groups
+
+ -- Proxmox Support Team <support@proxmox.com>  Mon, 16 Mar 2015 13:03:23 +0100
+
 pve-ha-manager (0.2-1) unstable; urgency=medium
 
   * add ha-manager command line tool
