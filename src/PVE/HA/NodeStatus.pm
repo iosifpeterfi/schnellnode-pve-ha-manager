@@ -13,6 +13,7 @@ sub new {
     my $self = bless {
 	haenv => $haenv,
 	status => $status,
+	last_online => {},
     }, $class;
 
     return $self;
@@ -38,6 +39,23 @@ sub node_is_online {
     my ($self, $node) = @_;
 
     return $self->get_node_state($node) eq 'online';
+}
+
+sub node_is_offline_delayed {
+    my ($self, $node, $delay) = @_;
+
+    return undef if $self->get_node_state($node) eq 'online';
+
+    my $last_online = $self->{last_online}->{$node};
+
+    my $ctime = time();
+    
+    if (!defined($last_online)) {
+	$self->{last_online}->{$node} = $ctime;
+	return undef;
+    }
+
+    return (time() - $last_online) >= $delay;
 }
 
 sub list_online_nodes {
@@ -69,7 +87,6 @@ my $set_node_state = sub {
 
     $haenv->log('info', "node '$node': state changed from " .
 		"'$last_state' => '$state'\n");
-
 };
 
 sub update {
@@ -78,6 +95,9 @@ sub update {
     foreach my $node (keys %$node_info) {
 	my $d = $node_info->{$node};
 	next if !$d->{online};
+
+	# record last time the node was online (required to implement fence delay)
+	$self->{last_online}->{$node} = time();
 
 	my $state = $self->get_node_state($node);
 
