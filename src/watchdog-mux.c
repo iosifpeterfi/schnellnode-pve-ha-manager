@@ -115,9 +115,12 @@ main(void)
         fprintf(stderr, "watchdog active - unable to restart watchdog-mux\n");
         exit(EXIT_FAILURE);       
     }
-    
+
+    /* if you want to debug, set options in /lib/modprobe.d/aliases.conf
+     * options softdog soft_noboot=1
+     */
     if (stat(WATCHDOG_DEV, &fs) == -1) {
-        system("modprobe -q softdog soft_noboot=1"); // fixme
+        system("modprobe -q softdog"); // load softdog by default
     }
 
     if ((watchdog_fd = open(WATCHDOG_DEV, O_WRONLY)) == -1) {
