@@ -124,6 +124,31 @@ sub fenced_service_count {
     
     return $count;
 }
+
+sub active_service_count {
+    my ($self) = @_;
+    
+    my $haenv = $self->{haenv};
+
+    my $nodename = $haenv->nodename();
+
+    my $ss = $self->{service_status};
+
+    my $count = 0;
+    
+    foreach my $sid (keys %$ss) {
+	my $sd = $ss->{$sid};
+	next if !$sd->{node};
+	next if $sd->{node} ne $nodename;
+	my $req_state = $sd->{state};
+	next if !defined($req_state);
+	next if $req_state eq 'stopped';
+
+	$count++;
+    }
+    
+    return $count;
+}
     
 sub do_one_iteration {
     my ($self) = @_;
@@ -144,7 +169,7 @@ sub do_one_iteration {
 
     if ($state eq 'wait_for_agent_lock') {
 
-	my $service_count = 1; # todo: correctly compute
+	my $service_count = $self->active_service_count();
 
 	if (!$fence_request && $service_count && $haenv->quorate()) {
 	    if ($self->get_protected_ha_agent_lock()) {
@@ -197,7 +222,7 @@ sub do_one_iteration {
 
 		# fixme: request service stop or relocate ?
 
-		my $service_count = 0; # fixme
+		my $service_count = $self->active_service_count();
 
 		if ($service_count == 0) {
 
@@ -230,23 +255,23 @@ sub do_one_iteration {
 
 	if ($self->{shutdown_request}) {
 
-	    my $running_services = 0; # fixme: correctly compute
+	    my $service_count = $self->active_service_count();
 
-	    if ($running_services > 0) {
+	    if ($service_count > 0) {
 		$haenv->log('err', "get shutdown request in state 'lost_agent_lock' - " . 
-			    "killing running services");
+			    "detected $service_count running services");
 
-		# fixme: kill all services as fast as possible
+	    } else {
+
+		# all services are stopped, so we can close the watchdog
+
+		if ($self->{ha_agent_wd}) {
+		    $haenv->watchdog_close($self->{ha_agent_wd});
+		    delete $self->{ha_agent_wd};
+		}
+		
+		return 0;
 	    }
-
-	    # now all services are stopped, so we can close the watchdog
-
-	    if ($self->{ha_agent_wd}) {
-		$haenv->watchdog_close($self->{ha_agent_wd});
-		delete $self->{ha_agent_wd};
-	    }
-
-	    return 0;
 	}
 
 	$haenv->sleep(5);
