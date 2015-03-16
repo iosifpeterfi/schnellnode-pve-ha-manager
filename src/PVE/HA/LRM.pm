@@ -29,6 +29,7 @@ sub new {
 	status => { state => 'startup' },
 	workers => {},
 	results => {},
+	shutdown_request => 0,
     }, $class;
 
     $self->set_local_status({ state => 	'wait_for_agent_lock' });   
@@ -98,6 +99,32 @@ sub get_protected_ha_agent_lock {
     return 0;
 }
 
+sub fenced_service_count {
+    my ($self) = @_;
+    
+    my $haenv = $self->{haenv};
+
+    my $nodename = $haenv->nodename();
+
+    my $ss = $self->{service_status};
+
+    my $count = 0;
+    
+    foreach my $sid (keys %$ss) {
+	my $sd = $ss->{$sid};
+	next if !$sd->{node};
+	next if $sd->{node} ne $nodename;
+	my $req_state = $sd->{state};
+	next if !defined($req_state);
+	if ($req_state eq 'fence') {
+	    $count++;
+	    next;
+	}
+    }
+    
+    return $count;
+}
+    
 sub do_one_iteration {
     my ($self) = @_;
 
@@ -106,6 +133,11 @@ sub do_one_iteration {
     my $status = $self->get_local_status();
     my $state = $status->{state};
 
+    my $ms = $haenv->read_manager_status();
+    $self->{service_status} =  $ms->{service_status} || {};
+
+    my $fence_request = $self->fenced_service_count();
+    
     # do state changes first 
 
     my $ctime = $haenv->get_time();
@@ -114,7 +146,7 @@ sub do_one_iteration {
 
 	my $service_count = 1; # todo: correctly compute
 
-	if ($service_count && $haenv->quorate()) {
+	if (!$fence_request && $service_count && $haenv->quorate()) {
 	    if ($self->get_protected_ha_agent_lock()) {
 		$self->set_local_status({ state => 'active' });
 	    }
@@ -122,7 +154,7 @@ sub do_one_iteration {
 	
     } elsif ($state eq 'lost_agent_lock') {
 
-	if ($haenv->quorate()) {
+	if (!$fence_request && $haenv->quorate()) {
 	    if ($self->get_protected_ha_agent_lock()) {
 		$self->set_local_status({ state => 'active' });
 	    }
@@ -130,7 +162,10 @@ sub do_one_iteration {
 
     } elsif ($state eq 'active') {
 
-	if (!$self->get_protected_ha_agent_lock()) {
+	if ($fence_request) {		
+	    $haenv->log('err', "node need to be fenced - releasing agent_lock\n");
+	    $self->set_local_status({ state => 'lost_agent_lock'});	
+	} elsif (!$self->get_protected_ha_agent_lock()) {
 	    $self->set_local_status({ state => 'lost_agent_lock'});
 	}
     }
@@ -139,8 +174,6 @@ sub do_one_iteration {
     $state = $status->{state};
 
     # do work
-
-    $self->{service_status} = {};
 
     if ($state eq 'wait_for_agent_lock') {
 
@@ -176,11 +209,9 @@ sub do_one_iteration {
 		    $shutdown = 1;
 		}
 	    } else {
-		my $ms = $haenv->read_manager_status();
-
-		$self->{service_status} =  $ms->{service_status} || {};
 
 		$self->manage_resources();
+
 	    }
 	};
 	if (my $err = $@) {
@@ -236,8 +267,6 @@ sub manage_resources {
 
     my $nodename = $haenv->nodename();
 
-    my $ms = $haenv->read_manager_status();
-
     my $ss = $self->{service_status};
 
     foreach my $sid (keys %$ss) {
@@ -247,7 +276,6 @@ sub manage_resources {
 	next if $sd->{node} ne $nodename;
 	my $req_state = $sd->{state};
 	next if !defined($req_state);
-
 	eval {
 	    $self->queue_resource_command($sid, $sd->{uid}, $req_state, $sd->{target});
 	};
