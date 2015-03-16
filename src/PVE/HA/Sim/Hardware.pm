@@ -415,6 +415,23 @@ my $modify_watchog = sub {
     return $self->global_lock($update_cmd);
 };
 
+sub watchdog_reset_nolock {
+    my ($self, $node) = @_;
+
+    my $filename = "$self->{statusdir}/watchdog_status";
+
+    if (-f $filename) {
+ 	my $raw = PVE::Tools::file_get_contents($filename);
+	my $wdstatus = decode_json($raw);
+
+	foreach my $id (keys %$wdstatus) {
+	    delete $wdstatus->{$id} if $wdstatus->{$id}->{node} eq $node;
+	}
+	
+	PVE::Tools::file_set_contents($filename, encode_json($wdstatus));
+    }
+}
+
 sub watchdog_check {
     my ($self, $node) = @_;
 
@@ -509,7 +526,5 @@ sub watchdog_update {
 
     return &$modify_watchog($self, $code);
 }
-
-
 
 1;

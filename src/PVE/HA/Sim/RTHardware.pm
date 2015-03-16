@@ -216,6 +216,7 @@ sub sim_hardware_cmd {
 			kill(9, $d->{lrm});
 			$d->{lrm} = undef;
 		    }
+		    $self->watchdog_reset_nolock($node);
 		}
 	    }
 
