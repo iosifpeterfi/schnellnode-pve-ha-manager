@@ -44,6 +44,8 @@ sub options {
     return {
 	nodes => {},
 	comment => { optional => 1 },
+	nofailback => { optional => 1 },
+	restricted => { optional => 1 },
     };
 }
 

@@ -195,12 +195,15 @@ sub write_service_status {
 my $default_group_config = <<__EOD;
 group: prefer_node1
     nodes node1
+    nofailback 1
 
 group: prefer_node2
     nodes node2
+    nofailback 1
 
 group: prefer_node3
     nodes node3
+    nofailback 1
 __EOD
 
 sub new {
