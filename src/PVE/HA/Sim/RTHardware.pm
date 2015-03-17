@@ -31,6 +31,10 @@ sub new {
 
     my $self = $class->SUPER::new($testdir);
 
+    my $logfile = "$testdir/log";
+    $self->{logfh} = IO::File->new(">$logfile") ||
+	die "unable to open '$logfile' - $!";
+
     foreach my $node (sort keys %{$self->{nodes}}) {
 	my $d = $self->{nodes}->{$node};
 
@@ -265,6 +269,9 @@ sub cleanup {
 
 sub append_text {
     my ($self, $text) = @_;
+
+    $self->{logfh}->print($text);
+    $self->{logfh}->flush();
 
     my $logview = $self->{gui}->{text_view} || die "GUI not ready";
     my $textbuf = $logview->get_buffer();
