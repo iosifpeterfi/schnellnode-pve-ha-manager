@@ -301,22 +301,11 @@ sub get_ha_manager_lock {
 }
 
 sub get_ha_agent_lock {
-    my ($self) = @_;
-    
-    my $node = $self->nodename();
-
-    return $self->get_pve_lock("ha_agent_${node}_lock");
-}
-
-sub test_ha_agent_lock {
     my ($self, $node) = @_;
     
-    my $lockid = "ha_agent_${node}_lock";
-    my $filename = "$lockdir/$lockid";
-    my $res = $self->get_pve_lock($lockid);
-    rmdir $filename if $res; # cfs unlock
+    $node = $self->nodename() if !defined($node);
 
-    return $res;
+    return $self->get_pve_lock("ha_agent_${node}_lock");
 }
 
 sub quorate {

@@ -64,14 +64,6 @@ sub get_ha_agent_lock {
     return $res;
 }
 
-sub test_ha_agent_lock {
-    my ($self, $node) = @_;
-
-    my $res = $self->SUPER::test_ha_agent_lock($node);
-    ++$self->{loop_delay};
-    return $res;
-}
-
 sub loop_start_hook {
     my ($self, $starttime) = @_;
 

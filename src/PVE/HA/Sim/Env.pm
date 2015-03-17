@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use POSIX qw(strftime EINTR);
 use Data::Dumper;
-use JSON; 
+use JSON;
 use IO::File;
 use Fcntl qw(:DEFAULT :flock);
 
@@ -16,7 +16,7 @@ sub new {
 
     die "missing nodename" if !$nodename;
     die "missing log_id" if !$log_id;
-    
+
     my $class = ref($this) || $this;
 
     my $self = bless {}, $class;
@@ -47,7 +47,7 @@ sub sim_get_lock {
 
     my $code = sub {
 
-	my $data = PVE::HA::Tools::read_json_from_file($filename, {});  
+	my $data = PVE::HA::Tools::read_json_from_file($filename, {});
 
 	my $res;
 
@@ -58,7 +58,7 @@ sub sim_get_lock {
 
 	    if (my $d = $data->{$lock_name}) {
 		my $tdiff = $ctime - $d->{time};
-	    
+
 		if ($tdiff > $self->{lock_timeout}) {
 		    $res = 1;
 		} elsif (($tdiff <= $self->{lock_timeout}) && ($d->{node} eq $nodename)) {
@@ -72,9 +72,9 @@ sub sim_get_lock {
 	} else {
 
 	    if (my $d = $data->{$lock_name}) {
-	    
+
 		my $tdiff = $ctime - $d->{time};
-	    
+
 		if ($tdiff <= $self->{lock_timeout}) {
 		    if ($d->{node} eq $nodename) {
 			$d->{time} = $ctime;
@@ -99,7 +99,7 @@ sub sim_get_lock {
 	    }
 	}
 
-	PVE::HA::Tools::write_json_to_file($filename, $data); 
+	PVE::HA::Tools::write_json_to_file($filename, $data);
 
 	return $res;
     };
@@ -109,10 +109,10 @@ sub sim_get_lock {
 
 sub read_manager_status {
     my ($self) = @_;
-    
+
     my $filename = "$self->{statusdir}/manager_status";
 
-    return PVE::HA::Tools::read_json_from_file($filename, {});  
+    return PVE::HA::Tools::read_json_from_file($filename, {});
 }
 
 sub write_manager_status {
@@ -120,7 +120,7 @@ sub write_manager_status {
 
     my $filename = "$self->{statusdir}/manager_status";
 
-    PVE::HA::Tools::write_json_to_file($filename, $status_obj); 
+    PVE::HA::Tools::write_json_to_file($filename, $status_obj);
 }
 
 sub read_lrm_status {
@@ -218,19 +218,10 @@ sub get_ha_agent_lock_name {
 }
 
 sub get_ha_agent_lock {
-    my ($self) = @_;
-
-    my $lck = $self->get_ha_agent_lock_name();
-    return $self->sim_get_lock($lck);
-}
-
-sub test_ha_agent_lock {
     my ($self, $node) = @_;
 
     my $lck = $self->get_ha_agent_lock_name($node);
-    my $res = $self->sim_get_lock($lck);
-    $self->sim_get_lock($lck, 1) if $res; # unlock
-    return $res;
+    return $self->sim_get_lock($lck);
 }
 
 # return true when cluster is quorate

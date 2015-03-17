@@ -265,7 +265,7 @@ sub cleanup {
 
 sub append_text {
     my ($self, $text) = @_;
-    
+
     my $logview = $self->{gui}->{text_view} || die "GUI not ready";
     my $textbuf = $logview->get_buffer();
 
