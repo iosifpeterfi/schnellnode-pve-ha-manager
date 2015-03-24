@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use PVE::INotify;
+use JSON;
 use PVE::JSONSchema qw(get_standard_option);
 use PVE::CLIHandler;
 use PVE::Cluster;
@@ -11,6 +12,7 @@ use PVE::Cluster;
 use PVE::HA::Tools;
 use PVE::API2::HA::Resources;
 use PVE::API2::HA::Groups;
+use PVE::HA::Env::PVE2;
 
 use base qw(PVE::CLIHandler);
 
@@ -62,9 +64,34 @@ __PACKAGE__->register_method ({
 	return undef;
     }});
 
+__PACKAGE__->register_method ({
+    name => 'status', 
+    path => 'status',
+    method => 'GET',
+    description => "Display HA manger status.",
+    parameters => {
+    	additionalProperties => 0,
+	properties => {},
+    },
+    returns => { type => 'null' },
+    code => sub {
+	my ($param) = @_;
+
+	PVE::Cluster::check_cfs_quorum();
+	
+	my $haenv = PVE::HA::Env::PVE2->new($nodename);
+	
+	my $status = $haenv->read_manager_status();
+	
+	print to_json($status, { pretty => 1, canonical => 1} );
+
+	return undef;
+    }});
+
 my $cmddef = {
     enable => [ __PACKAGE__, 'enable', ['sid']],
     disable => [ __PACKAGE__, 'disable', ['sid']],
+    status => [ __PACKAGE__, 'status'],
     config => [ 'PVE::API2::HA::Resources', 'index', [], {}, sub {
 	my $res = shift;
 	foreach my $rec (sort { $a->{sid} cmp $b->{sid} } @$res) {
