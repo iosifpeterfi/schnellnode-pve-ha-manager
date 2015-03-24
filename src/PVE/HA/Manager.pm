@@ -294,6 +294,13 @@ sub manage {
 			uid => compute_new_uuid('started') };
     }
 
+    # remove stale service from manager state
+    foreach my $sid (keys %$ss) {
+	next if $sc->{$sid};
+	$haenv->log('info', "removing stale service '$sid' (no config)");
+	delete $ss->{$sid};
+    }
+    
     $self->update_crm_commands();
 
     for (;;) {
@@ -359,9 +366,6 @@ sub manage {
 
 	last if !$repeat;
     }
-
-    # remove stale services
-    # fixme:
 
     $self->flush_master_status();
 }
