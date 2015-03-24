@@ -207,7 +207,7 @@ my $change_service_state = sub {
     
 
     $text_state = " ($text_state)" if $text_state;
-    $haenv->log('info', "service '$sid': state changed from '${old_state}' to '${new_state}' $text_state\n");
+    $haenv->log('info', "service '$sid': state changed from '${old_state}' to '${new_state}' $text_state");
 };
 
 # read LRM status for all active nodes 
@@ -273,7 +273,7 @@ sub manage {
     $ns->update($haenv->get_node_info());
 
     if (!$ns->node_is_online($haenv->nodename())) {
-	$haenv->log('info', "master seems offline\n");
+	$haenv->log('info', "master seems offline");
 	return;
     }
 
@@ -288,7 +288,7 @@ sub manage {
     # add new service
     foreach my $sid (keys %$sc) {
 	next if $ss->{$sid}; # already there
-	$haenv->log('info', "Adding new service '$sid'\n");
+	$haenv->log('info', "adding new service '$sid'");
 	# assume we are running to avoid relocate running service at add
 	$ss->{$sid} = { state => 'started', node => $sc->{$sid}->{node},
 			uid => compute_new_uuid('started') };
