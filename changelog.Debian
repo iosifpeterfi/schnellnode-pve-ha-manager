@@ -1,3 +1,13 @@
+pve-ha-manager (0.4-1) unstable; urgency=medium
+
+  * increase fence_delay to 60 seconds
+
+  * fix regression test environment
+
+  * fix failover after master crash with pending fence action
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 25 Mar 2015 13:59:28 +0100
+
 pve-ha-manager (0.3-1) unstable; urgency=medium
 
   * really activate softdog
