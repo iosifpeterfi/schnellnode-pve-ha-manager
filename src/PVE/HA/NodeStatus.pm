@@ -52,8 +52,6 @@ sub node_is_offline_delayed {
 
     my $ctime = $haenv->get_time();
 
-    my $tdiff = $ctime -  $last_online;
-    
     if (!defined($last_online)) {
 	$self->{last_online}->{$node} = $ctime;
 	return undef;
