@@ -16,9 +16,6 @@ if (!GetOptions ("nodiff"   => \$opt_nodiff)) {
     exit -1;
 }
 
-
-#my $testcmd = "../pve-ha-manager --test"
-
 sub run_test {
     my $dir = shift;
 
@@ -26,10 +23,10 @@ sub run_test {
 
     print "run: $dir\n";
 
-    my $logfile = "$dir/log";
-    my $logexpect = "$logfile.expect";
+    my $logfile = "$dir/status/log";
+    my $logexpect = "$dir/log.expect";
 
-    my $res = system("perl -I ../ ../pve-ha-simulator $dir|tee $logfile");
+    my $res = system("perl -I ../ ../pve-ha-tester $dir");
     die "Test '$dir' failed\n" if $res != 0;
 
     return if $opt_nodiff;

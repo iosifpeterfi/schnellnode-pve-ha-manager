@@ -1,0 +1,32 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use JSON;
+use lib '..';
+
+use PVE::Tools;
+use PVE::HA::Sim::TestHardware;
+
+sub show_usage {
+    print "usage: $0 <testdir>\n";
+    exit(-1);
+};
+
+
+my $testdir = shift || show_usage();
+my $hardware = PVE::HA::Sim::TestHardware->new($testdir);
+
+$hardware->log('info', "starting simulation");
+
+eval { $hardware->run(); };
+if (my $err = $@) {
+    $hardware->log('err', "exit simulation - $err ");
+} else {
+    $hardware->log('info', "exit simulation - done");
+}
+
+exit(0);
+
+
+
