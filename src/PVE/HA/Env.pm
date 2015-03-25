@@ -186,4 +186,11 @@ sub exec_resource_agent {
     return $self->{plug}->exec_resource_agent($sid, $service_config, $cmd, @params)
 }
 
+# hack to support regression tests
+sub can_fork {
+    my ($self) = @_;
+
+    return $self->{plug}->can_fork();
+}
+
 1;

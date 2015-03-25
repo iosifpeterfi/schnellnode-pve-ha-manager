@@ -414,6 +414,12 @@ sub upid_wait {
     }
 }
 
+sub can_fork {
+    my ($self) = @_;
+
+    return 1;
+}
+
 sub exec_resource_agent {
     my ($self, $sid, $service_config, $cmd, @params) = @_;
 
