@@ -8,7 +8,7 @@ use Data::Dumper;
 use PVE::Tools;
 use PVE::HA::NodeStatus;
 
-my $fence_delay = 30;
+my $fence_delay = 60;
 
 sub new {
     my ($this, $haenv) = @_;
