@@ -286,9 +286,9 @@ sub manage {
     # compute new service status
 
     # add new service
-    foreach my $sid (keys %$sc) {
+    foreach my $sid (sort keys %$sc) {
 	next if $ss->{$sid}; # already there
-	$haenv->log('info', "adding new service '$sid'");
+	$haenv->log('info', "adding new service '$sid' on node '$sc->{$sid}->{node}'");
 	# assume we are running to avoid relocate running service at add
 	$ss->{$sid} = { state => 'started', node => $sc->{$sid}->{node},
 			uid => compute_new_uuid('started') };
