@@ -305,18 +305,18 @@ sub manage_resources {
 	    $self->queue_resource_command($sid, $sd->{uid}, $req_state, $sd->{target});
 	};
 	if (my $err = $@) {
-	    warn "unable to run resource agent for '$sid' - $err"; # fixme
+	    $haenv->log('err', "unable to run resource agent for '$sid' - $err"); # fixme
 	}
     }
 
-    my $starttime = time();
+    my $starttime = $haenv->get_time();
 
     # start workers
     my $max_workers = 4;
 
     my $sc = $haenv->read_service_config();
-    
-    while ((time() - $starttime) < 5) {
+
+    while (($haenv->get_time() - $starttime) < 5) {
 	my $count =  $self->check_active_workers();
 
 	foreach my $sid (keys %{$self->{workers}}) {
@@ -324,35 +324,46 @@ sub manage_resources {
 	    my $w = $self->{workers}->{$sid};
 	    my $cd = $sc->{$sid};
 	    if (!$cd) {
-		warn "missing resource configuration for '$sid'\n";
+		$haenv->log('err', "missing resource configuration for '$sid'");
 		next;
 	    }
 	    if (!$w->{pid}) {
-		my $pid = fork();
-		if (!defined($pid)) {
-		    warn "fork worker failed\n";
-		    $count = 0; last; # abort, try later
-		} elsif ($pid == 0) {
-		    # do work
+		if ($haenv->can_fork()) {
+		    my $pid = fork();
+		    if (!defined($pid)) {
+			$haenv->log('err', "fork worker failed");
+			$count = 0; last; # abort, try later
+		    } elsif ($pid == 0) {
+			# do work
+			my $res = -1;
+			eval {
+			    $res = $haenv->exec_resource_agent($sid, $cd, $w->{state}, $w->{target});
+			};
+			if (my $err = $@) {
+			    $haenv->log('err', $err);
+			    POSIX::_exit(-1);
+			}  
+			POSIX::_exit($res); 
+		    } else {
+			$count++;
+			$w->{pid} = $pid;
+		    }
+		} else {
 		    my $res = -1;
 		    eval {
 			$res = $haenv->exec_resource_agent($sid, $cd, $w->{state}, $w->{target});
 		    };
 		    if (my $err = $@) {
-			warn $err;
-			POSIX::_exit(-1);
-		    }  
-		    POSIX::_exit($res); 
-		} else {
-		    $count++;
-		    $w->{pid} = $pid;
+			$haenv->log('err', $err);
+		    }		    
+		    $self->resource_command_finished($sid, $w->{uid}, $res);
 		}
 	    }
 	}
 
 	last if !$count;
 
-	sleep(1);
+	$haenv->sleep(1);
     }
 }
 
