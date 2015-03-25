@@ -37,6 +37,11 @@ sub new {
     $self->{loop_count} = 0;
     $self->{cur_time} = 0;
 
+    my $statusdir = $self->statusdir();
+    my $logfile = "$statusdir/log";
+    $self->{logfh} = IO::File->new(">>$logfile") ||
+	die "unable to open '$logfile' - $!";
+
     foreach my $node (sort keys %{$self->{nodes}}) {
 
 	my $d = $self->{nodes}->{$node};
@@ -58,6 +63,22 @@ sub get_time {
     my ($self) = @_;
 
     return $self->{cur_time};
+}
+
+sub log {
+    my ($self, $level, $msg, $id) = @_;
+
+    chomp $msg;
+
+    my $time = $self->get_time();
+
+    $id = 'hardware' if !$id;
+
+    my $line = sprintf("%-5s %5d %12s: $msg\n", $level, $time, $id);
+    print $line;
+
+    $self->{logfh}->print($line);
+    $self->{logfh}->flush();
 }
 
 # simulate hardware commands
@@ -176,6 +197,13 @@ sub run {
 
 	die "simulation end\n" if $self->{cur_time} > $max_sim_time;
 
+	foreach my $node (@nodes) {
+	    my $d = $self->{nodes}->{$node};
+	    # forced time update
+	    $d->{lrm_env}->loop_start_hook($self->get_time());
+	    $d->{crm_env}->loop_start_hook($self->get_time());
+	}
+	
 	# apply new comand after 5 loop iterations
 
 	if (($self->{loop_count} % 5) == 0) {

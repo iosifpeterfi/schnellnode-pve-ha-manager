@@ -22,6 +22,11 @@ sub new {
     $self->{cur_time} = 0;
     $self->{loop_delay} = 0;
 
+    my $statusdir = $self->{hardware}->statusdir();
+    my $logfile = "$statusdir/log";
+    $self->{logfh} = IO::File->new(">>$logfile") ||
+	die "unable to open '$logfile' - $!";
+
     return $self;
 }
 
@@ -29,6 +34,20 @@ sub get_time {
     my ($self) = @_;
 
     return $self->{cur_time};
+}
+
+sub log {
+    my ($self, $level, $msg) = @_;
+
+    chomp $msg;
+
+    my $time = $self->get_time();
+
+    my $line = sprintf("%-5s %5d %12s: $msg\n", $level, $time, "$self->{nodename}/$self->{log_id}");
+    print $line;
+    
+    $self->{logfh}->print($line);
+    $self->{logfh}->flush();
 }
 
 sub sleep {
@@ -56,9 +75,9 @@ sub get_ha_manager_lock {
 }
 
 sub get_ha_agent_lock {
-    my ($self) = @_;
+    my ($self, $node) = @_;
 
-    my $res = $self->SUPER::get_ha_agent_lock();
+    my $res = $self->SUPER::get_ha_agent_lock($node);
     ++$self->{loop_delay};
 
     return $res;
@@ -88,6 +107,12 @@ sub loop_end_hook {
     # $self->{cur_time} += $delay;
 
     $self->{cur_time} += 1; # easier for simulation
+}
+
+sub can_fork {
+    my ($self) = @_;
+
+    return 0;
 }
 
 1;
