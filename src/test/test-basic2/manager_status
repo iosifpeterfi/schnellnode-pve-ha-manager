@@ -1,0 +1,15 @@
+{
+    "master_node": "node2",
+    "node_status": {
+	"node1":"fence",
+	"node3":"online",
+	"node2":"online"
+    },
+    "service_status": {
+	"pvevm:101": {
+	    "node": "node1",
+	    "state": "fence",
+	    "uid": "lavE3c7vLnotUBGT9whswg"
+	}
+    }
+}

@@ -1,0 +1,13 @@
+Test failover after master crash with pending fence action
+
+Scenario:
+
+1.) master was running on node2
+2.) master tries to fence node1 for some reason
+3.) master crash
+
+Test:
+
+- start master election
+- node1 cannot get master, because it is in state fence
+- node3 shold become master, fence node1, ...

@@ -1,0 +1,22 @@
+info      0     hardware: starting simulation
+info     20      cmdlist: execute power node1 on
+info     20    node1/crm: status change startup => wait_for_quorum
+info     20    node1/lrm: status change startup => wait_for_agent_lock
+info     20      cmdlist: execute power node3 on
+info     20    node3/crm: status change startup => wait_for_quorum
+info     20    node3/lrm: status change startup => wait_for_agent_lock
+info     22    node3/crm: got lock 'ha_manager_lock'
+info     22    node3/crm: status change wait_for_quorum => master
+info     22    node3/crm: node 'node2': state changed from 'online' => 'unknown'
+info     22    node3/crm: got lock 'ha_agent_node1_lock'
+info     22    node3/crm: fencing: acknowleged - got agent lock for node 'node1'
+info     22    node3/crm: node 'node1': state changed from 'fence' => 'unknown'
+info     22    node3/crm: service 'pvevm:101': state changed from 'fence' to 'stopped' 
+info     40    node1/crm: status change wait_for_quorum => slave
+info     42    node3/crm: node 'node1': state changed from 'unknown' => 'online'
+info     42    node3/crm: service 'pvevm:101': state changed from 'stopped' to 'started'  (node = node1)
+info    161    node1/lrm: got lock 'ha_agent_node1_lock'
+info    161    node1/lrm: status change wait_for_agent_lock => active
+info    161    node1/lrm: starting service pvevm:101
+info    161    node1/lrm: service status pvevm:101 started
+info    620     hardware: exit simulation - done

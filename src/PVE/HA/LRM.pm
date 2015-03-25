@@ -99,32 +99,6 @@ sub get_protected_ha_agent_lock {
     return 0;
 }
 
-sub fenced_service_count {
-    my ($self) = @_;
-    
-    my $haenv = $self->{haenv};
-
-    my $nodename = $haenv->nodename();
-
-    my $ss = $self->{service_status};
-
-    my $count = 0;
-    
-    foreach my $sid (keys %$ss) {
-	my $sd = $ss->{$sid};
-	next if !$sd->{node};
-	next if $sd->{node} ne $nodename;
-	my $req_state = $sd->{state};
-	next if !defined($req_state);
-	if ($req_state eq 'fence') {
-	    $count++;
-	    next;
-	}
-    }
-    
-    return $count;
-}
-
 sub active_service_count {
     my ($self) = @_;
     
@@ -161,7 +135,7 @@ sub do_one_iteration {
     my $ms = $haenv->read_manager_status();
     $self->{service_status} =  $ms->{service_status} || {};
 
-    my $fence_request = $self->fenced_service_count();
+    my $fence_request = PVE::HA::Tools::count_fenced_services($self->{service_status}, $haenv->nodename());
     
     # do state changes first 
 

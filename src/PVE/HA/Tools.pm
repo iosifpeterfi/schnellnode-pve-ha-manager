@@ -76,5 +76,24 @@ sub write_json_to_file {
     PVE::Tools::file_set_contents($filename, $raw);
 }
 
+sub count_fenced_services {
+    my ($ss, $node) = @_;
+
+    my $count = 0;
+    
+    foreach my $sid (keys %$ss) {
+	my $sd = $ss->{$sid};
+	next if !$sd->{node};
+	next if $sd->{node} ne $node;
+	my $req_state = $sd->{state};
+	next if !defined($req_state);
+	if ($req_state eq 'fence') {
+	    $count++;
+	    next;
+	}
+    }
+    
+    return $count;
+}
 
 1;
