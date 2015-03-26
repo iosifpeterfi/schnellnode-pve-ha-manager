@@ -512,6 +512,9 @@ sub exec_resource_agent {
 
 	my $target = $params[0];
 	die "$cmd '$sid' failed - missing target\n" if !defined($target);
+
+	# fixme: return valid_exit code
+	die "service '$sid' not on this node" if $service_config->{node} ne $nodename;
 	
 	if ($service_config->{node} eq $target) {
 	    # already there
@@ -519,12 +522,32 @@ sub exec_resource_agent {
 	} 
 	
 	if (!$running) {
-	    $self->change_service_location($sid, $service_config->{node}, $target);
+	    $self->change_service_location($sid, $nodename, $target);
 	    $self->log("info", "service $sid moved to node '$target'");
 	    return 0;
 	} else {
 	    # we alwas do live migration if VM is online
-	    #return 0;
+
+	    my $upid;
+	    my $params = {
+		node => $nodename, 
+		vmid => $vmid,
+		target => $target,
+		online => 1,
+	    };
+
+	    my $oldconfig = PVE::QemuServer::config_file($vmid, $nodename);
+
+	    my $upid = PVE::API2::Qemu->migrate_vm($params);
+	    $self->upid_wait($upid);
+
+	    # something went wrong if old config file is still there
+	    if (-f $oldconfig) {
+		$self->log("err", "service $sid not moved (migration error)");
+		return 1;
+	    }
+	    
+	    return 0;
 	}
 	
     }
