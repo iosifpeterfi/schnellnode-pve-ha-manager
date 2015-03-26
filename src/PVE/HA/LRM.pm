@@ -36,8 +36,6 @@ sub new {
 
     $self->set_local_status({ state => 	'wait_for_agent_lock' });   
 
-    $self->update_lrm_status();
-    
     return $self;
 }
 
@@ -50,7 +48,7 @@ sub shutdown_request {
 
     eval { $self->update_lrm_status(); };
     if (my $err = $@) {
-	$self->log('err', "unable to update lrm status file");
+	$self->log('err', "unable to update lrm status file - $err");
     }
 }
 
@@ -82,12 +80,20 @@ sub set_local_status {
 sub update_lrm_status {
     my ($self) = @_;
 
+    my $haenv = $self->{haenv};
+
     my $lrm_status = {	
 	mode => $self->{mode},
 	results => $self->{results},
     };
     
-    $self->{haenv}->write_lrm_status($lrm_status);
+    eval { $haenv->write_lrm_status($lrm_status); };
+    if (my $err = $@) {
+	$haenv->log('err', "unable to write lrm status file - $err");
+	return 0;
+    }
+
+    return 1;
 }
 
 sub get_protected_ha_agent_lock {
@@ -146,12 +152,18 @@ sub active_service_count {
     
     return $count;
 }
-    
+
+my $wrote_lrm_status_at_startup = 0;
+
 sub do_one_iteration {
     my ($self) = @_;
 
     my $haenv = $self->{haenv};
 
+    if (!$wrote_lrm_status_at_startup && $haenv->quorate()) {
+	$wrote_lrm_status_at_startup = 1 if $self->update_lrm_status();
+    }
+    
     my $status = $self->get_local_status();
     my $state = $status->{state};
 
