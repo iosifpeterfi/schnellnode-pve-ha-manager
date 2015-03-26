@@ -17,7 +17,7 @@ After=syslog.service
 ExecStart=/usr/sbin/pve-ha-lrm start
 ExecStop=/usr/sbin/pve-ha-lrm stop
 PIDFile=/var/run/pve-ha-lrm.pid
-TimeoutStopSec=180
+TimeoutStopSec=185
 Type=forking
 
 [Install]
