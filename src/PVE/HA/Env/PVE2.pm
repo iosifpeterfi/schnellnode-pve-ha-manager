@@ -157,9 +157,18 @@ sub read_service_config {
 }
 
 sub change_service_location {
-    my ($self, $sid, $node) = @_;
+    my ($self, $sid, $current_node, $new_node) = @_;
 
-    die "implement me";
+    my ($type, $name) = PVE::HA::Tools::parse_sid($sid);
+
+    if ($type eq 'pvevm') {
+	my $old = PVE::QemuServer::config_file($name, $current_node);
+	my $new = PVE::QemuServer::config_file($name, $new_node);
+	rename($old, $new) ||
+	    die "rename '$old' to '$new' failed - $!\n";
+    } else {
+	die "implement me";
+    }
 }
 
 sub read_group_config {
@@ -501,7 +510,22 @@ sub exec_resource_agent {
 
     } elsif ($cmd eq 'migrate' || $cmd eq 'relocate') {
 
-	# implement me
+	my $target = $params[0];
+	die "$cmd '$sid' failed - missing target\n" if !defined($target);
+	
+	if ($service_config->{node} eq $target) {
+	    # already there
+	    return 0;
+	} 
+	
+	if (!$running) {
+	    $self->change_service_location($sid, $service_config->{node}, $target);
+	    $self->log("info", "service $sid moved to node '$target'");
+	    return 0;
+	} else {
+	    # we alwas do live migration if VM is online
+	    #return 0;
+	}
 	
     }
 

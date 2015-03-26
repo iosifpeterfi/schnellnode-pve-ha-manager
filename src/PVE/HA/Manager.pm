@@ -468,9 +468,14 @@ sub next_state_stopped {
 	    } elsif ($sd->{node} eq $target) {
 		$haenv->log('info', "ignore service '$sid' $cmd request - service already on node '$target'");
 	    } else {
-		$haenv->change_service_location($sid, $target);
-		$cd->{node} = $sd->{node} = $target; # fixme: $sd is read-only??!!	    
-		$haenv->log('info', "$cmd service '$sid' to node '$target' (stopped)");
+		eval {
+		    $haenv->change_service_location($sid, $sd->{node}, $target);
+		    $cd->{node} = $sd->{node} = $target; # fixme: $sd is read-only??!!	    
+		    $haenv->log('info', "$cmd service '$sid' to node '$target' (stopped)");
+		};
+		if (my $err = $@) {
+		    $haenv->log('err', "$cmd service '$sid' to node '$target' failed - $err");
+		}
 	    }
 	} else {
 	    $haenv->log('err', "unknown command '$cmd' for service '$sid'"); 
@@ -485,9 +490,18 @@ sub next_state_stopped {
     if ($cd->{state} eq 'enabled') {
 	if (my $node = select_service_node($self->{groups}, $self->{online_node_usage}, $cd, $sd->{node})) {
 	    if ($node && ($sd->{node} ne $node)) {
-		$haenv->change_service_location($sid, $node);
+		eval {
+		    $haenv->change_service_location($sid, $sd->{node}, $node);
+		    $cd->{node} = $sd->{node} = $node; # fixme: $sd is read-only??!!
+		};
+		if (my $err = $@) {
+		    $haenv->log('err', "move service '$sid' to node '$node' failed - $err");
+		} else {
+		    &$change_service_state($self, $sid, 'started', node => $node);
+		}
+	    } else {
+		&$change_service_state($self, $sid, 'started', node => $node);
 	    }
-	    &$change_service_state($self, $sid, 'started', node => $node);
 	} else {
 	    # fixme: warn 
 	}

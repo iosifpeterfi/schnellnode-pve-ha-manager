@@ -81,9 +81,9 @@ sub read_service_config {
 }
 
 sub change_service_location {
-    my ($self, $sid, $node) = @_;
+    my ($self, $sid, $current_node, $new_node) = @_;
 
-    return $self->{plug}->change_service_location($sid, $node);
+    return $self->{plug}->change_service_location($sid, $current_node, $new_node);
 }
 
 sub read_group_config {

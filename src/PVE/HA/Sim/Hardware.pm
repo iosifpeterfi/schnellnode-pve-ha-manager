@@ -115,13 +115,16 @@ sub write_service_config {
 } 
 
 sub change_service_location {
-    my ($self, $sid, $node) = @_;
+    my ($self, $sid, $current_node, $new_node) = @_;
 
     my $conf = $self->read_service_config();
 
     die "no such service '$sid'\n" if !$conf->{$sid};
 
-    $conf->{$sid}->{node} = $node;
+    die "current_node for '$sid' does not match ($current_node != $conf->{$sid}->{node})\n" 
+	if $current_node ne $conf->{$sid}->{node};
+    
+    $conf->{$sid}->{node} = $new_node;
 
     $self->write_service_config($conf);
 }
