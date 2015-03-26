@@ -1,0 +1,39 @@
+info      0     hardware: starting simulation
+info     20      cmdlist: execute power node1 on
+info     20    node1/crm: status change startup => wait_for_quorum
+info     20    node1/lrm: status change startup => wait_for_agent_lock
+info     20      cmdlist: execute power node2 on
+info     20    node2/crm: status change startup => wait_for_quorum
+info     20    node2/lrm: status change startup => wait_for_agent_lock
+info     20      cmdlist: execute power node3 on
+info     20    node3/crm: status change startup => wait_for_quorum
+info     20    node3/lrm: status change startup => wait_for_agent_lock
+info     20      cmdlist: execute network node1 off
+info     20      cmdlist: execute network node2 off
+info     20      cmdlist: execute network node3 off
+info    120      cmdlist: execute network node1 on
+info    120      cmdlist: execute network node2 on
+info    120      cmdlist: execute network node3 on
+info    120    node1/crm: got lock 'ha_manager_lock'
+info    120    node1/crm: status change wait_for_quorum => master
+info    120    node1/crm: node 'node1': state changed from 'unknown' => 'online'
+info    120    node1/crm: node 'node2': state changed from 'unknown' => 'online'
+info    120    node1/crm: node 'node3': state changed from 'unknown' => 'online'
+info    120    node1/crm: adding new service 'pvevm:101' on node 'node1'
+info    120    node1/crm: adding new service 'pvevm:102' on node 'node2'
+info    120    node1/crm: adding new service 'pvevm:103' on node 'node3'
+info    121    node1/lrm: got lock 'ha_agent_node1_lock'
+info    121    node1/lrm: status change wait_for_agent_lock => active
+info    121    node1/lrm: starting service pvevm:101
+info    121    node1/lrm: service status pvevm:101 started
+info    122    node2/crm: status change wait_for_quorum => slave
+info    123    node2/lrm: got lock 'ha_agent_node2_lock'
+info    123    node2/lrm: status change wait_for_agent_lock => active
+info    123    node2/lrm: starting service pvevm:102
+info    123    node2/lrm: service status pvevm:102 started
+info    124    node3/crm: status change wait_for_quorum => slave
+info    125    node3/lrm: got lock 'ha_agent_node3_lock'
+info    125    node3/lrm: status change wait_for_agent_lock => active
+info    125    node3/lrm: starting service pvevm:103
+info    125    node3/lrm: service status pvevm:103 started
+info    720     hardware: exit simulation - done

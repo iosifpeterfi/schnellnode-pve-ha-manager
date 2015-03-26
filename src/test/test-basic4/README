@@ -1,0 +1,4 @@
+Start with total network failure.
+
+All nodes starts without quorum at same time,
+so nothing happens until we turn on the network.
