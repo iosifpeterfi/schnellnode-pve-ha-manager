@@ -528,7 +528,6 @@ sub exec_resource_agent {
 	} else {
 	    # we alwas do live migration if VM is online
 
-	    my $upid;
 	    my $params = {
 		node => $nodename, 
 		vmid => $vmid,
