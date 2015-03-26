@@ -1,3 +1,13 @@
+pve-ha-manager (0.5-1) unstable; urgency=medium
+
+  * implement service migration
+
+  * fix service dependencies (allow restart, reboot)
+
+  * freeze services during reboot/restart
+  
+ -- Proxmox Support Team <support@proxmox.com>  Thu, 26 Mar 2015 13:22:58 +0100
+
 pve-ha-manager (0.4-1) unstable; urgency=medium
 
   * increase fence_delay to 60 seconds
