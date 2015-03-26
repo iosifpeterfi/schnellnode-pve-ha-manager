@@ -60,6 +60,12 @@ sub node_is_offline_delayed {
     return ($ctime - $last_online) >= $delay;
 }
 
+sub list_nodes {
+    my ($self) = @_;
+
+    return [sort keys %{$self->{status}}];
+}
+
 sub list_online_nodes {
     my ($self) = @_;
 

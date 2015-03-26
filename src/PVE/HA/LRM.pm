@@ -30,9 +30,13 @@ sub new {
 	workers => {},
 	results => {},
 	shutdown_request => 0,
+	# mode can be: active, reboot, shutdown, restart
+	mode => 'active',
     }, $class;
 
     $self->set_local_status({ state => 	'wait_for_agent_lock' });   
+
+    $self->update_lrm_status();
     
     return $self;
 }
@@ -41,6 +45,13 @@ sub shutdown_request {
     my ($self) = @_;
 
     $self->{shutdown_request} = 1;
+
+    $self->{mode} = 'restart'; # fixme: detect shutdown/reboot
+
+    eval { $self->update_lrm_status(); };
+    if (my $err = $@) {
+	$self->log('err', "unable to update lrm status file");
+    }
 }
 
 sub get_local_status {
@@ -66,6 +77,17 @@ sub set_local_status {
     $new->{state_change_time} = $haenv->get_time();
 
     $self->{status} = $new;
+}
+
+sub update_lrm_status {
+    my ($self) = @_;
+
+    my $lrm_status = {	
+	mode => $self->{mode},
+	results => $self->{results},
+    };
+    
+    $self->{haenv}->write_lrm_status($lrm_status);
 }
 
 sub get_protected_ha_agent_lock {
@@ -117,6 +139,7 @@ sub active_service_count {
 	my $req_state = $sd->{state};
 	next if !defined($req_state);
 	next if $req_state eq 'stopped';
+	next if $req_state eq 'freeze';
 
 	$count++;
     }
@@ -275,6 +298,7 @@ sub manage_resources {
 	next if $sd->{node} ne $nodename;
 	my $req_state = $sd->{state};
 	next if !defined($req_state);
+	next if $req_state eq 'freeze';
 	eval {
 	    $self->queue_resource_command($sid, $sd->{uid}, $req_state, $sd->{target});
 	};
@@ -422,7 +446,7 @@ sub resource_command_finished {
     }
     $self->{results} = $results;
 
-    $haenv->write_lrm_status($results);
+    $self->update_lrm_status();
 }
 
 1;

@@ -140,6 +140,7 @@ my $valid_service_states = {
     fence => 1,
     migrate => 1,
     relocate => 1,
+    freeze => 1,
     error => 1,
 };
 
@@ -159,7 +160,7 @@ sub recompute_online_node_usage {
 	my $state = $sd->{state};
 	if (defined($online_node_usage->{$sd->{node}})) {
 	    if (($state eq 'started') || ($state eq 'request_stop') || 
-		($state eq 'fence') || ($state eq 'error')) {
+		($state eq 'fence') || ($state eq 'freeze') || ($state eq 'error')) {
 		$online_node_usage->{$sd->{node}}++;
 	    } elsif (($state eq 'migrate') || ($state eq 'relocate')) {
 		$online_node_usage->{$sd->{target}}++;
@@ -210,24 +211,26 @@ my $change_service_state = sub {
     $haenv->log('info', "service '$sid': state changed from '${old_state}' to '${new_state}' $text_state");
 };
 
-# read LRM status for all active nodes 
+# read LRM status for all nodes 
 sub read_lrm_status {
     my ($self) = @_;
 
-    my $nodes = $self->{ns}->list_online_nodes();
+    my $nodes = $self->{ns}->list_nodes();
     my $haenv = $self->{haenv};
 
-    my $res = {};
-
+    my $results = {};
+    my $modes = {};
     foreach my $node (@$nodes) {
-	my $ls = $haenv->read_lrm_status($node);
-	foreach my $uid (keys %$ls) {
-	    next if $res->{$uid}; # should not happen
-	    $res->{$uid} = $ls->{$uid};
+	my $lrm_status = $haenv->read_lrm_status($node);
+	$modes->{$node} = $lrm_status->{mode} || 'unknown';
+	foreach my $uid (keys %{$lrm_status->{results}}) {
+	    next if $results->{$uid}; # should not happen
+	    $results->{$uid} = $lrm_status->{results}->{$uid};
 	}
     }
 
-    return $res;
+    
+    return ($results, $modes);
 }
 
 # read new crm commands and save them into crm master status
@@ -277,7 +280,7 @@ sub manage {
 	return;
     }
 
-    my $lrm_status = $self->read_lrm_status();
+    my ($lrm_results, $lrm_modes) = $self->read_lrm_status();
 
     my $sc = $haenv->read_service_config();
 
@@ -312,7 +315,7 @@ sub manage {
 	    my $sd = $ss->{$sid};
 	    my $cd = $sc->{$sid} || { state => 'disabled' };
 
-	    my $lrm_res = $sd->{uid} ? $lrm_status->{$sd->{uid}} : undef;
+	    my $lrm_res = $sd->{uid} ? $lrm_results->{$sd->{uid}} : undef;
 
 	    my $last_state = $sd->{state};
 
@@ -336,6 +339,14 @@ sub manage {
 
 		$self->next_state_request_stop($sid, $cd, $sd, $lrm_res);
 
+	    } elsif ($last_state eq 'freeze') {
+
+		my $lrm_mode = $sd->{node} ? $lrm_modes->{$sd->{node}} : undef;
+		$lrm_mode = 'unknown'if !$lrm_mode;
+		# unfreeze
+		&$change_service_state($self, $sid, 'started') 
+		    if $lrm_mode eq 'active';
+
 	    } elsif ($last_state eq 'error') {
 
 		# fixme: 
@@ -345,6 +356,14 @@ sub manage {
 		die "unknown service state '$last_state'";
 	    }
 
+
+	    my $lrm_mode = $sd->{node} ? $lrm_modes->{$sd->{node}} : undef;
+	    $lrm_mode = 'unknown'if !$lrm_mode;
+	    if (($sd->{state} eq 'started' || $sd->{state} eq 'stopped' ||
+		 $sd->{state} eq 'request_stop') && ($lrm_mode ne 'active')) {
+		&$change_service_state($self, $sid, 'freeze');
+	    }
+		    
 	    $repeat = 1 if $sd->{state} ne $last_state;
 	}
 
