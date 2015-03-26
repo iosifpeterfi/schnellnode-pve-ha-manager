@@ -1,0 +1,4 @@
+Test total network failure.
+
+All nodes loose quorum at same time, so all nodes
+gets killed by self fencing (watchdog).
