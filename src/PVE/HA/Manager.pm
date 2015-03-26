@@ -222,7 +222,7 @@ sub read_lrm_status {
     my $modes = {};
     foreach my $node (@$nodes) {
 	my $lrm_status = $haenv->read_lrm_status($node);
-	$modes->{$node} = $lrm_status->{mode} || 'unknown';
+	$modes->{$node} = $lrm_status->{mode} || 'active';
 	foreach my $uid (keys %{$lrm_status->{results}}) {
 	    next if $results->{$uid}; # should not happen
 	    $results->{$uid} = $lrm_status->{results}->{$uid};
@@ -342,10 +342,9 @@ sub manage {
 	    } elsif ($last_state eq 'freeze') {
 
 		my $lrm_mode = $sd->{node} ? $lrm_modes->{$sd->{node}} : undef;
-		$lrm_mode = 'unknown'if !$lrm_mode;
 		# unfreeze
 		&$change_service_state($self, $sid, 'started') 
-		    if $lrm_mode eq 'active';
+		    if $lrm_mode && $lrm_mode eq 'active';
 
 	    } elsif ($last_state eq 'error') {
 
