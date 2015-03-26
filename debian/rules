@@ -20,4 +20,5 @@ override_dh_systemd_enable:
 
 override_dh_systemd_start:
 	dh_systemd_start -ppve-ha-manager --name watchdog-mux --no-restart-on-upgrade watchdog-mux.service
-	dh_systemd_start -ppve-ha-manager --name pve-ha-crm pve-ha-crm.service pve-ha-lrm.service
+	dh_systemd_start -ppve-ha-manager --name pve-ha-lrm pve-ha-lrm.service
+	dh_systemd_start -ppve-ha-manager --name pve-ha-crm --restart-after-upgrade pve-ha-crm.service

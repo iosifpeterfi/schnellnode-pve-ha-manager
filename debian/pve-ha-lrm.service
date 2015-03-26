@@ -3,15 +3,21 @@ Description=PVE Local HA Ressource Manager Daemon
 ConditionPathExists=/usr/sbin/pve-ha-lrm
 ConditionPathExists=/etc/pve/ha/resources.cfg
 Requires=pve-cluster.service
+Requires=watchdog-mux.service
 Wants=pvedaemon.service
+Wants=pve-ha-crm.service
+After=pve-ha-crm.service
 After=pve-cluster.service
+After=corosync.service
 After=pvedaemon.service
+After=watchdog-mux.service
+After=syslog.service
 
 [Service]
 ExecStart=/usr/sbin/pve-ha-lrm start
 ExecStop=/usr/sbin/pve-ha-lrm stop
 PIDFile=/var/run/pve-ha-lrm.pid
-TimeoutStopSec=60
+TimeoutStopSec=180
 Type=forking
 
 [Install]
