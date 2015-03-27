@@ -85,6 +85,7 @@ sub update_lrm_status {
     my $lrm_status = {	
 	mode => $self->{mode},
 	results => $self->{results},
+	timestamp => $haenv->get_time(),
     };
     
     eval { $haenv->write_lrm_status($lrm_status); };
