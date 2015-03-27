@@ -86,7 +86,14 @@ __PACKAGE__->register_method ({
     description => "Display HA manger status.",
     parameters => {
     	additionalProperties => 0,
-	properties => {},
+	properties => {
+	    verbose => {
+		description => "Verbose output. Include complete CRM and LRM status (JSON).",
+		type => 'boolean',
+		default => 0,
+		optional => 1,
+	    }
+	},
     },
     returns => { type => 'null' },
     code => sub {
@@ -97,6 +104,7 @@ __PACKAGE__->register_method ({
 	my $haenv = PVE::HA::Env::PVE2->new($nodename);
 	
 	my $status = $haenv->read_manager_status();
+	my $verbose_data = { manager_status => $status };
 
 	my $ctime = $haenv->get_time();
 
@@ -106,10 +114,11 @@ __PACKAGE__->register_method ({
 	print "master_node: $master ($status_str)\n";
 	my $time_str = localtime($status->{timestamp});
 	print "last_update: $time_str\n";
-
+	
 	foreach my $node (sort keys %{$status->{node_status}}) {
 	    my $d = $status->{node_status}->{node};
 	    my $lrm_status = $haenv->read_lrm_status($node);
+	    $verbose_data->{lrm_status}->{$node} = $lrm_status;
 	    if (!$lrm_status->{timestamp}) {
 		print "lrm_status: $node (unable to read lrm status)\n";
 	    } else {
@@ -118,10 +127,12 @@ __PACKAGE__->register_method ({
 		print "lrm_status: $node ($status_str, $time_str)\n";
 	    }
 	}
-	
-	print "manager_status:\n";
-	print to_json($status, { pretty => 1, canonical => 1} );
 
+	if ($param->{verbose}) {
+	    print "full cluster state:\n";
+	    print to_json($verbose_data, { pretty => 1, canonical => 1} );
+	}
+	
 	return undef;
     }});
 
