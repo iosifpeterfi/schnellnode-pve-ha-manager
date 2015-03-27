@@ -47,7 +47,8 @@ sub flush_master_status {
 
     $ms->{node_status} = $ns->{status};
     $ms->{service_status} = $ss;
-
+    $ms->{timestamp} = $haenv->get_time();
+    
     $haenv->write_manager_status($ms);
 } 
 
