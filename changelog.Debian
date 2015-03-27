@@ -1,3 +1,13 @@
+pve-ha-manager (0.6-1) unstable; urgency=medium
+
+  * move configuration handling into PVE::HA::Config
+
+  * ha-manager status: add --verbose flag
+
+  * depend on qemu-server
+
+ -- Proxmox Support Team <support@proxmox.com>  Fri, 27 Mar 2015 12:28:50 +0100
+
 pve-ha-manager (0.5-1) unstable; urgency=medium
 
   * implement service migration

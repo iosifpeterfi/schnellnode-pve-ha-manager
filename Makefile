@@ -1,6 +1,6 @@
 RELEASE=4.0
 
-VERSION=0.5
+VERSION=0.6
 PACKAGE=pve-ha-manager
 SIMPACKAGE=pve-ha-simulator
 PKGREL=1
