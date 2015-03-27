@@ -160,8 +160,14 @@ sub do_one_iteration {
 
     my $haenv = $self->{haenv};
 
-    if (!$wrote_lrm_status_at_startup && $haenv->quorate()) {
-	$wrote_lrm_status_at_startup = 1 if $self->update_lrm_status();
+    if (!$wrote_lrm_status_at_startup) {
+	if ($haenv->quorate() && $self->update_lrm_status()) {
+	    $wrote_lrm_status_at_startup = 1;
+	} else {
+	    # do nothing
+	    $haenv->sleep(5);
+	    return $self->{shutdown_request} ? 0 : 1;
+	}
     }
     
     my $status = $self->get_local_status();
