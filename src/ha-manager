@@ -116,7 +116,6 @@ __PACKAGE__->register_method ({
 	print "last_update: $time_str\n";
 	
 	foreach my $node (sort keys %{$status->{node_status}}) {
-	    my $d = $status->{node_status}->{node};
 	    my $lrm_status = $haenv->read_lrm_status($node);
 	    $verbose_data->{lrm_status}->{$node} = $lrm_status;
 	    if (!$lrm_status->{timestamp}) {
@@ -128,6 +127,11 @@ __PACKAGE__->register_method ({
 	    }
 	}
 
+	foreach my $sid (sort keys %{$status->{service_status}}) {
+	    my $d = $status->{service_status}->{$sid};
+	    print "service_state: $sid (node $d->{node}, $d->{state})\n"; 
+	}
+	
 	if ($param->{verbose}) {
 	    print "full cluster state:\n";
 	    print to_json($verbose_data, { pretty => 1, canonical => 1} );
