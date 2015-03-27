@@ -9,7 +9,7 @@ Package: pve-ha-manager
 Section: perl
 Priority: optional
 Architecture: any
-Depends: ${shlibs:Depends}, ${perl:Depends}, ${misc:Depends}, libpve-common-perl, pve-cluster (>= 3.0-17)
+Depends: ${shlibs:Depends}, ${perl:Depends}, ${misc:Depends}, libpve-common-perl, pve-cluster (>= 3.0-17), qemu-server
 Conflicts: watchdog
 Description: Proxmox VE HA Manager
  HA Manager Proxmox VE.
