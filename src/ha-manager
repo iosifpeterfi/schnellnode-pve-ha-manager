@@ -2,9 +2,11 @@
 
 use strict;
 use warnings;
+use Data::Dumper;
 
 use PVE::INotify;
 use JSON;
+
 use PVE::JSONSchema qw(get_standard_option);
 use PVE::CLIHandler;
 use PVE::Cluster;
@@ -64,6 +66,19 @@ __PACKAGE__->register_method ({
 	return undef;
     }});
 
+my $timestamp_to_status = sub {
+    my ($ctime, $timestamp) = @_;
+
+    my $tdiff = $ctime - $timestamp;
+    if ($tdiff > 30) {
+	return "old timestamp - dead?";
+    } elsif ($tdiff < -2) {
+	return "detected time drift!";
+    } else {
+	return "active";
+    }
+};
+    
 __PACKAGE__->register_method ({
     name => 'status', 
     path => 'status',
@@ -82,7 +97,29 @@ __PACKAGE__->register_method ({
 	my $haenv = PVE::HA::Env::PVE2->new($nodename);
 	
 	my $status = $haenv->read_manager_status();
+
+	my $ctime = $haenv->get_time();
+
+	my $master = $status->{master_node};
+	my $status_str = &$timestamp_to_status($ctime, $status->{timestamp});
 	
+	print "master_node: $master ($status_str)\n";
+	my $time_str = localtime($status->{timestamp});
+	print "last_update: $time_str\n";
+
+	foreach my $node (sort keys %{$status->{node_status}}) {
+	    my $d = $status->{node_status}->{node};
+	    my $lrm_status = $haenv->read_lrm_status($node);
+	    if (!$lrm_status->{timestamp}) {
+		print "lrm_status: $node (unable to read lrm status)\n";
+	    } else {
+		$status_str = &$timestamp_to_status($ctime, $lrm_status->{timestamp});
+		my $time_str = localtime($lrm_status->{timestamp});
+		print "lrm_status: $node ($status_str, $time_str)\n";
+	    }
+	}
+	
+	print "manager_status:\n";
 	print to_json($status, { pretty => 1, canonical => 1} );
 
 	return undef;
