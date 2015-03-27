@@ -5,10 +5,11 @@ use warnings;
 use POSIX qw(:errno_h :fcntl_h);
 use IO::File;
 use IO::Socket::UNIX;
+use JSON;
 
 use PVE::SafeSyslog;
 use PVE::Tools;
-use PVE::Cluster qw(cfs_register_file cfs_read_file cfs_lock_file);
+use PVE::Cluster qw(cfs_register_file cfs_read_file cfs_write_file cfs_lock_file);
 use PVE::INotify;
 use PVE::RPCEnvironment;
 
@@ -21,32 +22,45 @@ use PVE::API2::Qemu;
 
 my $lockdir = "/etc/pve/priv/lock";
 
-my $manager_status_filename = "/etc/pve/ha/manager_status";
-my $ha_groups_config = "/etc/pve/ha/groups.cfg";
-my $ha_resources_config = "/etc/pve/ha/resources.cfg";
+my $manager_status_filename = "ha/manager_status";
+my $ha_groups_config = "ha/groups.cfg";
+my $ha_resources_config = "ha/resources.cfg";
+my $crm_commands_filename = "ha/crm_commands";
 
-# fixme:
-#cfs_register_file($ha_groups_config, 
-#		  sub { PVE::HA::Groups->parse_config(@_); },
-#		  sub { PVE::HA::Groups->write_config(@_); });
-#cfs_register_file($ha_resources_config, 
-#		  sub { PVE::HA::Resources->parse_config(@_); },
-#		  sub { PVE::HA::Resources->write_config(@_); });
+cfs_register_file($crm_commands_filename, 
+		  sub { my ($fn, $raw) = @_; return defined($raw) ? $raw : ''; },
+		  sub { my ($fn, $raw) = @_; return $raw; });
+cfs_register_file($ha_groups_config, 
+		  sub { PVE::HA::Groups->parse_config(@_); },
+		  sub { PVE::HA::Groups->write_config(@_); });
+cfs_register_file($ha_resources_config, 
+		  sub { PVE::HA::Resources->parse_config(@_); },
+		  sub { PVE::HA::Resources->write_config(@_); });
+cfs_register_file($manager_status_filename, 
+		  \&json_reader, 
+		  \&json_writer);
+
+sub json_reader {
+    my ($filename, $data) = @_;
+
+    return decode_json($data || {});
+}
+
+sub json_writer {
+    my ($filename, $data) = @_;
+
+    return encode_json($data);
+}
 
 sub read_resources_config {
-    my $raw = '';
 
-    $raw = PVE::Tools::file_get_contents($ha_resources_config)
-	if -f $ha_resources_config;
-    
-    return PVE::HA::Config::parse_resources_config($ha_resources_config, $raw);
+    return cfs_read_file($ha_resources_config);
 }
 
 sub write_resources_config {
     my ($cfg) = @_;
 
-    my $raw = PVE::HA::Resources->write_config($ha_resources_config, $cfg);
-    PVE::Tools::file_set_contents($ha_resources_config, $raw);
+    cfs_write_file($ha_resources_config, $cfg);
 }
 
 sub lock_ha_config {
@@ -83,18 +97,14 @@ sub nodename {
 
 sub read_manager_status {
     my ($self) = @_;
-    
-    my $filename = $manager_status_filename;
 
-    return PVE::HA::Tools::read_json_from_file($filename, {});  
+    return cfs_read_file($manager_status_filename);
 }
 
 sub write_manager_status {
     my ($self, $status_obj) = @_;
     
-    my $filename = $manager_status_filename;
-
-    PVE::HA::Tools::write_json_to_file($filename, $status_obj); 
+    cfs_write_file($manager_status_filename, $status_obj);
 }
 
 sub read_lrm_status {
@@ -115,12 +125,6 @@ sub write_lrm_status {
     my $filename = "/etc/pve/nodes/$node/lrm_status";
 
     PVE::HA::Tools::write_json_to_file($filename, $status_obj); 
-}
-
-sub service_config_exists {
-    my ($self) = @_;
-
-    return -f $ha_resources_config ? 1 : 0;
 }
 
 sub read_service_config {
@@ -174,14 +178,7 @@ sub change_service_location {
 sub read_group_config {
     my ($self) = @_;
 
-    # fixme: use cfs_read_file
-    
-    my $raw = '';
-
-    $raw = PVE::Tools::file_get_contents($ha_groups_config)
-	if -f $ha_groups_config;
-    
-    return PVE::HA::Config::parse_groups_config($ha_groups_config, $raw);
+    return cfs_read_file($ha_groups_config);
 }
 
 sub queue_crm_commands {
@@ -190,13 +187,10 @@ sub queue_crm_commands {
     chomp $cmd;
 
     my $code = sub {
-	my $data = '';
-	my $filename = "/etc/pve/ha/crm_commands";
-	if (-f $filename) {
-	    $data = PVE::Tools::file_get_contents($filename);
-	}
+	my $data = cfs_read_file($crm_commands_filename);
 	$data .= "$cmd\n";
-	PVE::Tools::file_set_contents($filename, $data);
+	cfs_write_file($crm_commands_filename, $data);
+	print "WRITE:$data\n";
     };
 
     return lock_ha_config($code);
@@ -206,14 +200,8 @@ sub read_crm_commands {
     my ($self) = @_;
 
     my $code = sub {
-	my $data = '';
-
- 	my $filename = "/etc/pve/ha/crm_commands";
-	if (-f $filename) {
-	    $data = PVE::Tools::file_get_contents($filename);
-	    PVE::Tools::file_set_contents($filename, '');
-	}
-
+	my $data = cfs_read_file($crm_commands_filename);
+	cfs_write_file($crm_commands_filename, '');
 	return $data;
     };
 

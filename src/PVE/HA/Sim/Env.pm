@@ -139,12 +139,6 @@ sub write_lrm_status {
     return $self->{hardware}->write_lrm_status($node, $status_obj);
 }
 
-sub service_config_exists {
-    my ($self) = @_;
-
-    return 1; # assume ha is always enabled here
-}
-
 sub read_service_config {
     my ($self) = @_;
 
