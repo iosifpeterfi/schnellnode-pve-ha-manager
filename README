@@ -17,14 +17,17 @@ In future, we want to make HA easier for our users, and it should
 be possible to move to newest corosync, or even a totally different 
 cluster stack. So we want:
 
-- possible to run with any distributed key/value store which provides
+- possibility to run with any distributed key/value store which provides
   some kind of locking with timeouts (zookeeper, consul, etcd, ..) 
 
 - self fencing using Linux watchdog device
 
 - implemented in Perl, so that we can use PVE framework
 
-- only works with simply resources like VMs
+- only work with simply resources like VMs
+
+We dropped the idea to assemble complex, dependend services, because we think
+this is already done with the VM abstraction.
 
 = Architecture =
 
@@ -107,10 +110,12 @@ started:      Service is active an LRM should start it asap.
 fence:        Wait for node fencing (service node is not inside
 	      quorate cluster partition).
 
+freeze:       Do not touch. We use this state while we reboot a node,
+	      or when we restart the LRM daemon.
+
 migrate:      Migrate (live) service to other node.
 
 error:        Service disabled because of LRM errors.
-
 
 
 == Local Resource Manager (class PVE::HA::LRM) ==
