@@ -5,10 +5,8 @@ use warnings;
 
 use PVE::SafeSyslog;
 use PVE::Tools qw(extract_param);
-use PVE::Cluster qw(cfs_read_file cfs_write_file);
 use PVE::HA::Config;
 use PVE::HA::Resources;
-use PVE::HA::Env::PVE2;
 use HTTP::Status qw(:constants);
 use Storable qw(dclone);
 use PVE::JSONSchema qw(get_standard_option);
@@ -20,8 +18,6 @@ use PVE::RESTHandler;
 use base qw(PVE::RESTHandler);
 
 # fixme: use cfs_read_file
-
-my $ha_resources_config = "/etc/pve/ha/resources.cfg";
 
 my $resource_type_enum = PVE::HA::Resources->lookup_types();
 
@@ -66,7 +62,7 @@ __PACKAGE__->register_method ({
     code => sub {
 	my ($param) = @_;
 
-	my $cfg = PVE::HA::Env::PVE2::read_resources_config();
+	my $cfg = PVE::HA::Config::read_resources_config();
 
 	my $res = [];
 	foreach my $sid (keys %{$cfg->{ids}}) {
@@ -93,7 +89,7 @@ __PACKAGE__->register_method ({
     code => sub {
 	my ($param) = @_;
 
-	my $cfg = PVE::HA::Env::PVE2::read_resources_config();
+	my $cfg = PVE::HA::Config::read_resources_config();
 
 	return &$api_copy_config($cfg, $param->{sid});
     }});
@@ -125,7 +121,7 @@ __PACKAGE__->register_method ({
 	PVE::HA::Env::PVE2::lock_ha_config(
 	    sub {
 
-		my $cfg = PVE::HA::Env::PVE2::read_resources_config();
+		my $cfg = PVE::HA::Config::read_resources_config();
 
 		if ($cfg->{ids}->{$sid}) {
 		    die "resource ID '$sid' already defined\n";
@@ -162,10 +158,10 @@ __PACKAGE__->register_method ({
 	    die "types does not match\n" if $param_type ne $type;
 	}
 
-	PVE::HA::Env::PVE2::lock_ha_config(
+	PVE::HA::Config::lock_ha_config(
 	    sub {
 
-		my $cfg = PVE::HA::Env::PVE2::read_resources_config();
+		my $cfg = PVE::HA::Config::read_resources_config();
 
 		PVE::SectionConfig::assert_if_modified($cfg, $digest);
 
@@ -192,7 +188,7 @@ __PACKAGE__->register_method ({
 		    }
 		}
 
-		PVE::HA::Env::PVE2::write_resources_config($cfg)
+		PVE::HA::Config::write_resources_config($cfg)
 
 	    }, "update resource failed");
 
@@ -217,14 +213,14 @@ __PACKAGE__->register_method ({
 
 	my $sid = extract_param($param, 'sid');
 
- 	PVE::HA::Env::PVE2::lock_ha_config(
+ 	PVE::HA::Config::lock_ha_config(
 	    sub {
 
-		my $cfg = PVE::HA::Env::PVE2::read_resources_config();
+		my $cfg = PVE::HA::Config::read_resources_config();
 
 		delete $cfg->{ids}->{$sid};
 
-		PVE::HA::Env::PVE2::write_resources_config($cfg)
+		PVE::HA::Config::write_resources_config($cfg)
 
 	    }, "delete storage failed");
 
@@ -248,7 +244,7 @@ __PACKAGE__->register_method ({
     code => sub {
 	my ($param) = @_;
 
-	PVE::HA::Env::PVE2->queue_crm_commands("migrate $param->{sid} $param->{node}");
+	PVE::HA::Config::queue_crm_commands("migrate $param->{sid} $param->{node}");
 	    
 	return undef;
     }});
@@ -270,7 +266,7 @@ __PACKAGE__->register_method ({
     code => sub {
 	my ($param) = @_;
 
-	PVE::HA::Env::PVE2->queue_crm_commands("relocate $param->{sid} $param->{node}");
+	PVE::HA::Config::queue_crm_commands("relocate $param->{sid} $param->{node}");
 	    
 	return undef;
     }});

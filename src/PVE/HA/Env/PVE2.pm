@@ -5,7 +5,6 @@ use warnings;
 use POSIX qw(:errno_h :fcntl_h);
 use IO::File;
 use IO::Socket::UNIX;
-use JSON;
 
 use PVE::SafeSyslog;
 use PVE::Tools;
@@ -22,57 +21,16 @@ use PVE::API2::Qemu;
 
 my $lockdir = "/etc/pve/priv/lock";
 
-my $manager_status_filename = "ha/manager_status";
-my $ha_groups_config = "ha/groups.cfg";
-my $ha_resources_config = "ha/resources.cfg";
-my $crm_commands_filename = "ha/crm_commands";
-
-cfs_register_file($crm_commands_filename, 
-		  sub { my ($fn, $raw) = @_; return defined($raw) ? $raw : ''; },
-		  sub { my ($fn, $raw) = @_; return $raw; });
-cfs_register_file($ha_groups_config, 
-		  sub { PVE::HA::Groups->parse_config(@_); },
-		  sub { PVE::HA::Groups->write_config(@_); });
-cfs_register_file($ha_resources_config, 
-		  sub { PVE::HA::Resources->parse_config(@_); },
-		  sub { PVE::HA::Resources->write_config(@_); });
-cfs_register_file($manager_status_filename, 
-		  \&json_reader, 
-		  \&json_writer);
-
-sub json_reader {
-    my ($filename, $data) = @_;
-
-    return decode_json($data || {});
-}
-
-sub json_writer {
-    my ($filename, $data) = @_;
-
-    return encode_json($data);
-}
 
 sub read_resources_config {
 
-    return cfs_read_file($ha_resources_config);
+    return PVE::HA::Config::read_resources_config();
 }
 
 sub write_resources_config {
     my ($cfg) = @_;
 
-    cfs_write_file($ha_resources_config, $cfg);
-}
-
-sub lock_ha_config {
-    my ($code, $errmsg) = @_;
-
-    # fixme: do not use cfs_lock_storage (replace with cfs_lock_ha)
-    my $res = PVE::Cluster::cfs_lock_storage("_ha_crm_commands", undef, $code);
-    my $err = $@;
-    if ($err) {
-	$errmsg ? die "$errmsg: $err" : die $err;
-    }
-    return $res;
+    PVE::HA::Config::write_resources_config($cfg);
 }
 
 sub new {
@@ -98,13 +56,13 @@ sub nodename {
 sub read_manager_status {
     my ($self) = @_;
 
-    return cfs_read_file($manager_status_filename);
+    return PVE::HA::Config::read_manager_status();
 }
 
 sub write_manager_status {
     my ($self, $status_obj) = @_;
     
-    cfs_write_file($manager_status_filename, $status_obj);
+    PVE::HA::Config::write_manager_status($status_obj);
 }
 
 sub read_lrm_status {
@@ -112,19 +70,27 @@ sub read_lrm_status {
 
     $node = $self->{nodename} if !defined($node);
 
-    my $filename = "/etc/pve/nodes/$node/lrm_status";
-
-    return PVE::HA::Tools::read_json_from_file($filename, {});  
+    return PVE::HA::Config::read_lrm_status($node);
 }
 
 sub write_lrm_status {
     my ($self, $status_obj) = @_;
 
     my $node = $self->{nodename};
+    
+    PVE::HA::Config::write_lrm_status($node, $status_obj);
+}
 
-    my $filename = "/etc/pve/nodes/$node/lrm_status";
+sub queue_crm_commands {
+    my ($self, $cmd) = @_;
 
-    PVE::HA::Tools::write_json_to_file($filename, $status_obj); 
+    return PVE::HA::Config::queue_crm_commands($cmd);
+}
+
+sub read_crm_commands {
+    my ($self) = @_;
+
+    return PVE::HA::Config::read_crm_commands();
 }
 
 sub read_service_config {
@@ -178,34 +144,7 @@ sub change_service_location {
 sub read_group_config {
     my ($self) = @_;
 
-    return cfs_read_file($ha_groups_config);
-}
-
-sub queue_crm_commands {
-    my ($self, $cmd) = @_;
-
-    chomp $cmd;
-
-    my $code = sub {
-	my $data = cfs_read_file($crm_commands_filename);
-	$data .= "$cmd\n";
-	cfs_write_file($crm_commands_filename, $data);
-	print "WRITE:$data\n";
-    };
-
-    return lock_ha_config($code);
-}
-
-sub read_crm_commands {
-    my ($self) = @_;
-
-    my $code = sub {
-	my $data = cfs_read_file($crm_commands_filename);
-	cfs_write_file($crm_commands_filename, '');
-	return $data;
-    };
-
-    return lock_ha_config($code);
+    return PVE::HA::Config::read_group_config();
 }
 
 # this should return a hash containing info
