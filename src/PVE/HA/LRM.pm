@@ -82,6 +82,8 @@ sub update_lrm_status {
 
     my $haenv = $self->{haenv};
 
+    return 0 if !$haenv->quorate();
+    
     my $lrm_status = {	
 	mode => $self->{mode},
 	results => $self->{results},
@@ -162,7 +164,7 @@ sub do_one_iteration {
     my $haenv = $self->{haenv};
 
     if (!$wrote_lrm_status_at_startup) {
-	if ($haenv->quorate() && $self->update_lrm_status()) {
+	if ($self->update_lrm_status()) {
 	    $wrote_lrm_status_at_startup = 1;
 	} else {
 	    # do nothing
@@ -219,7 +221,9 @@ sub do_one_iteration {
     if ($state eq 'wait_for_agent_lock') {
 
 	return 0 if $self->{shutdown_request};
-
+	
+	$self->update_lrm_status();
+	
 	$haenv->sleep(5);
 	   
     } elsif ($state eq 'active') {
@@ -259,6 +263,8 @@ sub do_one_iteration {
 	    $haenv->log('err', "got unexpected error - $err");
 	}
 
+	$self->update_lrm_status();
+	
 	return 0 if $shutdown;
 
 	$haenv->sleep_until($startime + $max_time);
@@ -464,8 +470,6 @@ sub resource_command_finished {
 	$results->{$id} = $self->{results}->{$id};
     }
     $self->{results} = $results;
-
-    $self->update_lrm_status();
 }
 
 1;
