@@ -28,7 +28,7 @@ my %daemon_options = (stop_wait_time => 180);
 
 my $daemon = __PACKAGE__->new('pve-ha-lrm', $cmdline, %daemon_options);
 
-my $rpcenv = PVE::RPCEnvironment->init('cli');
+my $rpcenv = PVE::RPCEnvironment->init('ha');
 
 $rpcenv->init_request();
 $rpcenv->set_language($ENV{LANG});
