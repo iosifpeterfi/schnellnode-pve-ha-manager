@@ -2,14 +2,14 @@ Source: pve-ha-manager
 Section: perl
 Priority: extra
 Maintainer: Proxmox Support Team <support@proxmox.com>
-Build-Depends: debhelper (>= 7.0.50~), libpve-common-perl, libglib-perl, libgtk3-perl
+Build-Depends: debhelper (>= 7.0.50~), libpve-common-perl, libglib-perl, libgtk3-perl, dh-systemd, lintian, libsystemd-dev, libsystemd-daemon-dev
 Standards-Version: 3.8.4
 
 Package: pve-ha-manager
 Section: perl
 Priority: optional
 Architecture: any
-Depends: ${shlibs:Depends}, ${perl:Depends}, ${misc:Depends}, libpve-common-perl, pve-cluster (>= 3.0-17), qemu-server
+Depends: ${shlibs:Depends}, ${perl:Depends}, ${misc:Depends}, libpve-common-perl, pve-cluster (>= 3.0-17), qemu-server, dh-systemd
 Conflicts: watchdog
 Description: Proxmox VE HA Manager
  HA Manager Proxmox VE.
