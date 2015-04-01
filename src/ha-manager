@@ -108,12 +108,15 @@ __PACKAGE__->register_method ({
 
 	my $ctime = $haenv->get_time();
 
-	my $master = $status->{master_node};
-	my $status_str = &$timestamp_to_status($ctime, $status->{timestamp});
+	if (defined($status->{master_node}) && defined($status->{timestamp})) {
+	    my $master = $status->{master_node};
+	    my $status_str = &$timestamp_to_status($ctime, $status->{timestamp});
 	
-	print "master_node: $master ($status_str)\n";
-	my $time_str = localtime($status->{timestamp});
-	print "last_update: $time_str\n";
+	    my $time_str = localtime($status->{timestamp});
+	    print "master_node: $master ($status_str, $time_str)\n";
+	} else {
+	    print "master_node: -\n";
+	}
 	
 	foreach my $node (sort keys %{$status->{node_status}}) {
 	    my $lrm_status = $haenv->read_lrm_status($node);
@@ -121,7 +124,7 @@ __PACKAGE__->register_method ({
 	    if (!$lrm_status->{timestamp}) {
 		print "lrm_status: $node (unable to read lrm status)\n";
 	    } else {
-		$status_str = &$timestamp_to_status($ctime, $lrm_status->{timestamp});
+		my $status_str = &$timestamp_to_status($ctime, $lrm_status->{timestamp});
 		my $time_str = localtime($lrm_status->{timestamp});
 		print "lrm_status: $node ($status_str, $time_str)\n";
 	    }
