@@ -39,7 +39,7 @@ cfs_register_file($manager_status_filename,
 sub json_reader {
     my ($filename, $data) = @_;
 
-    return decode_json($data || {});
+    return defined($data) ? decode_json($data) : {};
 }
 
 sub json_writer {
