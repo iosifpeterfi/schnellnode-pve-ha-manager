@@ -5,6 +5,7 @@ use warnings;
 
 use PVE::SafeSyslog;
 use PVE::Tools qw(extract_param);
+use PVE::Cluster;
 use PVE::HA::Config;
 use PVE::HA::Resources;
 use HTTP::Status qw(:constants);
@@ -105,6 +106,10 @@ __PACKAGE__->register_method ({
     code => sub {
 	my ($param) = @_;
 
+	# create /etc/pve/ha directory
+	PVE::Cluster::check_cfs_quorum();
+	mkdir("/etc/pve/ha");
+	
 	my $sid = extract_param($param, 'sid');
 	my ($type, $name) = PVE::HA::Tools::parse_sid($sid);
 
