@@ -19,7 +19,7 @@
 
 #include <systemd/sd-daemon.h>
 
-#define MY_SOCK_PATH "/run/watchdog-mux.sock"
+#define WD_SOCK_PATH "/run/watchdog-mux.sock"
 #define WD_ACTIVE_MARKER "/run/watchdog-mux.active"
 
 #define LISTEN_BACKLOG 32 /* set same value in watchdog-mux.socket */
@@ -107,7 +107,7 @@ main(void)
     socklen_t peer_addr_size;
     struct epoll_event ev, events[MAX_EVENTS];
     int socket_count, listen_sock, nfds, epollfd, sigfd;
-
+    int unlink_socket = 0;
     
     struct stat fs;
 
@@ -147,7 +147,7 @@ main(void)
             wdinfo.identity, wdinfo.firmware_version);
 
     socket_count = sd_listen_fds(0);
-
+    
     if (socket_count > 1) {
 
         perror("too many file descriptors received.\n");
@@ -156,10 +156,12 @@ main(void)
     } else if (socket_count == 1) {
 
         listen_sock = SD_LISTEN_FDS_START + 0;
-	    
+	
     } else {
 
-        unlink(MY_SOCK_PATH);
+	unlink_socket = 1;
+	
+        unlink(WD_SOCK_PATH);
 
         listen_sock = socket(AF_UNIX, SOCK_STREAM, 0);
         if (listen_sock == -1) {
@@ -169,7 +171,7 @@ main(void)
 
         memset(&my_addr, 0, sizeof(struct sockaddr_un));
         my_addr.sun_family = AF_UNIX;
-        strncpy(my_addr.sun_path, MY_SOCK_PATH, sizeof(my_addr.sun_path) - 1);
+        strncpy(my_addr.sun_path, WD_SOCK_PATH, sizeof(my_addr.sun_path) - 1);
 	    
         if (bind(listen_sock, (struct sockaddr *) &my_addr,
                  sizeof(struct sockaddr_un)) == -1) {
@@ -355,10 +357,14 @@ main(void)
         watchdog_close();
     }
     
-    unlink(MY_SOCK_PATH);
+    if (unlink_socket)
+	    unlink(WD_SOCK_PATH);
+    
     exit(EXIT_SUCCESS);
 
 err:
-    unlink(MY_SOCK_PATH);
+    if (unlink_socket)
+	    unlink(WD_SOCK_PATH);
+
     exit(EXIT_FAILURE);
 }
