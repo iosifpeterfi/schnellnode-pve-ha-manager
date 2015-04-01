@@ -1,3 +1,17 @@
+pve-ha-manager (0.7-1) unstable; urgency=medium
+
+  * create /etc/pve/ha automatically
+
+  * use correct package for lock_ha_config
+
+  * fix ha-manager status when ha is unconfigured
+
+  * do not unlink watchdog socket when started via systemd
+
+  * depend on systemd
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 01 Apr 2015 11:05:08 +0200
+
 pve-ha-manager (0.6-1) unstable; urgency=medium
 
   * move configuration handling into PVE::HA::Config
