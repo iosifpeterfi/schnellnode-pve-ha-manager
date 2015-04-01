@@ -118,7 +118,7 @@ __PACKAGE__->register_method ({
 
 	my $opts = $plugin->check_config($sid, $param, 1, 1);
 
-	PVE::HA::Env::PVE2::lock_ha_config(
+	PVE::HA::Config::lock_ha_config(
 	    sub {
 
 		my $cfg = PVE::HA::Config::read_resources_config();
