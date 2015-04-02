@@ -1,3 +1,11 @@
+pve-ha-manager (0.8-2) unstable; urgency=medium
+
+  * lrm: reduce TimeoutStopSec to 95
+
+  * lrm: set systemd killmode to 'process'
+
+ -- Proxmox Support Team <support@proxmox.com>  Thu, 02 Apr 2015 08:48:24 +0200
+
 pve-ha-manager (0.8-1) unstable; urgency=medium
 
   * currecrtly send cfs lock update request
