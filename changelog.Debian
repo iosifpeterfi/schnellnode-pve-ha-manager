@@ -1,3 +1,9 @@
+pve-ha-manager (0.8-1) unstable; urgency=medium
+
+  * currecrtly send cfs lock update request
+
+ -- Proxmox Support Team <support@proxmox.com>  Thu, 02 Apr 2015 08:18:00 +0200
+
 pve-ha-manager (0.7-1) unstable; urgency=medium
 
   * create /etc/pve/ha automatically
