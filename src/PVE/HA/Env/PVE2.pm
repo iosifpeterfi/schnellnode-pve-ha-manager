@@ -191,6 +191,9 @@ sub get_pve_lock {
 
     my $ctime = time();
 
+    my $retry = 0;
+    my $retry_timeout = 100; # fixme: what timeout
+    
     eval {
 
 	mkdir $lockdir;
@@ -198,9 +201,12 @@ sub get_pve_lock {
 	# pve cluster filesystem not online
 	die "can't create '$lockdir' (pmxcfs not mounted?)\n" if ! -d $lockdir;
 
-	if ($last && (($ctime - $last) < 100)) { # fixme: what timeout
-	    utime(0, $ctime, $filename) || # cfs lock update request
+	if ($last && (($ctime - $last) < $retry_timeout)) {
+	     # send cfs lock update request (utime)
+	    if (!utime(0, $ctime, $filename))  {
+		$retry = 1;
 		die "cfs lock update failed - $!\n";
+	    }
 	} else {
 
 	    # fixme: wait some time?
@@ -215,6 +221,11 @@ sub get_pve_lock {
 
     my $err = $@;
 
+    if ($retry) {
+	# $self->log('err', $err) if $err; # for debugging
+	return 0;
+    }
+    
     $last_lock_status->{$lockid} = $got_lock ? $ctime : 0;
 
     if (!!$got_lock != !!$last) {
@@ -225,6 +236,8 @@ sub get_pve_lock {
 	    $msg .= " - $err" if $err; 
 	    $self->log('err', $msg);
 	}
+    } else {
+	# $self->log('err', $err) if $err; # for debugging
     }
 
     return $got_lock;
