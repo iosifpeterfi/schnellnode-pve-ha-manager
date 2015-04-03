@@ -4,6 +4,8 @@ pve-ha-manager (0.9-1) unstable; urgency=medium
 
   * add API to query ha status
 
+  * allow to use simply VMIDs as resource id
+
  -- Proxmox Support Team <support@proxmox.com>  Fri, 03 Apr 2015 06:18:05 +0200
 
 pve-ha-manager (0.8-2) unstable; urgency=medium

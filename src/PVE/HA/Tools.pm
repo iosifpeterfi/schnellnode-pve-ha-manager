@@ -23,6 +23,23 @@ PVE::JSONSchema::register_standard_option('pve-ha-resource-id', {
     type => 'string', format => 'pve-ha-resource-id',					 
 });
 
+PVE::JSONSchema::register_format('pve-ha-resource-or-vm-id', \&pve_verify_ha_resource_or_vm_id);
+sub pve_verify_ha_resource_or_vm_id {
+    my ($sid, $noerr) = @_;
+
+    if ($sid !~ m/^([a-z]+:\S+|\d+)$/) {
+	return undef if $noerr;
+	die "value does not look like a valid ha resource id\n";
+    }
+    return $sid;
+}
+
+PVE::JSONSchema::register_standard_option('pve-ha-resource-or-vm-id', {
+    description => "HA resource ID. This consists of a resource type followed by a resource specific name, separated with collon (example: vm:100). For virtual machines, you can simply use the VM id as shortcut (example: 100).",
+    typetext => "<type>:<name>",
+    type => 'string', format => 'pve-ha-resource-or-vm-id',					 
+});
+
 PVE::JSONSchema::register_format('pve-ha-group-node', \&pve_verify_ha_group_node);
 sub pve_verify_ha_group_node {
     my ($node, $noerr) = @_;
@@ -48,9 +65,20 @@ PVE::JSONSchema::register_standard_option('pve-ha-group-id', {
 sub parse_sid {
     my ($sid) = @_;
 
-    my ($type, $name) = split(':', $sid, 2);
+    my ($type, $name);
 
-    return wantarray ? ($type, $name) : $name;
+    if ($sid =~ m/^(\d+)$/) {
+	$name = $1;
+	$type ='vm';
+	$sid = "vm:$name";
+    } elsif  ($sid =~m/^(\S+):(\S+)$/) {
+	$name = $2;
+	$type = $1;
+    } else {
+	die "unable to parse service id '$sid'\n";
+    }
+
+    return wantarray ? ($sid, $type, $name) : $sid;
 }
 
 sub read_json_from_file {

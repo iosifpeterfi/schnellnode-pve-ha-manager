@@ -13,7 +13,7 @@ use base qw(PVE::SectionConfig);
 my $defaultData = {
     propertyList => {
 	type => { description => "Resource type.", optional => 1 },
-	sid => get_standard_option('pve-ha-resource-id'),
+	sid => get_standard_option('pve-ha-resource-or-vm-id'),
 	state => {
 	    description => "Resource state.",
 	    type => 'string',

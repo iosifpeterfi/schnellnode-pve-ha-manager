@@ -83,7 +83,7 @@ __PACKAGE__->register_method ({
     parameters => {
     	additionalProperties => 0,
 	properties => {
-	    sid => get_standard_option('pve-ha-resource-id'),
+	    sid => get_standard_option('pve-ha-resource-or-vm-id'),
 	},
     },
     returns => {},
@@ -92,7 +92,9 @@ __PACKAGE__->register_method ({
 
 	my $cfg = PVE::HA::Config::read_resources_config();
 
-	return &$api_copy_config($cfg, $param->{sid});
+	my $sid = PVE::HA::Tools::parse_sid($param->{sid});
+
+	return &$api_copy_config($cfg, $sid);
     }});
 
 __PACKAGE__->register_method ({
@@ -110,8 +112,7 @@ __PACKAGE__->register_method ({
 	PVE::Cluster::check_cfs_quorum();
 	mkdir("/etc/pve/ha");
 	
-	my $sid = extract_param($param, 'sid');
-	my ($type, $name) = PVE::HA::Tools::parse_sid($sid);
+	my ($sid, $type, $name) = PVE::HA::Tools::parse_sid(extract_param($param, 'sid'));
 
 	if (my $param_type = extract_param($param, 'type')) {
 	    # useless, but do it anyway
@@ -155,8 +156,7 @@ __PACKAGE__->register_method ({
 	my $digest = extract_param($param, 'digest');
 	my $delete = extract_param($param, 'delete');
 
-	my $sid = extract_param($param, 'sid');
-	my ($type, $name) = PVE::HA::Tools::parse_sid($sid);
+	my ($sid, $type, $name) = PVE::HA::Tools::parse_sid(extract_param($param, 'sid'));
 
 	if (my $param_type = extract_param($param, 'type')) {
 	    # useless, but do it anyway
@@ -209,14 +209,14 @@ __PACKAGE__->register_method ({
     parameters => {
     	additionalProperties => 0,
 	properties => {
-	    sid => get_standard_option('pve-ha-resource-id'),
+	    sid => get_standard_option('pve-ha-resource-or-vm-id'),
 	},
     },
     returns => { type => 'null' },
     code => sub {
 	my ($param) = @_;
 
-	my $sid = extract_param($param, 'sid');
+	my ($sid, $type, $name) = PVE::HA::Tools::parse_sid(extract_param($param, 'sid'));
 
  	PVE::HA::Config::lock_ha_config(
 	    sub {
@@ -241,7 +241,7 @@ __PACKAGE__->register_method ({
     parameters => {
     	additionalProperties => 0,
 	properties => {
-	    sid => get_standard_option('pve-ha-resource-id'),
+	    sid => get_standard_option('pve-ha-resource-or-vm-id'),
 	    node => get_standard_option('pve-node'),
 	},
     },
@@ -249,7 +249,9 @@ __PACKAGE__->register_method ({
     code => sub {
 	my ($param) = @_;
 
-	PVE::HA::Config::queue_crm_commands("migrate $param->{sid} $param->{node}");
+	my ($sid, $type, $name) = PVE::HA::Tools::parse_sid(extract_param($param, 'sid'));
+
+	PVE::HA::Config::queue_crm_commands("migrate $sid $param->{node}");
 	    
 	return undef;
     }});
@@ -263,7 +265,7 @@ __PACKAGE__->register_method ({
     parameters => {
     	additionalProperties => 0,
 	properties => {
-	    sid => get_standard_option('pve-ha-resource-id'),
+	    sid => get_standard_option('pve-ha-resource-or-vm-id'),
 	    node => get_standard_option('pve-node'),
 	},
     },
@@ -271,7 +273,9 @@ __PACKAGE__->register_method ({
     code => sub {
 	my ($param) = @_;
 
-	PVE::HA::Config::queue_crm_commands("relocate $param->{sid} $param->{node}");
+	my ($sid, $type, $name) = PVE::HA::Tools::parse_sid(extract_param($param, 'sid'));
+
+	PVE::HA::Config::queue_crm_commands("relocate $sid $param->{node}");
 	    
 	return undef;
     }});
