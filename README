@@ -98,6 +98,10 @@ Most other service types requires the service to be stopped, and then
 restarted at the other node. Stopped services are moved by the CRM
 (usually by simply changing the service configuration).
 
+=== Service ordering and colocation constarints ===
+
+So far there are no plans to implement this (although it would be possible).
+
 === Possible CRM Service States ===
 
 stopped:      Service is stopped (confirmed by LRM)
