@@ -31,8 +31,37 @@ my $timestamp_to_status = sub {
 };
 
 __PACKAGE__->register_method ({
+    name => 'index', 
+    path => '', 
+    method => 'GET',
+    permissions => { user => 'all' },
+    description => "Directory index.",
+    parameters => {
+    	additionalProperties => 0,
+	properties => {},
+    },
+    returns => {
+	type => 'array',
+	items => {
+	    type => "object",
+	    properties => {},
+	},
+	links => [ { rel => 'child', href => "{name}" } ],
+    },
+    code => sub {
+	my ($param) = @_;
+    
+	my $result = [
+	    { name => 'current' },
+	    { name => 'manager_status' },
+	    ];
+
+	return $result;
+    }});
+
+__PACKAGE__->register_method ({
     name => 'status', 
-    path => '',
+    path => 'current',
     method => 'GET',
     description => "Get HA manger status.",
     parameters => {
@@ -92,6 +121,36 @@ __PACKAGE__->register_method ({
 	return $res;
     }});
 
+__PACKAGE__->register_method ({
+    name => 'manager_status', 
+    path => 'manager_status',
+    method => 'GET',
+    description => "Get full HA manger status, including LRM status.",
+    parameters => {
+    	additionalProperties => 0,
+	properties => {},
+    },
+    returns => { type => 'object' },
+    code => sub {
+	my ($param) = @_;
 
+	my $haenv = PVE::HA::Env::PVE2->new($nodename);
+
+	my $status = $haenv->read_manager_status();
+	
+	my $data = { manager_status => $status };
+
+	$data->{quorum} = {
+	    node => $nodename,
+	    quorate => PVE::Cluster::check_cfs_quorum(1),
+	};
+	
+	foreach my $node (sort keys %{$status->{node_status}}) {
+	    my $lrm_status = $haenv->read_lrm_status($node);
+	    $data->{lrm_status}->{$node} = $lrm_status;
+	}
+
+	return $data;
+    }});
 
 1;
