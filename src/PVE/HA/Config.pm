@@ -86,9 +86,14 @@ sub read_resources_config {
 }
 
 sub read_group_config {
-    my () = @_;
 
     return cfs_read_file($ha_groups_config);
+}
+
+sub write_group_config {
+    my ($cfg) = @_;
+
+    cfs_write_file($ha_groups_config, $cfg);
 }
 
 sub write_resources_config {
