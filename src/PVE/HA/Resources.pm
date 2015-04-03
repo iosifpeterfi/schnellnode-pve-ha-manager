@@ -58,6 +58,8 @@ sub parse_section_header {
 	eval {
 	    if (my $plugin = $defaultData->{plugins}->{$type}) {
 		$plugin->verify_name($name);
+	    } else {
+		die "no such resource type '$type'\n";
 	    }
 	};
 	$errmsg = $@ if $@;
@@ -92,30 +94,30 @@ sub options {
     };
 }
 
-package PVE::HA::Resources::IPAddr;
+# package PVE::HA::Resources::IPAddr;
 
-use strict;
-use warnings;
-use PVE::Tools qw($IPV4RE $IPV6RE);
+# use strict;
+# use warnings;
+# use PVE::Tools qw($IPV4RE $IPV6RE);
 
-use base qw(PVE::HA::Resources);
+# use base qw(PVE::HA::Resources);
 
-sub type {
-    return 'ipaddr';
-}
+# sub type {
+#     return 'ipaddr';
+# }
 
-sub verify_name {
-    my ($class, $name) = @_;
+# sub verify_name {
+#     my ($class, $name) = @_;
 
-    die "invalid IP address\n" if $name !~ m!^$IPV6RE|$IPV4RE$!;
-}
+#     die "invalid IP address\n" if $name !~ m!^$IPV6RE|$IPV4RE$!;
+# }
 
-sub options {
-    return {
-	state => { optional => 1 },
-	group => { optional => 1 },
-	comment => { optional => 1 },
-    };
-}
+# sub options {
+#     return {
+# 	state => { optional => 1 },
+# 	group => { optional => 1 },
+# 	comment => { optional => 1 },
+#     };
+# }
 
 1;

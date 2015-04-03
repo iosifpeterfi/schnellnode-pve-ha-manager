@@ -14,7 +14,7 @@ PVE::HA::Groups->register();
 PVE::HA::Groups->init();
 
 PVE::HA::Resources::PVEVM->register();
-PVE::HA::Resources::IPAddr->register();
+#PVE::HA::Resources::IPAddr->register();
 
 PVE::HA::Resources->init();
 
