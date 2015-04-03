@@ -93,8 +93,8 @@ sub read_service_config {
 
 	die "service '$sid' without assigned node!" if !$d->{node};
 
-	if ($sid =~ m/^pvevm:(\d+)$/) {
-	    $d->{type} = 'pvevm'; 
+	if ($sid =~ m/^vm:(\d+)$/) {
+	    $d->{type} = 'vm'; 
 	    $d->{name} = $1;
 	} else {
 	    die "implement me";
@@ -236,12 +236,12 @@ sub new {
 	copy("$testdir/service_config", "$statusdir/service_config");
     } else {
 	my $conf = {
-	    'pvevm:101' => { node => 'node1', group => 'prefer_node1' },
-	    'pvevm:102' => { node => 'node2', group => 'prefer_node2' },
-	    'pvevm:103' => { node => 'node3', group => 'prefer_node3' },
-	    'pvevm:104' => { node => 'node1', group => 'prefer_node1' },
-	    'pvevm:105' => { node => 'node2', group => 'prefer_node2' },
-	    'pvevm:106' => { node => 'node3', group => 'prefer_node3' },
+	    'vm:101' => { node => 'node1', group => 'prefer_node1' },
+	    'vm:102' => { node => 'node2', group => 'prefer_node2' },
+	    'vm:103' => { node => 'node3', group => 'prefer_node3' },
+	    'vm:104' => { node => 'node1', group => 'prefer_node1' },
+	    'vm:105' => { node => 'node2', group => 'prefer_node2' },
+	    'vm:106' => { node => 'node3', group => 'prefer_node3' },
 	};
 	$self->write_service_config($conf);
     }

@@ -13,23 +13,23 @@ info     20    node1/crm: status change wait_for_quorum => master
 info     20    node1/crm: node 'node1': state changed from 'unknown' => 'online'
 info     20    node1/crm: node 'node2': state changed from 'unknown' => 'online'
 info     20    node1/crm: node 'node3': state changed from 'unknown' => 'online'
-info     20    node1/crm: adding new service 'pvevm:101' on node 'node1'
-info     20    node1/crm: adding new service 'pvevm:102' on node 'node2'
-info     20    node1/crm: adding new service 'pvevm:103' on node 'node3'
+info     20    node1/crm: adding new service 'vm:101' on node 'node1'
+info     20    node1/crm: adding new service 'vm:102' on node 'node2'
+info     20    node1/crm: adding new service 'vm:103' on node 'node3'
 info     21    node1/lrm: got lock 'ha_agent_node1_lock'
 info     21    node1/lrm: status change wait_for_agent_lock => active
-info     21    node1/lrm: starting service pvevm:101
-info     21    node1/lrm: service status pvevm:101 started
+info     21    node1/lrm: starting service vm:101
+info     21    node1/lrm: service status vm:101 started
 info     22    node2/crm: status change wait_for_quorum => slave
 info     23    node2/lrm: got lock 'ha_agent_node2_lock'
 info     23    node2/lrm: status change wait_for_agent_lock => active
-info     23    node2/lrm: starting service pvevm:102
-info     23    node2/lrm: service status pvevm:102 started
+info     23    node2/lrm: starting service vm:102
+info     23    node2/lrm: service status vm:102 started
 info     24    node3/crm: status change wait_for_quorum => slave
 info     25    node3/lrm: got lock 'ha_agent_node3_lock'
 info     25    node3/lrm: status change wait_for_agent_lock => active
-info     25    node3/lrm: starting service pvevm:103
-info     25    node3/lrm: service status pvevm:103 started
+info     25    node3/lrm: starting service vm:103
+info     25    node3/lrm: service status vm:103 started
 info    120      cmdlist: execute network node1 off
 info    120      cmdlist: execute network node2 off
 info    120      cmdlist: execute network node3 off

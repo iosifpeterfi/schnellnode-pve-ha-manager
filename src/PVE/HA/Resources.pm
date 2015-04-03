@@ -75,7 +75,7 @@ use warnings;
 use base qw(PVE::HA::Resources);
 
 sub type {
-    return 'pvevm';
+    return 'vm';
 }
 
 sub verify_name {

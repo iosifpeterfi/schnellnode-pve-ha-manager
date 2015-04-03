@@ -6,7 +6,7 @@
 	"node2":"online"
     },
     "service_status": {
-	"pvevm:101": {
+	"vm:101": {
 	    "node": "node1",
 	    "state": "fence",
 	    "uid": "lavE3c7vLnotUBGT9whswg"

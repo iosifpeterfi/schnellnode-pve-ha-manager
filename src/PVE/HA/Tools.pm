@@ -18,7 +18,7 @@ sub pve_verify_ha_resource_id {
 }
 
 PVE::JSONSchema::register_standard_option('pve-ha-resource-id', {
-    description => "HA resource ID. This consists of a resource type followed by a resource specific name, separated with collon (example: pvevm:100).",
+    description => "HA resource ID. This consists of a resource type followed by a resource specific name, separated with collon (example: vm:100).",
     typetext => "<type>:<name>",
     type => 'string', format => 'pve-ha-resource-id',					 
 });

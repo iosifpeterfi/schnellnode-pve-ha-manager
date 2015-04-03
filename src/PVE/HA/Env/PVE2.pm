@@ -105,7 +105,7 @@ sub read_service_config {
 	my $d = $res->{ids}->{$sid};
 	my $name = PVE::HA::Tools::parse_sid($sid);
 	$d->{state} = 'enabled' if !defined($d->{state});
-	if ($d->{type} eq 'pvevm') {
+	if ($d->{type} eq 'vm') {
 	    if (my $vmd = $vmlist->{ids}->{$name}) {
 		if (!$vmd) {
 		    warn "no such VM '$name'\n";
@@ -131,7 +131,7 @@ sub change_service_location {
 
     my ($type, $name) = PVE::HA::Tools::parse_sid($sid);
 
-    if ($type eq 'pvevm') {
+    if ($type eq 'vm') {
 	my $old = PVE::QemuServer::config_file($name, $current_node);
 	my $new = PVE::QemuServer::config_file($name, $new_node);
 	rename($old, $new) ||
@@ -388,7 +388,7 @@ sub exec_resource_agent {
 
     my ($service_type, $service_name) = PVE::HA::Tools::parse_sid($sid);
 
-    die "service type '$service_type'not implemented" if $service_type ne 'pvevm';
+    die "service type '$service_type'not implemented" if $service_type ne 'vm';
 
     my $vmid = $service_name;
 

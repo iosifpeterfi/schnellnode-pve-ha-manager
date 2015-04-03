@@ -13,28 +13,28 @@ info     20    node1/crm: status change wait_for_quorum => master
 info     20    node1/crm: node 'node1': state changed from 'unknown' => 'online'
 info     20    node1/crm: node 'node2': state changed from 'unknown' => 'online'
 info     20    node1/crm: node 'node3': state changed from 'unknown' => 'online'
-info     20    node1/crm: adding new service 'pvevm:101' on node 'node1'
-info     20    node1/crm: adding new service 'pvevm:102' on node 'node2'
-info     20    node1/crm: adding new service 'pvevm:103' on node 'node3'
-info     20    node1/crm: service 'pvevm:102': state changed from 'started' to 'request_stop' 
+info     20    node1/crm: adding new service 'vm:101' on node 'node1'
+info     20    node1/crm: adding new service 'vm:102' on node 'node2'
+info     20    node1/crm: adding new service 'vm:103' on node 'node3'
+info     20    node1/crm: service 'vm:102': state changed from 'started' to 'request_stop' 
 info     21    node1/lrm: got lock 'ha_agent_node1_lock'
 info     21    node1/lrm: status change wait_for_agent_lock => active
-info     21    node1/lrm: starting service pvevm:101
-info     21    node1/lrm: service status pvevm:101 started
+info     21    node1/lrm: starting service vm:101
+info     21    node1/lrm: service status vm:101 started
 info     22    node2/crm: status change wait_for_quorum => slave
 info     23    node2/lrm: got lock 'ha_agent_node2_lock'
 info     23    node2/lrm: status change wait_for_agent_lock => active
 info     24    node3/crm: status change wait_for_quorum => slave
 info     25    node3/lrm: got lock 'ha_agent_node3_lock'
 info     25    node3/lrm: status change wait_for_agent_lock => active
-info     25    node3/lrm: starting service pvevm:103
-info     25    node3/lrm: service status pvevm:103 started
-info     40    node1/crm: service 'pvevm:102': state changed from 'request_stop' to 'stopped' 
+info     25    node3/lrm: starting service vm:103
+info     25    node3/lrm: service status vm:103 started
+info     40    node1/crm: service 'vm:102': state changed from 'request_stop' to 'stopped' 
 info    120      cmdlist: execute network node3 off
 info    120    node1/crm: node 'node3': state changed from 'online' => 'unknown'
 info    124    node3/crm: status change slave => wait_for_quorum
 info    125    node3/lrm: status change active => lost_agent_lock
-info    160    node1/crm: service 'pvevm:103': state changed from 'started' to 'fence' 
+info    160    node1/crm: service 'vm:103': state changed from 'started' to 'fence' 
 info    160    node1/crm: node 'node3': state changed from 'unknown' => 'fence'
 info    166     watchdog: execute power node3 off
 info    165    node3/crm: killed by poweroff
@@ -43,8 +43,8 @@ info    166     hardware: server 'node3' stopped by poweroff (watchdog)
 info    240    node1/crm: got lock 'ha_agent_node3_lock'
 info    240    node1/crm: fencing: acknowleged - got agent lock for node 'node3'
 info    240    node1/crm: node 'node3': state changed from 'fence' => 'unknown'
-info    240    node1/crm: service 'pvevm:103': state changed from 'fence' to 'stopped' 
-info    260    node1/crm: service 'pvevm:103': state changed from 'stopped' to 'started'  (node = node2)
-info    263    node2/lrm: starting service pvevm:103
-info    263    node2/lrm: service status pvevm:103 started
+info    240    node1/crm: service 'vm:103': state changed from 'fence' to 'stopped' 
+info    260    node1/crm: service 'vm:103': state changed from 'stopped' to 'started'  (node = node2)
+info    263    node2/lrm: starting service vm:103
+info    263    node2/lrm: service status vm:103 started
 info    720     hardware: exit simulation - done

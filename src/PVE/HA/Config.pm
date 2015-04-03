@@ -151,7 +151,7 @@ sub vm_is_ha_managed {
 
     my $conf = cfs_read_file($ha_resources_config);
 
-    my $sid = "pvevm:$vmid";
+    my $sid = "vm:$vmid";
     
     return defined($conf->{ids}->{$sid});
 }
