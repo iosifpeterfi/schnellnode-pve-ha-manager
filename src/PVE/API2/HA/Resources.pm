@@ -135,7 +135,7 @@ __PACKAGE__->register_method ({
 
 		$cfg->{ids}->{$sid} = $opts;
 
-		PVE::HA::Env::PVE2::write_resources_config($cfg)
+		PVE::HA::Config::write_resources_config($cfg)
 
 	    }, "create resource failed");
 

@@ -122,7 +122,7 @@ __PACKAGE__->register_method ({
 
 		$cfg->{ids}->{$group} = $opts;
 
-		PVE::HA::Env::PVE2::write_group_config($cfg)
+		PVE::HA::Config::write_group_config($cfg)
 
 	    }, "create ha group failed");
 
