@@ -206,8 +206,15 @@ __PACKAGE__->register_method ({
 
 	my $group = extract_param($param, 'group');
 
- 	PVE::HA::Config::lock_ha_config(
+	PVE::HA::Config::lock_ha_config(
 	    sub {
+
+		my $rcfg = PVE::HA::Config::read_resources_config();
+		foreach my $sid (keys %$rcfg->{ids}) {
+		    my $sg = $rcfg->{ids}->{$sid}->{group};
+		    die "ha group is used by service '$sid'\n" 
+			if ($sg && $sg eq $group);
+		}
 
 		my $cfg = PVE::HA::Config::read_group_config();
 
