@@ -1,0 +1,3 @@
+group: prefer_node3
+	nodes node3
+	nofailback 1

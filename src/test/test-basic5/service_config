@@ -1,0 +1,5 @@
+{
+    "vm:101": { "node": "node1", "state": "enabled", "group": "prefer_node1" },
+    "vm:102": { "node": "node2", "state": "enabled" },
+    "vm:103": { "node": "node3", "state": "enabled" }
+}

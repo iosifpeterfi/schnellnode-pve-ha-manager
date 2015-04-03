@@ -1,0 +1,81 @@
+info      0     hardware: starting simulation
+info     20      cmdlist: execute power node1 on
+info     20    node1/crm: status change startup => wait_for_quorum
+info     20    node1/lrm: status change startup => wait_for_agent_lock
+info     20      cmdlist: execute power node2 on
+info     20    node2/crm: status change startup => wait_for_quorum
+info     20    node2/lrm: status change startup => wait_for_agent_lock
+info     20      cmdlist: execute power node3 on
+info     20    node3/crm: status change startup => wait_for_quorum
+info     20    node3/lrm: status change startup => wait_for_agent_lock
+info     20    node1/crm: got lock 'ha_manager_lock'
+info     20    node1/crm: status change wait_for_quorum => master
+info     20    node1/crm: node 'node1': state changed from 'unknown' => 'online'
+info     20    node1/crm: node 'node2': state changed from 'unknown' => 'online'
+info     20    node1/crm: node 'node3': state changed from 'unknown' => 'online'
+info     20    node1/crm: adding new service 'vm:101' on node 'node1'
+info     20    node1/crm: adding new service 'vm:102' on node 'node2'
+info     20    node1/crm: adding new service 'vm:103' on node 'node3'
+info     21    node1/lrm: got lock 'ha_agent_node1_lock'
+info     21    node1/lrm: status change wait_for_agent_lock => active
+info     21    node1/lrm: starting service vm:101
+info     21    node1/lrm: service status vm:101 started
+info     22    node2/crm: status change wait_for_quorum => slave
+info     23    node2/lrm: got lock 'ha_agent_node2_lock'
+info     23    node2/lrm: status change wait_for_agent_lock => active
+info     23    node2/lrm: starting service vm:102
+info     23    node2/lrm: service status vm:102 started
+info     24    node3/crm: status change wait_for_quorum => slave
+info     25    node3/lrm: got lock 'ha_agent_node3_lock'
+info     25    node3/lrm: status change wait_for_agent_lock => active
+info     25    node3/lrm: starting service vm:103
+info     25    node3/lrm: service status vm:103 started
+info    120      cmdlist: execute network node1 off
+info    120    node1/crm: status change master => lost_manager_lock
+info    120    node1/crm: status change lost_manager_lock => wait_for_quorum
+info    121    node1/lrm: status change active => lost_agent_lock
+info    162     watchdog: execute power node1 off
+info    161    node1/crm: killed by poweroff
+info    162    node1/lrm: killed by poweroff
+info    162     hardware: server 'node1' stopped by poweroff (watchdog)
+info    220      cmdlist: execute power node1 off
+info    222    node3/crm: got lock 'ha_manager_lock'
+info    222    node3/crm: status change slave => master
+info    222    node3/crm: node 'node1': state changed from 'online' => 'unknown'
+info    282    node3/crm: service 'vm:101': state changed from 'started' to 'fence' 
+info    282    node3/crm: node 'node1': state changed from 'unknown' => 'fence'
+info    282    node3/crm: got lock 'ha_agent_node1_lock'
+info    282    node3/crm: fencing: acknowleged - got agent lock for node 'node1'
+info    282    node3/crm: node 'node1': state changed from 'fence' => 'unknown'
+info    282    node3/crm: service 'vm:101': state changed from 'fence' to 'stopped' 
+info    282    node3/crm: service 'vm:101': state changed from 'stopped' to 'started'  (node = node2)
+info    301    node2/lrm: starting service vm:101
+info    301    node2/lrm: service status vm:101 started
+info    320      cmdlist: execute network node3 off
+info    320      cmdlist: execute power node1 on
+info    320    node1/crm: status change startup => wait_for_quorum
+info    320    node1/lrm: status change startup => wait_for_agent_lock
+info    320    node1/crm: status change wait_for_quorum => slave
+info    324    node3/crm: status change master => lost_manager_lock
+info    324    node3/crm: status change lost_manager_lock => wait_for_quorum
+info    325    node3/lrm: status change active => lost_agent_lock
+info    364     watchdog: execute power node3 off
+info    360    node3/crm: killed by poweroff
+info    360    node3/lrm: killed by poweroff
+info    364     hardware: server 'node3' stopped by poweroff (watchdog)
+info    420      cmdlist: execute power node3 on
+info    420    node3/crm: status change startup => wait_for_quorum
+info    420    node3/lrm: status change startup => wait_for_agent_lock
+info    424    node3/crm: got lock 'ha_manager_lock'
+info    424    node3/crm: status change wait_for_quorum => master
+info    424    node3/crm: node 'node1': state changed from 'unknown' => 'online'
+info    424    node3/crm: migrate service 'vm:101' to node 'node1' (running)
+info    424    node3/crm: service 'vm:101': state changed from 'started' to 'migrate'  (node = node2, target = node1)
+info    425    node3/lrm: got lock 'ha_agent_node3_lock'
+info    425    node3/lrm: status change wait_for_agent_lock => active
+info    443    node2/lrm: service vm:101 - start migrate to node 'node1'
+info    443    node2/lrm: service vm:101 - end migrate to node 'node1'
+info    444    node3/crm: service 'vm:101': state changed from 'migrate' to 'started'  (node = node1)
+info    461    node1/lrm: got lock 'ha_agent_node1_lock'
+info    461    node1/lrm: status change wait_for_agent_lock => active
+info   1020     hardware: exit simulation - done
