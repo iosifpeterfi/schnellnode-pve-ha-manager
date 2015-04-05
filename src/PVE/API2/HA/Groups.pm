@@ -210,7 +210,7 @@ __PACKAGE__->register_method ({
 	    sub {
 
 		my $rcfg = PVE::HA::Config::read_resources_config();
-		foreach my $sid (keys %$rcfg->{ids}) {
+		foreach my $sid (keys %{$rcfg->{ids}}) {
 		    my $sg = $rcfg->{ids}->{$sid}->{group};
 		    die "ha group is used by service '$sid'\n" 
 			if ($sg && $sg eq $group);
