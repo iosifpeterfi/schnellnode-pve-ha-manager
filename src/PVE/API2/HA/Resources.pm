@@ -64,11 +64,15 @@ __PACKAGE__->register_method ({
 	my ($param) = @_;
 
 	my $cfg = PVE::HA::Config::read_resources_config();
+	my $groups = PVE::HA::Config::read_group_config();
 
 	my $res = [];
 	foreach my $sid (keys %{$cfg->{ids}}) {
 	    my $scfg = &$api_copy_config($cfg, $sid);
 	    next if $param->{type} && $param->{type} ne $scfg->{type};
+	    if ($scfg->{group} && !$groups->{ids}->{$scfg->{group}}) {
+		$scfg->{errors}->{group} = "group '$scfg->{group}' does not exist";
+	    }
 	    push @$res, $scfg;
 	}
 

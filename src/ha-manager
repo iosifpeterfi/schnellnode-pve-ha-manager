@@ -129,8 +129,13 @@ my $cmddef = {
 	    print "$type:$name\n";
 	    foreach my $k (sort keys %$rec) {
 		next if $k eq 'digest' || $k eq 'sid' || 
-		    $k eq 'type';
+		    $k eq 'type' || $k eq 'errors';
 		print "\t$k $rec->{$k}\n";
+	    }
+	    if (my $errors = $rec->{errors}) {
+		foreach my $p (keys %$errors) {
+		    warn "error: property '$p' - $errors->{$p}\n";
+		}
 	    }
 	    print "\n";
 	}}],
