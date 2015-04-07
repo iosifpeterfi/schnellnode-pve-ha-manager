@@ -1,3 +1,9 @@
+pve-ha-manager (0.9-2) unstable; urgency=medium
+
+  * issue warning if ha group does not exist
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 07 Apr 2015 09:52:07 +0200
+
 pve-ha-manager (0.9-1) unstable; urgency=medium
 
   * rename vm resource prefix: pvevm: => vm:
