@@ -4,15 +4,15 @@ use strict;
 use warnings;
 
 use lib '..';
+use PVE::HA::Config;
 use PVE::HA::Manager;
 
 use Data::Dumper;
 
-my $groups = {
-    prefer_node1 => {
-	nodes => 'node1',
-    },
-};
+my $groups = PVE::HA::Config::parse_groups_config("groups.tmp", <<EOD);
+group: prefer_node1
+	nodes node1
+EOD
 
 
 my $online_node_usage = {
