@@ -1,3 +1,9 @@
+pve-ha-manager (0.9-3) unstable; urgency=medium
+
+  * regression test improvements
+  
+ -- Proxmox Support Team <support@proxmox.com>  Fri, 10 Apr 2015 06:53:23 +0200
+
 pve-ha-manager (0.9-2) unstable; urgency=medium
 
   * issue warning if ha group does not exist
