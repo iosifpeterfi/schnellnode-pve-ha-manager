@@ -1,7 +1,6 @@
 [
     [ "power node1 on", "power node2 on", "power node3 on"],
     [ "network node1 off" ],
-    [ "power node1 off" ],
-    [ "network node3 off", "power node1 on" ],
-    [ "power node3 on" ]
+    [ "delay 200" ],
+    [ "power node1 on" ]
 ]

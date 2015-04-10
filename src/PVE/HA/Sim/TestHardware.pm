@@ -138,7 +138,8 @@ sub run {
     my ($self) = @_;
 
     my $last_command_time = 0;
-
+    my $next_cmd_at = 0;
+	
     for (;;) {
 
 	my $starttime = $self->get_time();
@@ -203,7 +204,9 @@ sub run {
 	    $d->{lrm_env}->loop_start_hook($self->get_time());
 	    $d->{crm_env}->loop_start_hook($self->get_time());
 	}
-	
+
+	next if $self->{cur_time} < $next_cmd_at;
+ 
 	# apply new comand after 5 loop iterations
 
 	if (($self->{loop_count} % 5) == 0) {
@@ -215,7 +218,12 @@ sub run {
 
 	    foreach my $cmd (@$list) {
 		$last_command_time = $self->{cur_time};
-		$self->sim_hardware_cmd($cmd, 'cmdlist');
+
+		if ($cmd =~ m/^delay\s+(\d+)\s*$/) {
+		    $next_cmd_at = $self->{cur_time} + $1;
+		} else {
+		    $self->sim_hardware_cmd($cmd, 'cmdlist');
+		}
 	    }
 	}
 
