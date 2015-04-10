@@ -196,7 +196,7 @@ my $change_service_state = sub {
     $sd->{node} = $old_node;
 
     my $text_state = '';
-    foreach my $k (keys %params) {
+    foreach my $k (sort keys %params) {
 	my $v = $params{$k};
 	$text_state .= ", " if $text_state;
 	$text_state .= "$k = $v";
