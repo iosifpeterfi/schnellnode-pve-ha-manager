@@ -342,7 +342,7 @@ sub exec_resource_agent {
 	    }
 
 	    $self->sleep(2);
-	    $self->change_service_location($sid, $target);
+	    $self->change_service_location($sid, $nodename, $target);
 	    $self->log("info", "service $sid - end $cmd to node '$target'");
 
 	    return 0;
