@@ -1,3 +1,9 @@
+pve-ha-manager (1.0-1) unstable; urgency=medium
+
+  * enable/start crm and lrm services by default
+
+ -- Proxmox Support Team <support@proxmox.com>  Fri, 05 Jun 2015 10:03:53 +0200
+
 pve-ha-manager (0.9-3) unstable; urgency=medium
 
   * regression test improvements
