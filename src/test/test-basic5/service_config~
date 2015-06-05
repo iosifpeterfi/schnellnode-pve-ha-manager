@@ -1,5 +1,0 @@
-{
-    "pvevm:101": { "node": "node1", "state": "enabled", "group": "prefer_node3" },
-    "pvevm:102": { "node": "node2", "state": "enabled" },
-    "pvevm:103": { "node": "node3", "state": "enabled" }
-}
