@@ -1,3 +1,9 @@
+pve-ha-manager (1.0-2) unstable; urgency=medium
+
+  * use Wants instead of Requires inside systemd service definitions
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 09 Jun 2015 09:33:24 +0200
+
 pve-ha-manager (1.0-1) unstable; urgency=medium
 
   * enable/start crm and lrm services by default
