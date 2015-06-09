@@ -71,6 +71,7 @@ sub set_local_status {
 
     # fixme: do not use extra class
     if ($new->{state} eq 'master') {
+	mkdir("/etc/pve/ha");
 	$self->{manager} = PVE::HA::Manager->new($haenv);
     } else {
 	if ($self->{manager}) {

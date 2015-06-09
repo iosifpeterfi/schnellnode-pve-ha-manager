@@ -1,3 +1,9 @@
+pve-ha-manager (1.0-3) unstable; urgency=medium
+
+  * correctly create /etc/pve/ha to avoid warnings
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 09 Jun 2015 14:35:09 +0200
+
 pve-ha-manager (1.0-2) unstable; urgency=medium
 
   * use Wants instead of Requires inside systemd service definitions
