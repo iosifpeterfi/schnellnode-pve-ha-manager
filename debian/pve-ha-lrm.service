@@ -1,8 +1,8 @@
 [Unit]
 Description=PVE Local HA Ressource Manager Daemon
 ConditionPathExists=/usr/sbin/pve-ha-lrm
-Requires=pve-cluster.service
-Requires=watchdog-mux.service
+Wants=pve-cluster.service
+Wants=watchdog-mux.service
 Wants=pvedaemon.service
 Wants=pve-ha-crm.service
 After=pve-ha-crm.service

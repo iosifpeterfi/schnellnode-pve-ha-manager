@@ -1,8 +1,8 @@
 [Unit]
 Description=PVE Cluster Ressource Manager Daemon
 ConditionPathExists=/usr/sbin/pve-ha-crm
-Requires=pve-cluster.service
-Requires=watchdog-mux.service
+Wants=pve-cluster.service
+Wants=watchdog-mux.service
 Wants=pvedaemon.service
 After=pve-cluster.service
 After=corosync.service
