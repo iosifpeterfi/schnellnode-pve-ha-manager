@@ -71,7 +71,6 @@ sub set_local_status {
 
     # fixme: do not use extra class
     if ($new->{state} eq 'master') {
-	mkdir("/etc/pve/ha");
 	$self->{manager} = PVE::HA::Manager->new($haenv);
     } else {
 	if ($self->{manager}) {
@@ -138,7 +137,8 @@ sub do_one_iteration {
 
     if ($state eq 'wait_for_quorum') {
 
-	if (!$pending_fencing && $haenv->quorate()) {
+	if (!$pending_fencing && $haenv->quorate() &&
+	    $haenv->service_config_exists()) {
 	    if ($self->get_protected_ha_manager_lock()) {
 		$self->set_local_status({ state => 'master' });
 	    } else {
@@ -148,7 +148,8 @@ sub do_one_iteration {
 
     } elsif ($state eq 'slave') {
 
-	if (!$pending_fencing && $haenv->quorate()) {
+	if (!$pending_fencing && $haenv->quorate() &&
+	    $haenv->service_config_exists()) {
 	    if ($self->get_protected_ha_manager_lock()) {
 		$self->set_local_status({ state => 'master' });
 	    }

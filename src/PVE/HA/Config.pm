@@ -80,6 +80,11 @@ sub parse_resources_config {
     return PVE::HA::Resources->parse_config($filename, $raw);
 }
 
+sub resources_config_exists {
+
+    return (-f "/etc/pve/$ha_resources_config") ? 1 : 0;
+}
+
 sub read_resources_config {
 
     return cfs_read_file($ha_resources_config);

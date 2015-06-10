@@ -21,18 +21,6 @@ use PVE::API2::Qemu;
 
 my $lockdir = "/etc/pve/priv/lock";
 
-
-sub read_resources_config {
-
-    return PVE::HA::Config::read_resources_config();
-}
-
-sub write_resources_config {
-    my ($cfg) = @_;
-
-    PVE::HA::Config::write_resources_config($cfg);
-}
-
 sub new {
     my ($this, $nodename) = @_;
 
@@ -93,11 +81,17 @@ sub read_crm_commands {
     return PVE::HA::Config::read_crm_commands();
 }
 
+sub service_config_exists {
+    my ($self) = @_;
+    
+    return PVE::HA::Config::resources_config_exists();
+}
+
 sub read_service_config {
     my ($self) = @_;
 
-    my $res = read_resources_config();
-
+    my $res = PVE::HA::Config::read_resources_config();
+    
     my $vmlist = PVE::Cluster::get_vmlist();
     my $conf = {};
 
