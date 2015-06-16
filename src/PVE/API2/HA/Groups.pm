@@ -8,6 +8,7 @@ use PVE::SafeSyslog;
 use PVE::Tools qw(extract_param);
 use PVE::Cluster qw(cfs_read_file cfs_write_file);
 use PVE::HA::Config;
+use PVE::HA::Groups;
 use HTTP::Status qw(:constants);
 use Storable qw(dclone);
 use PVE::JSONSchema qw(get_standard_option);
@@ -27,7 +28,10 @@ my $api_copy_config = sub {
     my $group_cfg = dclone($cfg->{ids}->{$group});
     $group_cfg->{group} = $group;
     $group_cfg->{digest} = $cfg->{digest};
-
+    if ($group_cfg->{nodes}) {
+	$group_cfg->{nodes} = PVE::HA::Groups->encode_value(
+	    PVE::HA::Groups::type(), 'nodes', $group_cfg->{nodes});
+    }
     return $group_cfg;
 };
 

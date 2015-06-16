@@ -55,14 +55,14 @@ sub flush_master_status {
 sub select_service_node {
     my ($groups, $online_node_usage, $service_conf, $current_node, $try_next) = @_;
 
-    my $group = { 'nodes' => $service_conf->{node} }; # default group
+    my $group = { 'nodes' => { $service_conf->{node} => 1 } }; # default group
 
     $group =  $groups->{ids}->{$service_conf->{group}} if $service_conf->{group} && 
 	$groups->{ids}->{$service_conf->{group}};
 
     my $pri_groups = {};
     my $group_members = {};
-    foreach my $entry (PVE::Tools::split_list($group->{nodes})) {
+    foreach my $entry (keys %{$group->{nodes}}) {
 	my ($node, $pri) = ($entry, 0);
 	if ($entry =~ m/^(\S+):(\d+)$/) {
 	    ($node, $pri) = ($1, $2);

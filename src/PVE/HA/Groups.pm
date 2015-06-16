@@ -53,6 +53,34 @@ sub private {
     return $defaultData;
 }
 
+sub decode_value {
+    my ($class, $type, $key, $value) = @_;
+
+    if ($key eq 'nodes') {
+	my $res = {};
+
+	foreach my $node (PVE::Tools::split_list($value)) {
+	    if (PVE::JSONSchema::pve_verify_node_name($node)) {
+		$res->{$node} = 1;
+	    }
+	}
+
+	return $res;
+    }
+
+   return $value;
+}
+
+sub encode_value {
+    my ($class, $type, $key, $value) = @_;
+    
+    if ($key eq 'nodes') {
+        return join(',', keys(%$value));
+    }
+    
+    return $value;
+}
+
 sub parse_section_header {
     my ($class, $line) = @_;
 
