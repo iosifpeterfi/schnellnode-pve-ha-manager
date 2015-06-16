@@ -1,3 +1,11 @@
+pve-ha-manager (1.0-4) unstable; urgency=medium
+
+  * groups: encode nodes as hash (internally)
+
+  * add trigger for pve-api-updates
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 16 Jun 2015 09:59:03 +0200
+
 pve-ha-manager (1.0-3) unstable; urgency=medium
 
   * CRM: do not start if there is no resource.cfg file to avoid warnings
