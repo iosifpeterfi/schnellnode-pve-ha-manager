@@ -16,7 +16,7 @@ use PVE::HA::Manager;
 my $valid_states = {
     wait_for_quorum => "cluster is not quorate, waiting",
     master => "quorate, and we got the ha_manager lock",
-    lost_manager_lock => "we lost the ha_manager lock (watchgog active)",
+    lost_manager_lock => "we lost the ha_manager lock (watchdog active)",
     slave => "quorate, but we do not own the ha_manager lock",
 };
 
