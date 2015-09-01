@@ -5,6 +5,7 @@ use warnings;
 use JSON;
 use PVE::JSONSchema;
 use PVE::Tools;
+use PVE::Cluster;
 
 PVE::JSONSchema::register_format('pve-ha-resource-id', \&pve_verify_ha_resource_id);
 sub pve_verify_ha_resource_id {
@@ -18,7 +19,7 @@ sub pve_verify_ha_resource_id {
 }
 
 PVE::JSONSchema::register_standard_option('pve-ha-resource-id', {
-    description => "HA resource ID. This consists of a resource type followed by a resource specific name, separated with collon (example: vm:100).",
+    description => "HA resource ID. This consists of a resource type followed by a resource specific name, separated with colon (example: vm:100 / ct:100).",
     typetext => "<type>:<name>",
     type => 'string', format => 'pve-ha-resource-id',					 
 });
@@ -35,7 +36,7 @@ sub pve_verify_ha_resource_or_vm_id {
 }
 
 PVE::JSONSchema::register_standard_option('pve-ha-resource-or-vm-id', {
-    description => "HA resource ID. This consists of a resource type followed by a resource specific name, separated with collon (example: vm:100). For virtual machines, you can simply use the VM id as shortcut (example: 100).",
+    description => "HA resource ID. This consists of a resource type followed by a resource specific name, separated with colon (example: vm:100 / ct:100). For virtual machines and containers, you can simply use the VM or CT id as a shortcut (example: 100).",
     typetext => "<type>:<name>",
     type => 'string', format => 'pve-ha-resource-or-vm-id',					 
 });
@@ -69,8 +70,21 @@ sub parse_sid {
 
     if ($sid =~ m/^(\d+)$/) {
 	$name = $1;
-	$type ='vm';
-	$sid = "vm:$name";
+	my $vmlist = PVE::Cluster::get_vmlist();
+	if (defined($vmlist->{ids}->{$name})) {
+	    my $vm_type = $vmlist->{ids}->{$name}->{type};
+	    if ($vm_type eq 'lxc') {
+		$type = 'ct';
+	    } elsif ($vm_type eq 'qemu') {
+		$type = 'vm';
+	    } else {
+		die "internal error";
+	    }
+	    $sid = "$type:$name";
+	}
+	else {
+	    die "unable do add resource - VM/CT $1 does not exist\n";
+	}
     } elsif  ($sid =~m/^(\S+):(\S+)$/) {
 	$name = $2;
 	$type = $1;
