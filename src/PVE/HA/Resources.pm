@@ -69,10 +69,35 @@ sub parse_section_header {
     return undef;
 }
 
+sub start {
+    die "implement in subclass";
+}
+
+sub shutdown {
+    die "implement in subclass";
+}
+
+sub migrate {
+    die "implement in subclass";
+}
+
+sub config_file {
+    die "implement in subclass"
+}
+
+sub check_running {
+    die "implement in subclass";
+}
+
+
+# virtual machine resource class
 package PVE::HA::Resources::PVEVM;
 
 use strict;
 use warnings;
+
+use PVE::QemuServer;
+use PVE::API2::Qemu;
 
 use base qw(PVE::HA::Resources);
 
@@ -93,6 +118,104 @@ sub options {
 	comment => { optional => 1 },
     };
 }
+
+sub config_file {
+    my ($class, $vmid, $nodename) = @_;
+
+    return PVE::QemuServer::config_file($vmid, $nodename);
+}
+
+sub start {
+    my ($class, $haenv, $params) = @_;
+
+    my $upid = PVE::API2::Qemu->vm_start($params);
+    $haenv->upid_wait($upid);
+}
+
+sub shutdown {
+    my ($class, $haenv, $param) = @_;
+
+    my $upid = PVE::API2::Qemu->vm_shutdown($param);
+    $haenv->upid_wait($upid);
+}
+
+
+sub migrate {
+    my ($class, $haenv, $params) = @_;
+
+    my $upid = PVE::API2::Qemu->migrate_vm($params);
+    $haenv->upid_wait($upid);
+}
+
+sub check_running {
+    my ($class, $vmid) = @_;
+
+    return PVE::QemuServer::check_running($vmid, 1);
+}
+
+
+# container resource class
+package PVE::HA::Resources::PVECT;
+
+use strict;
+use warnings;
+
+use PVE::LXC;
+use PVE::API2::LXC::Status;
+
+use base qw(PVE::HA::Resources);
+
+sub type {
+    return 'ct';
+}
+
+sub verify_name {
+    my ($class, $name) = @_;
+
+    die "invalid VMID\n" if $name !~ m/^[1-9][0-9]+$/;
+}
+
+sub options {
+    return {
+	state => { optional => 1 },
+	group => { optional => 1 },
+	comment => { optional => 1 },
+    };
+}
+
+sub config_file {
+    my ($class, $vmid, $nodename) = @_;
+
+    return PVE::LXC::config_file($vmid, $nodename);
+}
+
+sub start {
+    my ($class, $haenv, $params) = @_;
+
+    my $upid = PVE::API2::LXC::Status->vm_start($params);
+    $haenv->upid_wait($upid);
+}
+
+sub shutdown {
+    my ($class, $haenv, $params) = @_;
+
+    my $upid = PVE::API2::LXC::Status->vm_shutdown($params);
+    $haenv->upid_wait($upid);
+}
+
+sub migrate {
+    my ($class, $haenv, $params) = @_;
+
+    my $upid = PVE::API2::LXC->migrate_vm($params);
+    $haenv->upid_wait($upid);
+}
+
+sub check_running {
+    my ($class, $vmid) = @_;
+
+    return PVE::LXC::check_running($vmid);
+}
+
 
 # package PVE::HA::Resources::IPAddr;
 
