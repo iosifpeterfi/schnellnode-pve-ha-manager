@@ -16,8 +16,6 @@ use PVE::HA::Tools;
 use PVE::HA::Env;
 use PVE::HA::Config;
 
-use PVE::QemuServer;
-use PVE::API2::Qemu;
 
 my $lockdir = "/etc/pve/priv/lock";
 
@@ -99,7 +97,7 @@ sub read_service_config {
 	my $d = $res->{ids}->{$sid};
 	my (undef, undef, $name) = PVE::HA::Tools::parse_sid($sid);
 	$d->{state} = 'enabled' if !defined($d->{state});
-	if ($d->{type} eq 'vm') {
+	if (PVE::HA::Resources->lookup($d->{type})) {
 	    if (my $vmd = $vmlist->{ids}->{$name}) {
 		if (!$vmd) {
 		    warn "no such VM '$name'\n";
@@ -125,9 +123,9 @@ sub change_service_location {
 
     my (undef, $type, $name) = PVE::HA::Tools::parse_sid($sid);
 
-    if ($type eq 'vm') {
-	my $old = PVE::QemuServer::config_file($name, $current_node);
-	my $new = PVE::QemuServer::config_file($name, $new_node);
+    if(my $plugin = PVE::HA::Resources->lookup($type)) {
+	my $old = $plugin->config_file($name, $current_node);
+	my $new = $plugin->config_file($name, $new_node);
 	rename($old, $new) ||
 	    die "rename '$old' to '$new' failed - $!\n";
     } else {
@@ -382,16 +380,17 @@ sub exec_resource_agent {
 
     my (undef, $service_type, $service_name) = PVE::HA::Tools::parse_sid($sid);
 
-    die "service type '$service_type'not implemented" if $service_type ne 'vm';
+    my $plugin = PVE::HA::Resources->lookup($service_type);
+    die "service type '$service_type' not implemented" if !$plugin;
+
+    # fixme: return valid_exit code
+    die "service '$sid' not on this node" if $service_config->{node} ne $nodename;
 
     my $vmid = $service_name;
 
-    my $running = PVE::QemuServer::check_running($vmid, 1);
- 
-    if ($cmd eq 'started') {
+    my $running = $plugin->check_running($vmid);
 
-	# fixme: return valid_exit code
-	die "service '$sid' not on this node" if $service_config->{node} ne $nodename;
+    if ($cmd eq 'started') {
 
 	# fixme: count failures
 	
@@ -399,10 +398,14 @@ sub exec_resource_agent {
 
 	$self->log("info", "starting service $sid");
 
-	my $upid = PVE::API2::Qemu->vm_start({node => $nodename, vmid => $vmid});
-	$self->upid_wait($upid);
+	my $params = {
+	    node => $nodename,
+	    vmid => $vmid
+	};
 
-	$running = PVE::QemuServer::check_running($vmid, 1);
+	$plugin->start($self, $params);
+
+	$running = $plugin->check_running($vmid);
 
 	if ($running) {
 	    $self->log("info", "service status $sid started");
@@ -414,26 +417,22 @@ sub exec_resource_agent {
 
     } elsif ($cmd eq 'request_stop' || $cmd eq 'stopped') {
 
-	# fixme: return valid_exit code
-	die "service '$sid' not on this node" if $service_config->{node} ne $nodename;
-
 	return 0 if !$running;
 
 	$self->log("info", "stopping service $sid");
 
 	my $timeout = 60; # fixme: make this configurable
-	
-	my $param = {
-	    node => $nodename, 
-	    vmid => $vmid, 
+
+	my $params = {
+	    node => $nodename,
+	    vmid => $vmid,
 	    timeout => $timeout,
 	    forceStop => 1,
 	};
 
-	my $upid = PVE::API2::Qemu->vm_shutdown($param);
-	$self->upid_wait($upid);
+	$plugin->shutdown($self, $params);
 
-	$running = PVE::QemuServer::check_running($vmid, 1);
+	$running = $plugin->check_running($vmid);
 
 	if (!$running) {
 	    $self->log("info", "service status $sid stopped");
@@ -447,42 +446,31 @@ sub exec_resource_agent {
 	my $target = $params[0];
 	die "$cmd '$sid' failed - missing target\n" if !defined($target);
 
-	# fixme: return valid_exit code
-	die "service '$sid' not on this node" if $service_config->{node} ne $nodename;
-	
 	if ($service_config->{node} eq $target) {
 	    # already there
 	    return 0;
-	} 
-	
-	if (!$running) {
-	    $self->change_service_location($sid, $nodename, $target);
-	    $self->log("info", "service $sid moved to node '$target'");
-	    return 0;
-	} else {
-	    # we alwas do live migration if VM is online
-
-	    my $params = {
-		node => $nodename, 
-		vmid => $vmid,
-		target => $target,
-		online => 1,
-	    };
-
-	    my $oldconfig = PVE::QemuServer::config_file($vmid, $nodename);
-
-	    my $upid = PVE::API2::Qemu->migrate_vm($params);
-	    $self->upid_wait($upid);
-
-	    # something went wrong if old config file is still there
-	    if (-f $oldconfig) {
-		$self->log("err", "service $sid not moved (migration error)");
-		return 1;
-	    }
-	    
-	    return 0;
 	}
-	
+
+	# we always do (live) migration
+	my $params = {
+	    node => $nodename,
+	    vmid => $vmid,
+	    target => $target,
+	    online => 1,
+	};
+
+	my $oldconfig = $plugin->config_file($vmid, $nodename);
+
+	$plugin->migrate($self, $params);
+
+	# something went wrong if old config file is still there
+	if (-f $oldconfig) {
+	    $self->log("err", "service $sid not moved (migration error)");
+	    return 1;
+	}
+
+	return 0;
+
     }
 
     die "implement me (cmd '$cmd')";
