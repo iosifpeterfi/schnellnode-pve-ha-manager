@@ -14,6 +14,7 @@ PVE::HA::Groups->register();
 PVE::HA::Groups->init();
 
 PVE::HA::Resources::PVEVM->register();
+PVE::HA::Resources::PVECT->register();
 #PVE::HA::Resources::IPAddr->register();
 
 PVE::HA::Resources->init();
@@ -161,9 +162,14 @@ sub vm_is_ha_managed {
 
     my $conf = cfs_read_file($ha_resources_config);
 
-    my $sid = "vm:$vmid";
-    
-    return defined($conf->{ids}->{$sid});
+    my $types = PVE::HA::Resources->lookup_types();
+    foreach my $type (@$types) {
+	my $sid = "$type:$vmid";
+
+	return 1 if defined($conf->{ids}->{$sid});
+}
+
+    return undef;
 }
 
 1;
