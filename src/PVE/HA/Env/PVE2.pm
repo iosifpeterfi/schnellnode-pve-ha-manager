@@ -471,6 +471,16 @@ sub exec_resource_agent {
 
 	return 0;
 
+    } elsif ($cmd eq 'error') {
+
+
+	if($running) {
+	    $self->log("err", "service $sid is in an error state while running");
+	} else {
+	    $self->log("info", "service $sid is not running and in an error state");
+	}
+	return 0;
+
     }
 
     die "implement me (cmd '$cmd')";

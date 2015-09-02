@@ -349,7 +349,7 @@ sub manage {
 
 	    } elsif ($last_state eq 'error') {
 
-		# fixme: 
+		$self->next_state_error($sid, $cd, $sd, $lrm_res);
 
 	    } else {
 
@@ -571,6 +571,23 @@ sub next_state_started {
     } 
 
     $haenv->log('err', "service '$sid' - unknown state '$cd->{state}' in service configuration");
+}
+
+sub next_state_error {
+    my ($self, $sid, $cd, $sd, $lrm_res) = @_;
+
+    my $ns = $self->{ns};
+
+    if ($cd->{state} eq 'disabled') {
+	&$change_service_state($self, $sid, 'stopped');
+	return;
+    }
+
+    if ($ns->node_is_offline_delayed($sd->{node}, $fence_delay)) {
+	&$change_service_state($self, $sid, 'fence');
+	return;
+    }
+
 }
 
 1;
