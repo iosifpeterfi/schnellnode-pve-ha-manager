@@ -1,3 +1,11 @@
+pve-ha-manager (1.0-5) unstable; urgency=medium
+
+  * Replacing hardcoded qemu commands with plugin calls
+
+  * improve error state behaviour
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 08 Sep 2015 08:45:36 +0200
+
 pve-ha-manager (1.0-4) unstable; urgency=medium
 
   * groups: encode nodes as hash (internally)
