@@ -7,6 +7,7 @@ use strict;
 use warnings;
 use POSIX qw(strftime EINTR);
 use Data::Dumper;
+$Data::Dumper::Sortkeys = 1; # fixes 'random' output behaviour of manager status
 use JSON; 
 use IO::File;
 use IO::Select;
