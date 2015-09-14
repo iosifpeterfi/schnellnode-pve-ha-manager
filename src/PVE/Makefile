@@ -5,6 +5,7 @@ install:
 	make -C HA install
 	make -C API2 install
 	make -C CLI install
+	make -C Service install
 
 .PHONY: installsim
 installsim:

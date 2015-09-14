@@ -2,16 +2,10 @@
 
 use strict;
 use warnings;
-use PVE::SafeSyslog;
-use PVE::Daemon;
-use Data::Dumper;
+
+use PVE::Service::pve_ha_lrm;
+
 use PVE::RPCEnvironment;
-
-use PVE::HA::Env;
-use PVE::HA::Env::PVE2;
-use PVE::HA::LRM;
-
-use base qw(PVE::Daemon);
 
 $SIG{'__WARN__'} = sub {
     my $err = $@;
@@ -22,70 +16,14 @@ $SIG{'__WARN__'} = sub {
     $@ = $err;
 };
 
-my $cmdline = [$0, @ARGV];
+my $prepare = sub {
 
-my %daemon_options = (stop_wait_time => 180);
+    my $rpcenv = PVE::RPCEnvironment->init('ha');
 
-my $daemon = __PACKAGE__->new('pve-ha-lrm', $cmdline, %daemon_options);
+    $rpcenv->init_request();
+    $rpcenv->set_language($ENV{LANG});
+    $rpcenv->set_user('root@pam');
 
-my $rpcenv = PVE::RPCEnvironment->init('ha');
-
-$rpcenv->init_request();
-$rpcenv->set_language($ENV{LANG});
-$rpcenv->set_user('root@pam');
-
-sub run {
-    my ($self) = @_;
-
-    $self->{haenv} = PVE::HA::Env->new('PVE::HA::Env::PVE2', $self->{nodename});
-
-    $self->{lrm} = PVE::HA::LRM->new($self->{haenv});
-
-    for (;;) {
-	$self->{haenv}->loop_start_hook();
-
-	my $repeat = $self->{lrm}->do_one_iteration();
-
-	$self->{haenv}->loop_end_hook();
-
-	last if !$repeat;
-    }
-}
-
-sub shutdown {
-    my ($self) = @_;
-
-    $self->{lrm}->shutdown_request();
-}
-
-$daemon->register_start_command();
-$daemon->register_stop_command();
-$daemon->register_status_command();
-
-my $cmddef = {
-    start => [ __PACKAGE__, 'start', []],
-    stop => [ __PACKAGE__, 'stop', []],
-    status => [ __PACKAGE__, 'status', [], undef, sub { print shift . "\n";} ],
 };
 
-my $cmd = shift;
-
-PVE::CLIHandler::handle_cmd($cmddef, $0, $cmd, \@ARGV, undef, $0);
-
-exit (0);
-
-__END__
-
-=head1 NAME
-                                          
-pve-ha-lrm - PVE Local HA Ressource Manager Daemon
-
-=head1 SYNOPSIS
-
-=include synopsis
-
-=head1 DESCRIPTION
-
-This is the Local HA Ressource Manager.
-
-=include pve_copyright
+PVE::Service::pve_ha_lrm->run_cli(undef, undef, $prepare);
