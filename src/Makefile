@@ -18,8 +18,11 @@ all: watchdog-mux
 	rm -f $@
 	cat $<|pod2man -n $* -s 1 -r ${VERSION} -c "Proxmox Documentation"|gzip -c9 >$@
 
-pve-ha-crm.1.pod: pve-ha-crm
-	perl -I. ./pve-ha-crm printmanpod >$@
+pve-ha-crm.1.pod:
+	perl -I. -T -e "use PVE::Service::pve_ha_crm; PVE::Service::pve_ha_crm->generate_pod_manpage();" >$@
+
+pve-ha-crm.bash-completion:
+	perl -I. -T -e "use PVE::Service::pve_ha_crm; PVE::Service::pve_ha_crm->generate_bash_completions();" >$@
 
 pve-ha-lrm.1.pod:
 	perl -I. -T -e "use PVE::Service::pve_ha_lrm; PVE::Service::pve_ha_lrm->generate_pod_manpage();" >$@
@@ -39,8 +42,8 @@ watchdog-mux: watchdog-mux.c
 	gcc watchdog-mux.c -o watchdog-mux -Wall -Wl,-z,relro $$(pkg-config --libs --cflags libsystemd-daemon)
 
 .PHONY: install
-install: watchdog-mux pve-ha-crm pve-ha-lrm ha-manager.1.pod ha-manager.1.gz pve-ha-crm.1.pod pve-ha-crm.1.gz pve-ha-lrm.1.pod pve-ha-lrm.1.gz ha-manager.bash-completion pve-ha-lrm.bash-completion
-	perl -I. ./pve-ha-crm verifyapi
+install: watchdog-mux pve-ha-crm pve-ha-lrm ha-manager.1.pod ha-manager.1.gz pve-ha-crm.1.pod pve-ha-crm.1.gz pve-ha-lrm.1.pod pve-ha-lrm.1.gz ha-manager.bash-completion pve-ha-lrm.bash-completion pve-ha-crm.bash-completion
+	perl -I. -T -e "use PVE::Service::pve_ha_crm; PVE::Service::pve_ha_crm->verify_api();"
 	perl -I. -T -e "use PVE::Service::pve_ha_lrm; PVE::Service::pve_ha_lrm->verify_api();"
 	perl -I. -T -e "use PVE::CLI::ha_manager; PVE::CLI::ha_manager->verify_api();"
 	install -d ${DESTDIR}${SBINDIR}
@@ -48,6 +51,7 @@ install: watchdog-mux pve-ha-crm pve-ha-lrm ha-manager.1.pod ha-manager.1.gz pve
 	install -m 0755 pve-ha-lrm ${DESTDIR}${SBINDIR}
 	install -m 0755 ha-manager ${DESTDIR}${SBINDIR}
 	install -m 0755 watchdog-mux ${DESTDIR}${SBINDIR}
+	install -m 0644 -D pve-ha-crm.bash-completion ${DESTDIR}${BASHCOMPLDIR}/pve-ha-crm
 	install -m 0644 -D pve-ha-lrm.bash-completion ${DESTDIR}${BASHCOMPLDIR}/pve-ha-lrm
 	install -m 0644 -D ha-manager.bash-completion ${DESTDIR}${BASHCOMPLDIR}/ha-manager
 	make -C PVE install

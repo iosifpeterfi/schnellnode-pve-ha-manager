@@ -1,4 +1,4 @@
-SOURCES=pve_ha_lrm.pm
+SOURCES=pve_ha_lrm.pm pve_ha_crm.pm
 
 .PHONY: install
 install: ${SOURCES}
