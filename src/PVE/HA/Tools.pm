@@ -138,4 +138,43 @@ sub count_fenced_services {
     return $count;
 }
 
+# bash auto completion helper
+
+sub complete_sid {
+
+    my $vmlist = PVE::Cluster::get_vmlist();
+
+    my $res = [];
+    while (my ($vmid, $info) = each %{$vmlist->{ids}}) {
+
+	my $sid = '';
+
+	if ($info->{type} eq 'lxc') {
+	    $sid .= 'ct:';
+	} elsif ($info->{type} eq 'qemu') {
+	    $sid .= 'vm:';
+	}
+
+	$sid .= $vmid;
+
+	push @$res, $sid;
+
+    }
+
+    return $res;
+}
+
+sub complete_group {
+
+    my $cfg = PVE::HA::Config::read_group_config();
+
+    my $res = [];
+    foreach my $group (keys %{$cfg->{ids}}) {
+	push @$res, $group;
+    }
+
+    return $res;
+}
+
+
 1;
