@@ -162,7 +162,7 @@ __END__
 
 =head1 NAME
 
-pvecm - Proxmox VE HA Command Line Interface
+ha-manager - Proxmox VE HA manager command line interface
 
 =head1 SYNOPSIS
 
