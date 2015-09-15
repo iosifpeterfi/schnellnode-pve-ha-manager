@@ -76,7 +76,8 @@ __PACKAGE__->register_method ({
     parameters => {
     	additionalProperties => 0,
 	properties => {
-	    group => get_standard_option('pve-ha-group-id'),
+	    group => get_standard_option('pve-ha-group-id',
+					{ completion => \&PVE::HA::Tools::complete_group }),
 	},
     },
     returns => {},
@@ -201,7 +202,8 @@ __PACKAGE__->register_method ({
     parameters => {
     	additionalProperties => 0,
 	properties => {
-	    group => get_standard_option('pve-ha-group-id'),
+	    group => get_standard_option('pve-ha-group-id',
+					{ completion => \&PVE::HA::Tools::complete_group }),
 	},
     },
     returns => { type => 'null' },

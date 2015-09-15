@@ -13,7 +13,8 @@ use base qw(PVE::SectionConfig);
 my $defaultData = {
     propertyList => {
 	type => { description => "Section type." },
-	group => get_standard_option('pve-ha-group-id'),
+	group => get_standard_option('pve-ha-group-id',
+				    { completion => \&PVE::HA::Tools::complete_group }),
 	nodes => get_standard_option('pve-ha-group-node-list'),
 	restricted => {
 	    description => "Services on unrestricted groups may run on any cluster members if all group members are offline. But they will migrate back as soon as a group member comes online. One can implement a 'preferred node' behavior using an unrestricted group with one member.",

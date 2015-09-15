@@ -13,7 +13,8 @@ use base qw(PVE::SectionConfig);
 my $defaultData = {
     propertyList => {
 	type => { description => "Resource type.", optional => 1 },
-	sid => get_standard_option('pve-ha-resource-or-vm-id'),
+	sid => get_standard_option('pve-ha-resource-or-vm-id',
+				  { completion => \&PVE::HA::Tools::complete_sid }),
 	state => {
 	    description => "Resource state.",
 	    type => 'string',
@@ -21,7 +22,9 @@ my $defaultData = {
 	    optional => 1,
 	    default => 'enabled',
 	},
-	group => get_standard_option('pve-ha-group-id', { optional => 1 }),
+	group => get_standard_option('pve-ha-group-id',
+				    { optional => 1,
+				      completion => \&PVE::HA::Tools::complete_group }),
 	comment => {
 	    description => "Description.",
 	    type => 'string',
