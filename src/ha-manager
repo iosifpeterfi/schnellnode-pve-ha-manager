@@ -3,6 +3,12 @@
 use strict;
 use warnings;
 
+use PVE::Cluster;
 use PVE::CLI::ha_manager;
 
-PVE::CLI::ha_manager->run_cli();
+my $prepare = sub {
+    PVE::Cluster::check_cfs_is_mounted();
+    PVE::Cluster::cfs_update();
+};
+    
+PVE::CLI::ha_manager->run_cli(undef, undef, $prepare);
