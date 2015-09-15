@@ -13,8 +13,6 @@ use PVE::HA::CRM;
 
 use base qw(PVE::Daemon);
 
-our $exename = "pve-ha-crm";
-
 my $cmdline = [$0, @ARGV];
 
 my %daemon_options = (stop_wait_time => 60);

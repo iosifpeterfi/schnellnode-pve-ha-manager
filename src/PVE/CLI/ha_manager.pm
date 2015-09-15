@@ -19,8 +19,6 @@ use PVE::HA::Env::PVE2;
 
 use base qw(PVE::CLIHandler);
 
-our $exename = 'ha-manager';
-
 my $nodename = PVE::INotify::nodename();
 
 __PACKAGE__->register_method ({

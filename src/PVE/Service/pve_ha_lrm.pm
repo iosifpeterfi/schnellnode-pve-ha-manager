@@ -13,8 +13,6 @@ use PVE::HA::LRM;
 
 use base qw(PVE::Daemon);
 
-our $exename = "pve-ha-lrm";
-
 my $cmdline = [$0, @ARGV];
 
 my %daemon_options = (stop_wait_time => 180);
