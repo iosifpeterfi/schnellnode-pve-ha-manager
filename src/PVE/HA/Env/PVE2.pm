@@ -411,7 +411,7 @@ sub exec_resource_agent {
 	    $self->log("info", "service status $sid started");
 	    return 0;
 	} else {
-	    $self->log("info", "unable to start service $sid");
+	    $self->log("warning", "unable to start service $sid");
 	    return 1;
 	}
 
@@ -477,7 +477,7 @@ sub exec_resource_agent {
 	if($running) {
 	    $self->log("err", "service $sid is in an error state while running");
 	} else {
-	    $self->log("info", "service $sid is not running and in an error state");
+	    $self->log("warning", "service $sid is not running and in an error state");
 	}
 	return 0;
 
