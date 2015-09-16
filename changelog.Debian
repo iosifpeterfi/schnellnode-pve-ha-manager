@@ -1,3 +1,13 @@
+pve-ha-manager (1.0-6) unstable; urgency=medium
+
+  * implement bash completion for ha-manager
+
+  * implement recovery policy for services
+
+  * simulator: fix random output of manager status
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 16 Sep 2015 12:06:12 +0200
+
 pve-ha-manager (1.0-5) unstable; urgency=medium
 
   * Replacing hardcoded qemu commands with plugin calls
