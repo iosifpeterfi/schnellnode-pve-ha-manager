@@ -105,14 +105,14 @@ sub log {
     return $self->{plug}->log($level, @args);
 }
 
-# aquire a cluster wide manager lock 
+# acquire a cluster wide manager lock
 sub get_ha_manager_lock {
     my ($self) = @_;
 
     return $self->{plug}->get_ha_manager_lock();
 }
 
-# aquire a cluster wide node agent lock 
+# acquire a cluster wide node agent lock
 sub get_ha_agent_lock {
     my ($self, $node) = @_;
 

@@ -315,7 +315,7 @@ sub global_lock {
 	}
 	if (!$success) {
 	    close($fh);
-	    die "can't aquire lock '$lockfile' - $!\n";
+	    die "can't acquire lock '$lockfile' - $!\n";
 	}
     }
 

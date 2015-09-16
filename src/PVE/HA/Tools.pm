@@ -53,7 +53,7 @@ sub pve_verify_ha_group_node {
 }
 
 PVE::JSONSchema::register_standard_option('pve-ha-group-node-list', {
-    description => "List of cluster node names with optional priority. We use priority '0' as default. The CRM tries to run services on the node with higest priority (also see option 'nofailback').",
+    description => "List of cluster node names with optional priority. We use priority '0' as default. The CRM tries to run services on the node with highest priority (also see option 'nofailback').",
     type => 'string', format => 'pve-ha-group-node-list',
     typetext => '<node>[:<pri>]{,<node>[:<pri>]}*',
 });

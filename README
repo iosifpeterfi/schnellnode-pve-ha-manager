@@ -41,7 +41,7 @@ The Proxmox 'pmxcfs' implements this on top of corosync.
 === Watchdog ===
 
 We need a reliable watchdog mechanism, which is able to provide hard
-timeouts. It must be guaranteed that the node reboot withing specified
+timeouts. It must be guaranteed that the node reboots within the specified
 timeout if we do not update the watchdog. For me it looks that neither
 systemd nor the standard watchdog(8) daemon provides such guarantees.
 
@@ -52,7 +52,7 @@ provides that service to several other daemons using a local socket.
 
 == Self fencing ==
 
-A node needs to aquire a special 'ha_agent_${node}_lock' (one separate
+A node needs to acquire a special 'ha_agent_${node}_lock' (one separate
 lock for each node) before starting HA resources, and the node updates
 the watchdog device once it get that lock. If the node loose quorum,
 or is unable to get the 'ha_agent_${node}_lock', the watchdog is no
@@ -63,7 +63,7 @@ This makes sure that the node holds the 'ha_agent_${node}_lock' as
 long as there are running services on that node.
 
 The HA manger can assume that the watchdog triggered a reboot when he
-is able to aquire the 'ha_agent_${node}_lock' for that node.
+is able to acquire the 'ha_agent_${node}_lock' for that node.
 
 === Problems with "two_node" Clusters ===
 

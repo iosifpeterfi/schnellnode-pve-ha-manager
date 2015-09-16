@@ -47,7 +47,7 @@ sub read_manager_status {
 
 sub write_manager_status {
     my ($self, $status_obj) = @_;
-    
+
     PVE::HA::Config::write_manager_status($status_obj);
 }
 
@@ -63,7 +63,7 @@ sub write_lrm_status {
     my ($self, $status_obj) = @_;
 
     my $node = $self->{nodename};
-    
+
     PVE::HA::Config::write_lrm_status($node, $status_obj);
 }
 
@@ -81,7 +81,7 @@ sub read_crm_commands {
 
 sub service_config_exists {
     my ($self) = @_;
-    
+
     return PVE::HA::Config::resources_config_exists();
 }
 
@@ -89,7 +89,7 @@ sub read_service_config {
     my ($self) = @_;
 
     my $res = PVE::HA::Config::read_resources_config();
-    
+
     my $vmlist = PVE::Cluster::get_vmlist();
     my $conf = {};
 
@@ -116,7 +116,7 @@ sub read_service_config {
 	    }
 	}
     }
-    
+
     return $conf;
 }
 
@@ -147,7 +147,7 @@ sub get_node_info {
     my ($self) = @_;
 
     my ($node_info, $quorate) = ({}, 0);
-   
+
     my $nodename = $self->{nodename};
 
     $quorate = PVE::Cluster::check_cfs_quorum(1) || 0;
@@ -156,11 +156,11 @@ sub get_node_info {
 
     foreach my $node (keys %$members) {
 	my $d = $members->{$node};
-	$node_info->{$node}->{online} = $d->{online}; 
+	$node_info->{$node}->{online} = $d->{online};
     }
-	
+
     $node_info->{$nodename}->{online} = 1; # local node is always up
-    
+
     return ($node_info, $quorate);
 }
 
@@ -187,7 +187,7 @@ sub get_pve_lock {
 
     my $retry = 0;
     my $retry_timeout = 100; # fixme: what timeout
-    
+
     eval {
 
 	mkdir $lockdir;
@@ -219,15 +219,15 @@ sub get_pve_lock {
 	# $self->log('err', $err) if $err; # for debugging
 	return 0;
     }
-    
+
     $last_lock_status->{$lockid} = $got_lock ? $ctime : 0;
 
     if (!!$got_lock != !!$last) {
 	if ($got_lock) {
-	    $self->log('info', "successfully aquired lock '$lockid'");
+	    $self->log('info', "successfully acquired lock '$lockid'");
 	} else {
 	    my $msg = "lost lock '$lockid";
-	    $msg .= " - $err" if $err; 
+	    $msg .= " - $err" if $err;
 	    $self->log('err', $msg);
 	}
     } else {
@@ -245,7 +245,7 @@ sub get_ha_manager_lock {
 
 sub get_ha_agent_lock {
     my ($self, $node) = @_;
-    
+
     $node = $self->nodename() if !defined($node);
 
     return $self->get_pve_lock("ha_agent_${node}_lock");
@@ -255,10 +255,10 @@ sub quorate {
     my ($self) = @_;
 
     my $quorate = 0;
-    eval { 
-	$quorate = PVE::Cluster::check_cfs_quorum(); 
+    eval {
+	$quorate = PVE::Cluster::check_cfs_quorum();
     };
-   
+
     return $quorate;
 }
 
@@ -290,7 +290,7 @@ sub loop_start_hook {
     my ($self) = @_;
 
     PVE::Cluster::cfs_update();
-    
+
     $self->{loop_start} = $self->get_time();
 }
 
@@ -298,7 +298,7 @@ sub loop_end_hook {
     my ($self) = @_;
 
     my $delay = $self->get_time() - $self->{loop_start};
- 
+
     warn "loop take too long ($delay seconds)\n" if $delay > 30;
 }
 
@@ -313,7 +313,7 @@ sub watchdog_open {
 	Type => SOCK_STREAM(),
 	Peer => "/run/watchdog-mux.sock") ||
 	die "unable to open watchdog socket - $!\n";
-      
+
     $self->log('info', "watchdog active");
 }
 
@@ -367,15 +367,15 @@ sub exec_resource_agent {
     my ($self, $sid, $service_config, $cmd, @params) = @_;
 
     # setup execution environment
-    
+
     $ENV{'PATH'} = '/sbin:/bin:/usr/sbin:/usr/bin';
 
     PVE::INotify::inotify_close();
-    
+
     PVE::INotify::inotify_init();
 
     PVE::Cluster::cfs_update();
- 
+
     my $nodename = $self->{nodename};
 
     # fixme: return valid_exit code (instead of using die) ?
@@ -473,8 +473,7 @@ sub exec_resource_agent {
 
     } elsif ($cmd eq 'error') {
 
-
-	if($running) {
+	if ($running) {
 	    $self->log("err", "service $sid is in an error state while running");
 	} else {
 	    $self->log("warning", "service $sid is not running and in an error state");

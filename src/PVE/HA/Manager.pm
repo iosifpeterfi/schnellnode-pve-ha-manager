@@ -379,7 +379,7 @@ sub manage {
 
 	    next if !$fenced_nodes->{$sd->{node}};
 
-	    # node fence was sucessful - mark service as stopped
+	    # node fence was successful - mark service as stopped
 	    &$change_service_state($self, $sid, 'stopped');	    
 	}
 
