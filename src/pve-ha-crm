@@ -6,6 +6,7 @@ use warnings;
 use PVE::Service::pve_ha_crm;
 
 use PVE::RPCEnvironment;
+use PVE::SafeSyslog;
 
 $SIG{'__WARN__'} = sub {
     my $err = $@;

@@ -3,7 +3,6 @@ package PVE::Service::pve_ha_lrm;
 use strict;
 use warnings;
 
-use PVE::SafeSyslog;
 use PVE::Daemon;
 use Data::Dumper;
 
