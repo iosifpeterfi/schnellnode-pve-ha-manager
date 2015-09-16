@@ -517,6 +517,7 @@ sub next_state_started {
     my ($self, $sid, $cd, $sd, $lrm_res) = @_;
 
     my $haenv = $self->{haenv};
+    my $master_status = $self->{ms};
     my $ns = $self->{ns};
 
     if (!$ns->node_is_online($sd->{node})) {
@@ -552,8 +553,31 @@ sub next_state_started {
 	} else {
 
 	    my $try_next = 0;
-	    if ($lrm_res && ($lrm_res->{exit_code} != 0)) { # fixme: other exit codes?
-		$try_next = 1;
+	    if ($lrm_res) {
+		if ($lrm_res->{exit_code} == 1) {
+
+		    my $try = $master_status->{relocate_trial}->{$sid} || 0;
+
+		    if ($try < $cd->{max_relocate}) {
+
+			$try++;
+			$try_next = 1; # tell select_service_node to relocate
+
+			$haenv->log('warning', "starting service $sid on node".
+				   " '$sd->{node}' failed, relocating service.");
+			$master_status->{relocate_trial}->{$sid} = $try;
+
+		    } else {
+
+			$haenv->log('err', "recovery policy for service".
+				   " $sid failed, entering error state!");
+			&$change_service_state($self, $sid, 'error');
+			return;
+
+		    }
+		} elsif ($lrm_res->{exit_code} == 0) {
+		    $master_status->{relocate_trial}->{$sid} = 0;
+		}
 	    }
 
 	    my $node = select_service_node($self->{groups}, $self->{online_node_usage}, 

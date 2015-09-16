@@ -97,6 +97,8 @@ sub read_service_config {
 	my $d = $res->{ids}->{$sid};
 	my (undef, undef, $name) = PVE::HA::Tools::parse_sid($sid);
 	$d->{state} = 'enabled' if !defined($d->{state});
+	$d->{max_restart} = 1 if !defined($d->{max_restart});
+	$d->{max_relocate} = 1 if !defined($d->{max_relocate});
 	if (PVE::HA::Resources->lookup($d->{type})) {
 	    if (my $vmd = $vmlist->{ids}->{$name}) {
 		if (!$vmd) {
@@ -392,8 +394,6 @@ sub exec_resource_agent {
 
     if ($cmd eq 'started') {
 
-	# fixme: count failures
-	
 	return 0 if $running;
 
 	$self->log("info", "starting service $sid");

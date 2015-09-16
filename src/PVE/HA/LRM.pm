@@ -29,6 +29,7 @@ sub new {
 	status => { state => 'startup' },
 	workers => {},
 	results => {},
+	restart_tries => {},
 	shutdown_request => 0,
 	# mode can be: active, reboot, shutdown, restart
 	mode => 'active',
@@ -448,6 +449,8 @@ sub resource_command_finished {
 	$exit_code = ($status >> 8);
     }
 
+    $exit_code = $self->handle_service_exitcode($sid, $w->{state}, $exit_code);
+
     $self->{results}->{$uid} = {
 	sid => $w->{sid},
 	state => $w->{state},
@@ -470,6 +473,46 @@ sub resource_command_finished {
 	$results->{$id} = $self->{results}->{$id};
     }
     $self->{results} = $results;
+}
+
+# processes the exit code from a finished resource agent, so that the CRM knows
+# if the LRM wants to retry an action based on the current recovery policies for
+# the failed service, or the CRM itself must try to recover from the failure.
+sub handle_service_exitcode {
+    my ($self, $sid, $cmd, $exit_code) = @_;
+
+    my $haenv = $self->{haenv};
+    my $tries = $self->{restart_tries};
+
+    my $sc = $haenv->read_service_config();
+    my $cd = $sc->{$sid};
+
+    if ($cmd eq 'started') {
+
+	if ($exit_code == 0) {
+
+	    $tries->{$sid} = 0;
+
+	    return $exit_code;
+
+	} elsif ($exit_code == 1) {
+
+	    $tries->{$sid} = 0 if !defined($tries->{$sid});
+
+	    $tries->{$sid}++;
+	    if ($tries->{$sid} >= $cd->{max_restart}) {
+		$haenv->log('err', "unable to start service $sid on local node".
+			   " after $tries->{$sid} retries");
+		$tries->{$sid} = 0;
+		return 1;
+	    }
+
+	    return 2;
+	}
+    }
+
+    return $exit_code;
+
 }
 
 1;

@@ -25,6 +25,22 @@ my $defaultData = {
 	group => get_standard_option('pve-ha-group-id',
 				    { optional => 1,
 				      completion => \&PVE::HA::Tools::complete_group }),
+	max_restart => {
+	    description => "Maximal number of tries to restart the service on".
+		          " a node after its start failed.",
+	    type => 'integer',
+	    optional => 1,
+	    default => 1,
+	    minimum => 0,
+	},
+	max_relocate => {
+	    description => "Maximal number of service relocate tries when a".
+		          " service failes to start.",
+	    type => 'integer',
+	    optional => 1,
+	    default => 1,
+	    minimum => 0,
+	},
 	comment => {
 	    description => "Description.",
 	    type => 'string',
@@ -119,6 +135,8 @@ sub options {
 	state => { optional => 1 },
 	group => { optional => 1 },
 	comment => { optional => 1 },
+	max_restart => { optional => 1 },
+	max_relocate => { optional => 1 },
     };
 }
 
@@ -183,6 +201,8 @@ sub options {
 	state => { optional => 1 },
 	group => { optional => 1 },
 	comment => { optional => 1 },
+	max_restart => { optional => 1 },
+	max_relocate => { optional => 1 },
     };
 }
 
