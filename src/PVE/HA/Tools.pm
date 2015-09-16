@@ -141,24 +141,66 @@ sub count_fenced_services {
 # bash auto completion helper
 
 sub complete_sid {
+    my ($cmd, $pname, $cur) = @_;
 
-    my $vmlist = PVE::Cluster::get_vmlist();
+    my $cfg = PVE::HA::Config::read_resources_config();
 
     my $res = [];
-    while (my ($vmid, $info) = each %{$vmlist->{ids}}) {
 
-	my $sid = '';
+    if ($cmd eq 'add') {
 
-	if ($info->{type} eq 'lxc') {
-	    $sid .= 'ct:';
-	} elsif ($info->{type} eq 'qemu') {
-	    $sid .= 'vm:';
+	my $vmlist = PVE::Cluster::get_vmlist();
+
+	while (my ($vmid, $info) = each %{$vmlist->{ids}}) {
+
+	    my $sid;
+
+	    if ($info->{type} eq 'lxc') {
+		$sid = "ct:$vmid";
+	    } elsif ($info->{type} eq 'qemu') {
+		$sid = "vm:$vmid";
+	    } else {
+		next; # should not happen
+	    }
+
+	    next if $cfg->{ids}->{$sid};
+
+	    push @$res, $sid;
 	}
 
-	$sid .= $vmid;
+    } else {
 
+	foreach my $sid (keys %{$cfg->{ids}}) {
+	    push @$res, $sid;
+	}
+    }
+
+    return $res;
+}
+
+sub complete_enabled_sid {
+
+    my $cfg = PVE::HA::Config::read_resources_config();
+
+    my $res = [];
+    foreach my $sid (keys %{$cfg->{ids}}) {
+	my $state = $cfg->{ids}->{$sid}->{state} // 'enabled';
+	next if $state ne 'enabled';
 	push @$res, $sid;
+    }
 
+    return $res;
+}
+
+sub complete_disabled_sid {
+
+    my $cfg = PVE::HA::Config::read_resources_config();
+
+    my $res = [];
+    foreach my $sid (keys %{$cfg->{ids}}) {
+	my $state = $cfg->{ids}->{$sid}->{state} // 'enabled';
+	next if $state eq 'enabled';
+	push @$res, $sid;
     }
 
     return $res;

@@ -14,7 +14,7 @@ my $defaultData = {
     propertyList => {
 	type => { description => "Resource type.", optional => 1 },
 	sid => get_standard_option('pve-ha-resource-or-vm-id',
-				  { completion => \&PVE::HA::Tools::complete_sid }),
+				   { completion => \&PVE::HA::Tools::complete_sid }),
 	state => {
 	    description => "Resource state.",
 	    type => 'string',

@@ -30,7 +30,7 @@ __PACKAGE__->register_method ({
 	additionalProperties => 0,
 	properties => {
 	    sid => get_standard_option('pve-ha-resource-or-vm-id',
-				      { completion => \&PVE::HA::Tools::complete_sid }),
+				      { completion => \&PVE::HA::Tools::complete_disabled_sid }),
 	},
     },
     returns => { type => 'null' },
@@ -54,7 +54,7 @@ __PACKAGE__->register_method ({
 	additionalProperties => 0,
 	properties => {
 	    sid => get_standard_option('pve-ha-resource-or-vm-id',
-				      { completion => \&PVE::HA::Tools::complete_sid }),
+				      { completion => \&PVE::HA::Tools::complete_enabled_sid }),
 	},
     },
     returns => { type => 'null' },
