@@ -16,26 +16,32 @@ all: watchdog-mux
 
 %.1.gz: %.1.pod
 	rm -f $@
-	cat $<|pod2man -n $* -s 1 -r ${VERSION} -c "Proxmox Documentation"|gzip -c9 >$@
+	cat $<|pod2man -n $* -s 1 -r ${VERSION} -c "Proxmox Documentation"|gzip -c9 >$@.tmp
+	mv $@.tmp $@
 
 pve-ha-crm.1.pod:
-	perl -I. -T -e "use PVE::Service::pve_ha_crm; PVE::Service::pve_ha_crm->generate_pod_manpage();" >$@
+	perl -I. -T -e "use PVE::Service::pve_ha_crm; PVE::Service::pve_ha_crm->generate_pod_manpage();" >$@.tmp
+	mv $@.tmp $@
 
 pve-ha-crm.bash-completion:
-	perl -I. -T -e "use PVE::Service::pve_ha_crm; PVE::Service::pve_ha_crm->generate_bash_completions();" >$@
+	perl -I. -T -e "use PVE::Service::pve_ha_crm; PVE::Service::pve_ha_crm->generate_bash_completions();" >$@.tmp
+	mv $@.tmp $@
 
 pve-ha-lrm.1.pod:
-	perl -I. -T -e "use PVE::Service::pve_ha_lrm; PVE::Service::pve_ha_lrm->generate_pod_manpage();" >$@
+	perl -I. -T -e "use PVE::Service::pve_ha_lrm; PVE::Service::pve_ha_lrm->generate_pod_manpage();" >$@.tmp
+	mv $@.tmp $@
 
 pve-ha-lrm.bash-completion:
-	perl -I. -T -e "use PVE::Service::pve_ha_lrm; PVE::Service::pve_ha_lrm->generate_bash_completions();" >$@
+	perl -I. -T -e "use PVE::Service::pve_ha_lrm; PVE::Service::pve_ha_lrm->generate_bash_completions();" >$@.tmp
+	mv $@.tmp $@
 
 ha-manager.1.pod:
 	perl -I. -T -e "use PVE::CLI::ha_manager; PVE::CLI::ha_manager->generate_pod_manpage();" >$@.tmp
 	mv $@.tmp $@
 
 ha-manager.bash-completion:
-	perl -I. -T -e "use PVE::CLI::ha_manager; PVE::CLI::ha_manager->generate_bash_completions();" >$@
+	perl -I. -T -e "use PVE::CLI::ha_manager; PVE::CLI::ha_manager->generate_bash_completions();" >$@.tmp
+	mv $@.tmp $@
 
 
 watchdog-mux: watchdog-mux.c
@@ -77,7 +83,7 @@ test:
 .PHONY: clean
 clean: 	
 	make -C test clean
-	rm -rf watchdog-mux *.1.pod *.1.gz *.bash-completion
+	rm -rf watchdog-mux *.1.pod *.1.gz *.bash-completion *.tmp
 	find . -name '*~' -exec rm {} ';'
 
 .PHONY: distclean
