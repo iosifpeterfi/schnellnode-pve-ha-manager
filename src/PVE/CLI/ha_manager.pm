@@ -136,7 +136,7 @@ our $cmddef = {
 	    }
 	    print "\n";
 	}}],
-    groups => [ 'PVE::API2::HA::Groups', 'index', [], {}, sub {
+    groupconfig => [ 'PVE::API2::HA::Groups', 'index', [], {}, sub {
 	my $res = shift;
 	foreach my $rec (sort { $a->{group} cmp $b->{group} } @$res) {
 	    print "group: $rec->{group}\n";
@@ -147,6 +147,10 @@ our $cmddef = {
 	    }
 	    print "\n";
 	}}],
+    groupadd => [ "PVE::API2::HA::Groups", 'create', ['group'] ],
+    groupremove => [ "PVE::API2::HA::Groups", 'delete', ['group'] ],
+    groupset => [ "PVE::API2::HA::Groups", 'update', ['group'] ],
+
     add => [ "PVE::API2::HA::Resources", 'create', ['sid'] ],
     remove => [ "PVE::API2::HA::Resources", 'delete', ['sid'] ],
     set => [ "PVE::API2::HA::Resources", 'update', ['sid'] ],

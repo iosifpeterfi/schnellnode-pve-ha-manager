@@ -207,12 +207,17 @@ sub complete_disabled_sid {
 }
 
 sub complete_group {
+    my ($cmd, $pname, $cur) = @_;
 
     my $cfg = PVE::HA::Config::read_group_config();
 
     my $res = [];
-    foreach my $group (keys %{$cfg->{ids}}) {
-	push @$res, $group;
+    if ($cmd ne 'groupadd') {
+
+	foreach my $group (keys %{$cfg->{ids}}) {
+	    push @$res, $group;
+	}
+
     }
 
     return $res;

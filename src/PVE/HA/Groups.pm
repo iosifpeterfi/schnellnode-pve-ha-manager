@@ -12,7 +12,10 @@ use base qw(PVE::SectionConfig);
 
 my $defaultData = {
     propertyList => {
-	type => { description => "Section type." },
+	type => {
+	    description => "Group type.",
+	    optional => 1,
+	},
 	group => get_standard_option('pve-ha-group-id',
 				    { completion => \&PVE::HA::Tools::complete_group }),
 	nodes => get_standard_option('pve-ha-group-node-list', { optional => 1 }),
