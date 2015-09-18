@@ -158,7 +158,7 @@ sub read_crm_commands {
 }
 
 sub vm_is_ha_managed {
-    my ($vmid) = @_;
+    my ($vmid, $has_state) = @_;
 
     my $conf = cfs_read_file($ha_resources_config);
 
@@ -166,7 +166,10 @@ sub vm_is_ha_managed {
     foreach my $type (@$types) {
 	my $sid = "$type:$vmid";
 
-	return 1 if defined($conf->{ids}->{$sid});
+	if (my $vm = $conf->{ids}->{$sid}) {
+	    $vm->{state} = 'enabled' if !defined($vm->{state});
+	    return !defined($has_state) || $vm->{state} eq $has_state;
+	}
 }
 
     return undef;
