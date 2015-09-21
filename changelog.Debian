@@ -1,3 +1,13 @@
+pve-ha-manager (1.0-7) unstable; urgency=medium
+
+  * enhance ha-managers group commands
+
+  * vm_is_ha_managed: allow check on service state
+
+  * improve Makefile
+
+ -- Proxmox Support Team <support@proxmox.com>  Mon, 21 Sep 2015 12:17:41 +0200
+
 pve-ha-manager (1.0-6) unstable; urgency=medium
 
   * implement bash completion for ha-manager
