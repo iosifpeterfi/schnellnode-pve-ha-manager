@@ -116,7 +116,7 @@ __PACKAGE__->register_method ({
 
 	my $opts = $plugin->check_config($group, $param, 1, 1);
 
-	PVE::HA::Config::lock_ha_config(
+	PVE::HA::Config::lock_ha_domain(
 	    sub {
 
 		my $cfg = PVE::HA::Config::read_group_config();
@@ -156,7 +156,7 @@ __PACKAGE__->register_method ({
 	    die "types does not match\n" if $param_type ne $type;
 	}
 
-	PVE::HA::Config::lock_ha_config(
+	PVE::HA::Config::lock_ha_domain(
 	    sub {
 
 		my $cfg = PVE::HA::Config::read_group_config();
@@ -212,7 +212,7 @@ __PACKAGE__->register_method ({
 
 	my $group = extract_param($param, 'group');
 
-	PVE::HA::Config::lock_ha_config(
+	PVE::HA::Config::lock_ha_domain(
 	    sub {
 
 		my $rcfg = PVE::HA::Config::read_resources_config();

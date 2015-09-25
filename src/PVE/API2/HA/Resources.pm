@@ -129,7 +129,7 @@ __PACKAGE__->register_method ({
 
 	my $opts = $plugin->check_config($sid, $param, 1, 1);
 
-	PVE::HA::Config::lock_ha_config(
+	PVE::HA::Config::lock_ha_domain(
 	    sub {
 
 		my $cfg = PVE::HA::Config::read_resources_config();
@@ -168,7 +168,7 @@ __PACKAGE__->register_method ({
 	    die "types does not match\n" if $param_type ne $type;
 	}
 
-	PVE::HA::Config::lock_ha_config(
+	PVE::HA::Config::lock_ha_domain(
 	    sub {
 
 		my $cfg = PVE::HA::Config::read_resources_config();
@@ -224,7 +224,7 @@ __PACKAGE__->register_method ({
 
 	my ($sid, $type, $name) = PVE::HA::Tools::parse_sid(extract_param($param, 'sid'));
 
- 	PVE::HA::Config::lock_ha_config(
+	PVE::HA::Config::lock_ha_domain(
 	    sub {
 
 		my $cfg = PVE::HA::Config::read_resources_config();

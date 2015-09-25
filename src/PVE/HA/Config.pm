@@ -120,11 +120,10 @@ sub write_manager_status {
     cfs_write_file($manager_status_filename, $status_obj);
 }
 
-sub lock_ha_config {
+sub lock_ha_domain {
     my ($code, $errmsg) = @_;
 
-    # fixme: do not use cfs_lock_storage (replace with cfs_lock_ha)
-    my $res = PVE::Cluster::cfs_lock_storage("_ha_crm_commands", undef, $code);
+    my $res = PVE::Cluster::cfs_lock_domain("ha", undef, $code);
     my $err = $@;
     if ($err) {
 	$errmsg ? die "$errmsg: $err" : die $err;
@@ -143,7 +142,7 @@ sub queue_crm_commands {
 	cfs_write_file($crm_commands_filename, $data);
     };
 
-    return lock_ha_config($code);
+    return lock_ha_domain($code);
 }
 
 sub read_crm_commands {
@@ -154,7 +153,7 @@ sub read_crm_commands {
 	return $data;
     };
 
-    return lock_ha_config($code);
+    return lock_ha_domain($code);
 }
 
 sub vm_is_ha_managed {
