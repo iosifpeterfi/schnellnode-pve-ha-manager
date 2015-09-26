@@ -1,3 +1,9 @@
+pve-ha-manager (1.0-8) unstable; urgency=medium
+
+  * Use new lock domain sub instead of storage lock
+
+ -- Proxmox Support Team <support@proxmox.com>  Sat, 26 Sep 2015 10:36:09 +0200
+
 pve-ha-manager (1.0-7) unstable; urgency=medium
 
   * enhance ha-managers group commands
