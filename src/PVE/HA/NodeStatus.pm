@@ -24,6 +24,7 @@ my $valid_node_states = {
     online => "node online and member of quorate partition",
     unknown => "not member of quorate partition, but possibly still running",
     fence => "node needs to be fenced",
+    gone => "node vanished from cluster members list, possibly deleted"
 };
 
 sub get_node_state {
@@ -79,6 +80,20 @@ sub list_online_nodes {
     return $res;
 }
 
+my $delete_node = sub {
+    my ($self, $node) = @_;
+
+    return undef if $self->get_node_state($node) ne 'gone';
+
+    my $haenv = $self->{haenv};
+
+    delete $self->{last_online}->{$node};
+    delete $self->{status}->{$node};
+
+    $haenv->log('notice', "deleting gone node '$node', not a cluster member".
+		" anymore.");
+};
+
 my $set_node_state = sub {
     my ($self, $node, $state) = @_;
 
@@ -113,7 +128,7 @@ sub update {
 
 	if ($state eq 'online') {
 	    # &$set_node_state($self, $node, 'online');
-	} elsif ($state eq 'unknown') {
+	} elsif ($state eq 'unknown' || $state eq 'gone') {
 	    &$set_node_state($self, $node, 'online');
 	} elsif ($state eq 'fence') {
 	    # do nothing, wait until fenced
@@ -133,9 +148,16 @@ sub update {
 	if ($state eq 'online') {
 	    &$set_node_state($self, $node, 'unknown');
 	} elsif ($state eq 'unknown') {
-	    # &$set_node_state($self, $node, 'unknown');
+
+	    # node isn't in the member list anymore, deleted from the cluster?
+	    &$set_node_state($self, $node, 'gone') if(!defined($d));
+
 	} elsif ($state eq 'fence') {
 	    # do nothing, wait until fenced
+	} elsif($state eq 'gone') {
+	    if($self->node_is_offline_delayed($node, 3600)) {
+		&$delete_node($self, $node);
+	    }
 	} else {
 	    die "detected unknown node state '$state";
 	}
