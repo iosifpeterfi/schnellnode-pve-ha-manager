@@ -1,3 +1,9 @@
+pve-ha-manager (1.0-9) unstable; urgency=medium
+
+  * delete node from CRM status when deleted from cluster
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 29 Sep 2015 07:35:30 +0200
+
 pve-ha-manager (1.0-8) unstable; urgency=medium
 
   * Use new lock domain sub instead of storage lock
