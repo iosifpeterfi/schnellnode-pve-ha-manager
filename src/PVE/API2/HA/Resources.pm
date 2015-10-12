@@ -237,7 +237,7 @@ __PACKAGE__->register_method ({
 
 		PVE::HA::Config::write_resources_config($cfg)
 
-	    }, "delete storage failed");
+	    }, "delete resource failed");
 
 	return undef;
     }});
