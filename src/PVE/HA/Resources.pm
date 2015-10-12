@@ -89,22 +89,32 @@ sub parse_section_header {
 }
 
 sub start {
+    my ($class, $haenv, $params) = @_;
+
     die "implement in subclass";
 }
 
 sub shutdown {
+    my ($class, $haenv, $param) = @_;
+
     die "implement in subclass";
 }
 
 sub migrate {
+    my ($class, $haenv, $params) = @_;
+
     die "implement in subclass";
 }
 
 sub config_file {
+    my ($class, $id, $nodename) = @_;
+
     die "implement in subclass"
 }
 
 sub check_running {
+    my ($class, $id) = @_;
+
     die "implement in subclass";
 }
 
