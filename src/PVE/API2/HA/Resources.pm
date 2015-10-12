@@ -127,6 +127,8 @@ __PACKAGE__->register_method ({
 	my $plugin = PVE::HA::Resources->lookup($type);
 	$plugin->verify_name($name);
 
+	$plugin->exists($name);
+
 	my $opts = $plugin->check_config($sid, $param, 1, 1);
 
 	PVE::HA::Config::lock_ha_domain(
@@ -224,6 +226,8 @@ __PACKAGE__->register_method ({
 
 	my ($sid, $type, $name) = PVE::HA::Tools::parse_sid(extract_param($param, 'sid'));
 
+	PVE::HA::Config::service_is_ha_managed($sid);
+
 	PVE::HA::Config::lock_ha_domain(
 	    sub {
 
@@ -259,6 +263,8 @@ __PACKAGE__->register_method ({
 
 	my ($sid, $type, $name) = PVE::HA::Tools::parse_sid(extract_param($param, 'sid'));
 
+	PVE::HA::Config::service_is_ha_managed($sid);
+
 	PVE::HA::Config::queue_crm_commands("migrate $sid $param->{node}");
 	    
 	return undef;
@@ -284,6 +290,8 @@ __PACKAGE__->register_method ({
 	my ($param) = @_;
 
 	my ($sid, $type, $name) = PVE::HA::Tools::parse_sid(extract_param($param, 'sid'));
+
+	PVE::HA::Config::service_is_ha_managed($sid);
 
 	PVE::HA::Config::queue_crm_commands("relocate $sid $param->{node}");
 	    
