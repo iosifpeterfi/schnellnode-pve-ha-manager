@@ -112,6 +112,12 @@ sub config_file {
     die "implement in subclass"
 }
 
+sub exists {
+    my ($class, $id, $noerr) = @_;
+
+    die "implement in subclass"
+}
+
 sub check_running {
     my ($class, $id) = @_;
 
@@ -154,6 +160,19 @@ sub config_file {
     my ($class, $vmid, $nodename) = @_;
 
     return PVE::QemuServer::config_file($vmid, $nodename);
+}
+
+sub exists {
+    my ($class, $vmid, $noerr) = @_;
+
+    my $vmlist = PVE::Cluster::get_vmlist();
+
+    if(!defined($vmlist->{ids}->{$vmid})) {
+	die "resource 'vm:$vmid' does not exists in cluster\n" if !$noerr;
+	return undef;
+    } else {
+	return 1;
+    }
 }
 
 sub start {
@@ -220,6 +239,19 @@ sub config_file {
     my ($class, $vmid, $nodename) = @_;
 
     return PVE::LXC::config_file($vmid, $nodename);
+}
+
+sub exists {
+    my ($class, $vmid, $noerr) = @_;
+
+    my $vmlist = PVE::Cluster::get_vmlist();
+
+    if(!defined($vmlist->{ids}->{$vmid})) {
+	die "resource 'ct:$vmid' does not exists in cluster\n" if !$noerr;
+	return undef;
+    } else {
+	return 1;
+    }
 }
 
 sub start {
