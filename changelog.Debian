@@ -1,3 +1,9 @@
+pve-ha-manager (1.0-10) unstable; urgency=medium
+
+  * better resource status check on addition and update
+
+ -- Proxmox Support Team <support@proxmox.com>  Mon, 12 Oct 2015 18:26:24 +0200
+
 pve-ha-manager (1.0-9) unstable; urgency=medium
 
   * delete node from CRM status when deleted from cluster
