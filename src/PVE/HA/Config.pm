@@ -174,4 +174,20 @@ sub vm_is_ha_managed {
     return undef;
 }
 
+sub service_is_ha_managed {
+    my ($sid, $has_state, $noerr) = @_;
+
+    my $conf = cfs_read_file($ha_resources_config);
+
+    if (my $vm = $conf->{ids}->{$sid}) {
+	return 1 if !defined($has_state);
+
+	$vm->{state} = 'enabled' if !defined($vm->{state});
+	return 1 if $vm->{state} eq $has_state;
+    }
+
+    die "resource '$sid' is not HA managed\n" if !$noerr;
+
+    return undef;
+}
 1;
