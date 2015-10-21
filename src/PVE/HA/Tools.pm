@@ -103,7 +103,16 @@ sub read_json_from_file {
     if (defined($default) && (! -f $filename)) {
 	$data = $default;
     } else {
-	my $raw = PVE::Tools::file_get_contents($filename);
+	my $raw;
+	# workaround for bug #775
+	if ($filename =~ m|^/etc/pve/|) {
+	    $filename =~ s|^/etc/pve/+||;
+	    $raw = PVE::Cluster::get_config($filename);
+	    die "unable to read file '/etc/pve/$filename'\n" 
+		if !defined($raw);
+	} else {
+	    $raw = PVE::Tools::file_get_contents($filename);
+	}
 	$data = decode_json($raw);
     }
 
