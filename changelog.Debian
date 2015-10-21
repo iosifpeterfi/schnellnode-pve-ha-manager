@@ -1,3 +1,9 @@
+pve-ha-manager (1.0-11) unstable; urgency=medium
+
+  * add workaround for bug #775
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 21 Oct 2015 08:58:41 +0200
+
 pve-ha-manager (1.0-10) unstable; urgency=medium
 
   * better resource status check on addition and update
