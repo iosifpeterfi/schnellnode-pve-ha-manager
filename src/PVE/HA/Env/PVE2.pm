@@ -378,15 +378,18 @@ sub exec_resource_agent {
 
     my $nodename = $self->{nodename};
 
-    # fixme: return valid_exit code (instead of using die) ?
-
     my (undef, $service_type, $service_name) = PVE::HA::Tools::parse_sid($sid);
 
     my $plugin = PVE::HA::Resources->lookup($service_type);
-    die "service type '$service_type' not implemented" if !$plugin;
+    if (!$plugin) {
+	$self->log('err', "service type '$service_type' not implemented");
+	return EUNKNOWN_SERVICE_TYPE;
+    }
 
-    # fixme: return valid_exit code
-    die "service '$sid' not on this node" if $service_config->{node} ne $nodename;
+    if ($service_config->{node} ne $nodename) {
+	$self->log('err', "service '$sid' not on this node");
+	return EWRONG_NODE;
+    }
 
     my $vmid = $service_name;
 
@@ -444,7 +447,10 @@ sub exec_resource_agent {
     } elsif ($cmd eq 'migrate' || $cmd eq 'relocate') {
 
 	my $target = $params[0];
-	die "$cmd '$sid' failed - missing target\n" if !defined($target);
+	if (!defined($target)) {
+	    die "$cmd '$sid' failed - missing target\n" if !defined($target);
+	    return EINVALID_PARAMETER;
+	}
 
 	if ($service_config->{node} eq $target) {
 	    # already there
@@ -482,7 +488,8 @@ sub exec_resource_agent {
 
     }
 
-    die "implement me (cmd '$cmd')";
+    $self->log("err", "implement me (cmd '$cmd')");
+    return EUNKNOWN_COMMAND;
 }
 
 1;
