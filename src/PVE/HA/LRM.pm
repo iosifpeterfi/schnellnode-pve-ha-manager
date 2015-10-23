@@ -9,7 +9,7 @@ use POSIX qw(:sys_wait_h);
 
 use PVE::SafeSyslog;
 use PVE::Tools;
-use PVE::HA::Tools;
+use PVE::HA::Tools ':exit_codes';
 
 # Server can have several states:
 
@@ -489,13 +489,13 @@ sub handle_service_exitcode {
 
     if ($cmd eq 'started') {
 
-	if ($exit_code == 0) {
+	if ($exit_code == SUCCESS) {
 
 	    $tries->{$sid} = 0;
 
 	    return $exit_code;
 
-	} elsif ($exit_code == 1) {
+	} elsif ($exit_code == ERROR) {
 
 	    $tries->{$sid} = 0 if !defined($tries->{$sid});
 
@@ -504,10 +504,11 @@ sub handle_service_exitcode {
 		$haenv->log('err', "unable to start service $sid on local node".
 			   " after $tries->{$sid} retries");
 		$tries->{$sid} = 0;
-		return 1;
+		return ERROR;
 	    }
 
-	    return 2;
+	    # tell CRM that we retry the start
+	    return ETRY_AGAIN;
 	}
     }
 

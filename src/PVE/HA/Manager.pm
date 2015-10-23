@@ -6,6 +6,7 @@ use Digest::MD5 qw(md5_base64);
 
 use Data::Dumper;
 use PVE::Tools;
+use PVE::HA::Tools ':exit_codes';
 use PVE::HA::NodeStatus;
 
 my $fence_delay = 60;
@@ -405,7 +406,7 @@ sub next_state_request_stop {
     # check result from LRM daemon
     if ($lrm_res) {
 	my $exit_code = $lrm_res->{exit_code};
-	if ($exit_code == 0) {
+	if ($exit_code == SUCCESS) {
 	    &$change_service_state($self, $sid, 'stopped');
 	    return;
 	} else {
@@ -429,7 +430,7 @@ sub next_state_migrate_relocate {
     # check result from LRM daemon
     if ($lrm_res) {
 	my $exit_code = $lrm_res->{exit_code};
-	if ($exit_code == 0) {
+	if ($exit_code == SUCCESS) {
 	    &$change_service_state($self, $sid, 'started', node => $sd->{target});
 	    return;
 	} else {
@@ -554,7 +555,7 @@ sub next_state_started {
 
 	    my $try_next = 0;
 	    if ($lrm_res) {
-		if ($lrm_res->{exit_code} == 1) {
+		if ($lrm_res->{exit_code} == ERROR) {
 
 		    my $try = $master_status->{relocate_trial}->{$sid} || 0;
 
@@ -575,7 +576,7 @@ sub next_state_started {
 			return;
 
 		    }
-		} elsif ($lrm_res->{exit_code} == 0) {
+		} elsif ($lrm_res->{exit_code} == SUCCESS) {
 		    $master_status->{relocate_trial}->{$sid} = 0;
 		}
 	    }

@@ -12,7 +12,7 @@ use PVE::Cluster qw(cfs_register_file cfs_read_file cfs_write_file cfs_lock_file
 use PVE::INotify;
 use PVE::RPCEnvironment;
 
-use PVE::HA::Tools;
+use PVE::HA::Tools ':exit_codes';
 use PVE::HA::Env;
 use PVE::HA::Config;
 
@@ -394,7 +394,7 @@ sub exec_resource_agent {
 
     if ($cmd eq 'started') {
 
-	return 0 if $running;
+	return SUCCESS if $running;
 
 	$self->log("info", "starting service $sid");
 
@@ -409,15 +409,15 @@ sub exec_resource_agent {
 
 	if ($running) {
 	    $self->log("info", "service status $sid started");
-	    return 0;
+	    return SUCCESS;
 	} else {
 	    $self->log("warning", "unable to start service $sid");
-	    return 1;
+	    return ERROR;
 	}
 
     } elsif ($cmd eq 'request_stop' || $cmd eq 'stopped') {
 
-	return 0 if !$running;
+	return SUCCESS if !$running;
 
 	$self->log("info", "stopping service $sid");
 
@@ -436,9 +436,9 @@ sub exec_resource_agent {
 
 	if (!$running) {
 	    $self->log("info", "service status $sid stopped");
-	    return 0;
+	    return SUCCESS;
 	} else {
-	    return 1;
+	    return ERROR;
 	}
 
     } elsif ($cmd eq 'migrate' || $cmd eq 'relocate') {
@@ -448,7 +448,7 @@ sub exec_resource_agent {
 
 	if ($service_config->{node} eq $target) {
 	    # already there
-	    return 0;
+	    return SUCCESS;
 	}
 
 	# we always do (live) migration
@@ -466,10 +466,10 @@ sub exec_resource_agent {
 	# something went wrong if old config file is still there
 	if (-f $oldconfig) {
 	    $self->log("err", "service $sid not moved (migration error)");
-	    return 1;
+	    return ERROR;
 	}
 
-	return 0;
+	return SUCCESS;
 
     } elsif ($cmd eq 'error') {
 
@@ -478,7 +478,7 @@ sub exec_resource_agent {
 	} else {
 	    $self->log("warning", "service $sid is not running and in an error state");
 	}
-	return 0;
+	return SUCCESS; # error always succeeds
 
     }
 
