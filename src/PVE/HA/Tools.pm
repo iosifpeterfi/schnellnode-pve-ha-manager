@@ -7,6 +7,24 @@ use PVE::JSONSchema;
 use PVE::Tools;
 use PVE::Cluster;
 
+# return codes used in the ha environment
+# mainly by the resource agents
+use constant {
+    SUCCESS => 0, # action finished as expected
+    ERROR => 1, # action was erroneous
+    ETRY_AGAIN => 2, # action was erroneous and needs to be repeated
+    EWRONG_NODE => 3, # needs to fixup the service location
+    EUNKNOWN_SERVICE_TYPE => 4, # no plugin for this type service found
+    EUNKNOWN_COMMAND => 5,
+    EINVALID_PARAMETER => 6,
+};
+
+# get constants out of package in a somewhat easy way
+use base 'Exporter';
+our @EXPORT_OK = qw(SUCCESS ERROR EWRONG_NODE EUNKNOWN_SERVICE_TYPE
+ EUNKNOWN_COMMAND EINVALID_PARAMETER ETRY_AGAIN);
+our %EXPORT_TAGS = ( 'exit_codes' => [@EXPORT_OK] );
+
 PVE::JSONSchema::register_format('pve-ha-resource-id', \&pve_verify_ha_resource_id);
 sub pve_verify_ha_resource_id {
     my ($sid, $noerr) = @_;
