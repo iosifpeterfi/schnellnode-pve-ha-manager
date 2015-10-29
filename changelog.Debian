@@ -1,3 +1,13 @@
+pve-ha-manager (1.0-12) unstable; urgency=medium
+
+  * Adding constants to gain more readability
+
+  * exec_resource_agent: return valid exit code instead of die's
+
+  * code cleanups
+
+ -- Proxmox Support Team <support@proxmox.com>  Thu, 29 Oct 2015 10:21:49 +0100
+
 pve-ha-manager (1.0-11) unstable; urgency=medium
 
   * add workaround for bug #775
