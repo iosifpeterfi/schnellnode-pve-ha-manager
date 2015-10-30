@@ -64,6 +64,9 @@ __PACKAGE__->register_method ({
     path => 'current',
     method => 'GET',
     description => "Get HA manger status.",
+    permissions => {
+	check => ['perm', '/', [ 'Sys.Audit' ]],
+    },
     parameters => {
     	additionalProperties => 0,
 	properties => {},
@@ -126,6 +129,9 @@ __PACKAGE__->register_method ({
     path => 'manager_status',
     method => 'GET',
     description => "Get full HA manger status, including LRM status.",
+    permissions => {
+	check => ['perm', '/', [ 'Sys.Audit' ]],
+    },
     parameters => {
     	additionalProperties => 0,
 	properties => {},

@@ -18,8 +18,6 @@ use PVE::RESTHandler;
 
 use base qw(PVE::RESTHandler);
 
-# fixme: fix permissions
-
 my $api_copy_config = sub {
     my ($cfg, $group) = @_;
 
@@ -40,6 +38,9 @@ __PACKAGE__->register_method ({
     path => '',
     method => 'GET',
     description => "Get HA groups.",
+    permissions => {
+	check => ['perm', '/', [ 'Sys.Audit' ]],
+    },
     parameters => {
     	additionalProperties => 0,
 	properties => {},
@@ -73,6 +74,9 @@ __PACKAGE__->register_method ({
     path => '{group}',
     method => 'GET',
     description => "Read ha group configuration.",
+    permissions => {
+	check => ['perm', '/', [ 'Sys.Audit' ]],
+    },
     parameters => {
     	additionalProperties => 0,
 	properties => {
@@ -95,6 +99,9 @@ __PACKAGE__->register_method ({
     path => '',
     method => 'POST',
     description => "Create a new HA group.",
+    permissions => {
+	check => ['perm', '/', [ 'Sys.Console' ]],
+    },
     parameters => PVE::HA::Groups->createSchema(),
     returns => { type => 'null' },
     code => sub {
@@ -140,6 +147,9 @@ __PACKAGE__->register_method ({
     path => '{group}',
     method => 'PUT',
     description => "Update ha group configuration.",
+    permissions => {
+	check => ['perm', '/', [ 'Sys.Console' ]],
+    },
     parameters => PVE::HA::Groups->updateSchema(),
     returns => { type => 'null' },
     code => sub {
@@ -199,6 +209,9 @@ __PACKAGE__->register_method ({
     path => '{group}',
     method => 'DELETE',
     description => "Delete ha group configuration.",
+    permissions => {
+	check => ['perm', '/', [ 'Sys.Console' ]],
+    },
     parameters => {
     	additionalProperties => 0,
 	properties => {

@@ -22,8 +22,6 @@ use base qw(PVE::RESTHandler);
 
 my $resource_type_enum = PVE::HA::Resources->lookup_types();
 
-# fixme: fix permissions
-
 my $api_copy_config = sub {
     my ($cfg, $sid) = @_;
 
@@ -41,6 +39,9 @@ __PACKAGE__->register_method ({
     path => '',
     method => 'GET',
     description => "List HA resources.",
+    permissions => {
+	check => ['perm', '/', [ 'Sys.Audit' ]],
+    },
     parameters => {
     	additionalProperties => 0,
 	properties => {
@@ -83,6 +84,9 @@ __PACKAGE__->register_method ({
     name => 'read',
     path => '{sid}',
     method => 'GET',
+    permissions => {
+	check => ['perm', '/', [ 'Sys.Audit' ]],
+    },
     description => "Read resource configuration.",
     parameters => {
     	additionalProperties => 0,
@@ -107,6 +111,9 @@ __PACKAGE__->register_method ({
     protected => 1,
     path => '',
     method => 'POST',
+    permissions => {
+	check => ['perm', '/', [ 'Sys.Console' ]],
+    },
     description => "Create a new HA resource.",
     parameters => PVE::HA::Resources->createSchema(),
     returns => { type => 'null' },
@@ -155,6 +162,9 @@ __PACKAGE__->register_method ({
     path => '{sid}',
     method => 'PUT',
     description => "Update resource configuration.",
+    permissions => {
+	check => ['perm', '/', [ 'Sys.Console' ]],
+    },
     parameters => PVE::HA::Resources->updateSchema(),
     returns => { type => 'null' },
     code => sub {
@@ -213,6 +223,9 @@ __PACKAGE__->register_method ({
     path => '{sid}',
     method => 'DELETE',
     description => "Delete resource configuration.",
+    permissions => {
+	check => ['perm', '/', [ 'Sys.Console' ]],
+    },
     parameters => {
     	additionalProperties => 0,
 	properties => {
@@ -248,6 +261,9 @@ __PACKAGE__->register_method ({
     path => '{sid}/migrate',
     method => 'POST',
     description => "Request resource migration (online) to another node.",
+    permissions => {
+	check => ['perm', '/', [ 'Sys.Console' ]],
+    },
     parameters => {
     	additionalProperties => 0,
 	properties => {
@@ -276,6 +292,9 @@ __PACKAGE__->register_method ({
     path => '{sid}/relocate',
     method => 'POST',
     description => "Request resource relocatzion to another node. This stops the service on the old node, and restarts it on the target node.",
+    permissions => {
+	check => ['perm', '/', [ 'Sys.Console' ]],
+    },
     parameters => {
     	additionalProperties => 0,
 	properties => {
