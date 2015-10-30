@@ -1,3 +1,9 @@
+pve-ha-manager (1.0-13) unstable; urgency=medium
+
+  * HA API: Fix permissions
+
+ -- Proxmox Support Team <support@proxmox.com>  Fri, 30 Oct 2015 11:16:50 +0100
+
 pve-ha-manager (1.0-12) unstable; urgency=medium
 
   * Adding constants to gain more readability
