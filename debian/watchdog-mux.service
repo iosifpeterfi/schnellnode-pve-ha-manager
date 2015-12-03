@@ -2,6 +2,7 @@
 Description=Proxmox VE watchdog multiplexer
 
 [Service]
+EnvironmentFile=-/etc/default/pve-ha-manager
 ExecStart=/usr/sbin/watchdog-mux
 OOMScoreAdjust=-1000
 Restart=no

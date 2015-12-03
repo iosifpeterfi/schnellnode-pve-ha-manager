@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -120,7 +121,17 @@ main(void)
      * options softdog soft_noboot=1
      */
     if (stat(WATCHDOG_DEV, &fs) == -1) {
-        system("modprobe -q softdog"); // load softdog by default
+        char *wd_module = getenv("WATCHDOG_MODULE");
+        if (wd_module) {
+            char *cmd = NULL;
+            if ((asprintf(&cmd, "modprobe -q %s", wd_module) == -1)) {
+                perror("assemble modprobe command failed");
+                exit(EXIT_FAILURE);
+            }
+            system(cmd);
+        } else {
+            system("modprobe -q softdog"); // load softdog by default
+        }
     }
 
     if ((watchdog_fd = open(WATCHDOG_DEV, O_WRONLY)) == -1) {
