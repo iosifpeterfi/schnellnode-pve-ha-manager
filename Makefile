@@ -1,4 +1,4 @@
-RELEASE=4.0
+RELEASE=4.1
 
 VERSION=1.0
 PACKAGE=pve-ha-manager
