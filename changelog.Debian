@@ -1,3 +1,9 @@
+pve-ha-manager (1.0-14) unstable; urgency=medium
+
+  * allow to configure watchdog module in /etc/default/pve-ha-manager
+
+ -- Proxmox Support Team <support@proxmox.com>  Thu, 03 Dec 2015 11:09:47 +0100
+
 pve-ha-manager (1.0-13) unstable; urgency=medium
 
   * HA API: Fix permissions
