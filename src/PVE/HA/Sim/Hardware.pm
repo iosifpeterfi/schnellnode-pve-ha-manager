@@ -364,14 +364,8 @@ my $compute_node_info = sub {
 sub get_node_info {
     my ($self) = @_;
 
-    my ($node_info, $quorate);
-
-    my $code = sub { 
-	my $cstatus = $self->read_hardware_status_nolock();
-	($node_info, $quorate) = &$compute_node_info($self, $cstatus); 
-    };
-
-    $self->global_lock($code);
+    my $cstatus = $self->read_hardware_status_nolock();
+    my ($node_info, $quorate) = &$compute_node_info($self, $cstatus);
 
     return ($node_info, $quorate);
 }
