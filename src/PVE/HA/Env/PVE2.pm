@@ -67,6 +67,24 @@ sub write_lrm_status {
     PVE::HA::Config::write_lrm_status($node, $status_obj);
 }
 
+# check if we do a poweroff, can be used to decide if services should be freezed
+sub is_poweroff {
+    my ($self) = @_;
+
+    my $poweroff;
+
+    my $code = sub {
+	my $line = shift;
+
+	$poweroff = 1 if ($line =~ m/poweroff\.target/);
+    };
+
+    my $cmd = ['/bin/systemctl', 'list-jobs'];
+    eval { PVE::Tools::run_command($cmd, outfunc => $code, noerr => 1); };
+
+    return $poweroff;
+}
+
 sub queue_crm_commands {
     my ($self, $cmd) = @_;
 

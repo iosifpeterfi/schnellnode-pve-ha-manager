@@ -54,6 +54,13 @@ sub write_lrm_status {
     return $self->{plug}->write_lrm_status($status_obj);
 }
 
+# check if we do a poweroff, can be used to decide if services should be freeze
+sub is_poweroff {
+    my ($self) = @_;
+
+    return $self->{plug}->is_poweroff();
+}
+
 # implement a way to send commands to the CRM master
 sub queue_crm_commands {
     my ($self, $cmd) = @_;

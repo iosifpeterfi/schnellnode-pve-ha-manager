@@ -115,4 +115,20 @@ sub can_fork {
     return 0;
 }
 
+sub is_poweroff {
+    my ($self) = @_;
+
+    my $node = $self->{nodename};
+    my $cstatus = $self->{hardware}->read_hardware_status_nolock();
+
+    die "undefined node status for node '$node'" if !defined($cstatus->{$node});
+
+    if (defined($cstatus->{$node}->{shutdown}) &&
+	$cstatus->{$node}->{shutdown} eq 'shutdown') {
+	return 1;
+    }
+
+    return 0;
+}
+
 1;
