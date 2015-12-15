@@ -84,6 +84,8 @@ sub log {
 # simulate hardware commands
 # power <node> <on|off>
 # network <node> <on|off>
+# reboot <node>
+# shutdown <node>
 
 sub sim_hardware_cmd {
     my ($self, $cmdstr, $logid) = @_;
@@ -95,7 +97,6 @@ sub sim_hardware_cmd {
 	my ($cmd, $node, $action) = split(/\s+/, $cmdstr);
 
 	die "sim_hardware_cmd: no node specified" if !$node;
-	die "sim_hardware_cmd: unknown action '$action'" if $action !~ m/^(on|off)$/;
 
 	my $d = $self->{nodes}->{$node};
 	die "sim_hardware_cmd: no such node '$node'\n" if !$d;
@@ -103,6 +104,7 @@ sub sim_hardware_cmd {
 	$self->log('info', "execute $cmdstr", $logid);
 	
 	if ($cmd eq 'power') {
+	    die "sim_hardware_cmd: unknown action '$action'" if $action !~ m/^(on|off)$/;
 	    if ($cstatus->{$node}->{power} ne $action) {
 		if ($action eq 'on') {	      
 		    $d->{crm} = PVE::HA::CRM->new($d->{crm_env}) if !$d->{crm};
@@ -121,14 +123,29 @@ sub sim_hardware_cmd {
 
 	    $cstatus->{$node}->{power} = $action;
 	    $cstatus->{$node}->{network} = $action;
+	    $cstatus->{$node}->{shutdown} = undef;
+
+	    $self->write_hardware_status_nolock($cstatus);
 
 	} elsif ($cmd eq 'network') {
-		$cstatus->{$node}->{network} = $action;
+	    die "sim_hardware_cmd: unknown action '$action'" if $action !~ m/^(on|off)$/;
+	    $cstatus->{$node}->{network} = $action;
+
+	    $self->write_hardware_status_nolock($cstatus);
+
+	} elsif ($cmd eq 'reboot' || $cmd eq 'shutdown') {
+	    $cstatus->{$node}->{shutdown} = $cmd;
+
+	    $self->write_hardware_status_nolock($cstatus);
+
+	    if ($d->{lrm}) {
+		$d->{lrm_env}->log('info', "got shutdown request");
+		$d->{lrm}->shutdown_request();
+	    }
 	} else {
-	    die "sim_hardware_cmd: unknown command '$cmd'\n";
+	    die "sim_hardware_cmd: unknown command '$cmdstr'\n";
 	}
 
-	$self->write_hardware_status_nolock($cstatus);
     };
 
     return $self->global_lock($code);
@@ -174,12 +191,28 @@ sub run {
 
 		$d->{lrm_env}->loop_start_hook($self->get_time());
 
-		die "implement me (LRM exit)" if !$lrm->do_one_iteration();
+		my $exit_lrm = !$lrm->do_one_iteration();
 
 		$d->{lrm_env}->loop_end_hook();
 
 		my $nodetime = $d->{lrm_env}->get_time();
 		$self->{cur_time} = $nodetime if $nodetime > $self->{cur_time};
+
+		if ($exit_lrm) {
+		    $d->{lrm_env}->log('info', "exit (loop end)");
+		    $d->{lrm} = undef;
+		    my $cstatus = $self->read_hardware_status_nolock();
+		    my $nstatus = $cstatus->{$node} || die "no node status for node '$node'";
+		    my $shutdown = $nstatus->{shutdown};
+		    if ($shutdown eq 'reboot') {
+			$self->sim_hardware_cmd("power $node off", 'reboot');
+			$self->sim_hardware_cmd("power $node on", 'reboot');
+		    } elsif ($shutdown eq 'shutdown') {
+			$self->sim_hardware_cmd("power $node off", 'shutdown');
+		    } else {
+			die "unexpected LRM exit - not implemented"
+		    }
+		}
 	    }
 
 	    foreach my $n (@nodes) {
