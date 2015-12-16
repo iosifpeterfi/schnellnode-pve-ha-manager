@@ -357,14 +357,14 @@ sub manage {
 		die "unknown service state '$last_state'";
 	    }
 
-
 	    my $lrm_mode = $sd->{node} ? $lrm_modes->{$sd->{node}} : undef;
-	    $lrm_mode = 'unknown'if !$lrm_mode;
-	    if (($sd->{state} eq 'started' || $sd->{state} eq 'stopped' ||
-		 $sd->{state} eq 'request_stop') && ($lrm_mode ne 'active')) {
-		&$change_service_state($self, $sid, 'freeze');
+	    if ($lrm_mode && $lrm_mode eq 'restart') {
+		if (($sd->{state} eq 'started' || $sd->{state} eq 'stopped' ||
+		     $sd->{state} eq 'request_stop')) {
+		    &$change_service_state($self, $sid, 'freeze');
+		}
 	    }
-		    
+
 	    $repeat = 1 if $sd->{state} ne $last_state;
 	}
 
