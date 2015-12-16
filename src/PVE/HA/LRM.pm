@@ -43,6 +43,8 @@ sub new {
 sub shutdown_request {
     my ($self) = @_;
 
+    return if $self->{shutdown_request}; # already in shutdown mode
+
     my $haenv = $self->{haenv};
 
     my $shutdown = $haenv->is_node_shutdown();
