@@ -22,6 +22,8 @@ info     25    node3/lrm: starting service vm:103
 info     25    node3/lrm: service status vm:103 started
 info    120      cmdlist: execute reboot node3
 info    120    node3/lrm: shutdown LRM, stop all services
+info    125    node3/lrm: stopping service vm:103
+info    125    node3/lrm: service status vm:103 stopped
 info    126    node3/lrm: exit (loop end)
 info    126       reboot: execute power node3 off
 info    125    node3/crm: killed by poweroff

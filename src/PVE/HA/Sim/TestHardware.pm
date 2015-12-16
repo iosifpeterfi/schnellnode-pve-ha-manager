@@ -212,7 +212,7 @@ sub run {
 		    my $nstatus = $cstatus->{$node} || die "no node status for node '$node'";
 		    my $shutdown = $nstatus->{shutdown};
 		    if ($d->{lrm_restart}) {
-			die "lrm restart durin shutdown - not implemented" if $shutdown;
+			die "lrm restart during shutdown - not implemented" if $shutdown;
 			$d->{lrm_restart} = undef;
 			$d->{lrm} = PVE::HA::LRM->new($d->{lrm_env});
 		    } elsif ($shutdown eq 'reboot') {

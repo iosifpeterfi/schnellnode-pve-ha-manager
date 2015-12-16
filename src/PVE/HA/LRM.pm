@@ -31,6 +31,7 @@ sub new {
 	results => {},
 	restart_tries => {},
 	shutdown_request => 0,
+	shutdown_errors => 0,
 	# mode can be: active, reboot, shutdown, restart
 	mode => 'active',
     }, $class;
@@ -47,11 +48,26 @@ sub shutdown_request {
 
     my $haenv = $self->{haenv};
 
+    my $nodename = $haenv->nodename();
+
     my $shutdown = $haenv->is_node_shutdown();
 
     if ($shutdown) {
 	$haenv->log('info', "shutdown LRM, stop all services");
 	$self->{mode} = 'shutdown';
+
+	# queue stop jobs for all services
+
+	my $ss = $self->{service_status};
+
+	foreach my $sid (keys %$ss) {
+	    my $sd = $ss->{$sid};
+	    next if !$sd->{node};
+	    next if $sd->{node} ne $nodename;
+	    # Note: use undef uuid to mark shutdown/stop jobs
+	    $self->queue_resource_command($sid, undef, 'request_stop');
+	}
+
     } else {
 	$haenv->log('info', "restart LRM, freeze all services");
 	$self->{mode} = 'restart';
@@ -259,16 +275,27 @@ sub do_one_iteration {
 
 		    if ($service_count == 0) {
 
-			if ($self->{ha_agent_wd}) {
-			    $haenv->watchdog_close($self->{ha_agent_wd});
-			    delete $self->{ha_agent_wd};
+			if ($self->run_workers() == 0) {
+			    if ($self->{ha_agent_wd}) {
+				$haenv->watchdog_close($self->{ha_agent_wd});
+				delete $self->{ha_agent_wd};
+			    }
+
+			    $shutdown = 1;
+			}
+		    }
+		} else {
+
+		    if ($self->run_workers() == 0) {
+			if ($self->{shutdown_errors} == 0) {
+			    if ($self->{ha_agent_wd}) {
+				$haenv->watchdog_close($self->{ha_agent_wd});
+				delete $self->{ha_agent_wd};
+			    }
 			}
 
 			$shutdown = 1;
 		    }
-		} else {
-		    # fixme: stop all services
-		    $shutdown = 1;
 		}
 	    } else {
 
@@ -324,30 +351,10 @@ sub do_one_iteration {
     return 1;
 }
 
-sub manage_resources {
+sub run_workers {
     my ($self) = @_;
 
     my $haenv = $self->{haenv};
-
-    my $nodename = $haenv->nodename();
-
-    my $ss = $self->{service_status};
-
-    foreach my $sid (keys %$ss) {
-	my $sd = $ss->{$sid};
-	next if !$sd->{node};
-	next if !$sd->{uid};
-	next if $sd->{node} ne $nodename;
-	my $req_state = $sd->{state};
-	next if !defined($req_state);
-	next if $req_state eq 'freeze';
-	eval {
-	    $self->queue_resource_command($sid, $sd->{uid}, $req_state, $sd->{target});
-	};
-	if (my $err = $@) {
-	    $haenv->log('err', "unable to run resource agent for '$sid' - $err"); # fixme
-	}
-    }
 
     my $starttime = $haenv->get_time();
 
@@ -395,8 +402,12 @@ sub manage_resources {
 		    };
 		    if (my $err = $@) {
 			$haenv->log('err', $err);
-		    }		    
-		    $self->resource_command_finished($sid, $w->{uid}, $res);
+		    }
+		    if (defined($w->{uid})) {
+			$self->resource_command_finished($sid, $w->{uid}, $res);
+		    } else {
+			$self->stop_command_finished($sid, $res);
+		    }
 		}
 	    }
 	}
@@ -405,9 +416,33 @@ sub manage_resources {
 
 	$haenv->sleep(1);
     }
+
+    return scalar(keys %{$self->{workers}});
 }
 
-# fixme: use a queue an limit number of parallel workers?
+sub manage_resources {
+    my ($self) = @_;
+
+    my $haenv = $self->{haenv};
+
+    my $nodename = $haenv->nodename();
+
+    my $ss = $self->{service_status};
+
+    foreach my $sid (keys %$ss) {
+	my $sd = $ss->{$sid};
+	next if !$sd->{node};
+	next if !$sd->{uid};
+	next if $sd->{node} ne $nodename;
+	my $req_state = $sd->{state};
+	next if !defined($req_state);
+	next if $req_state eq 'freeze';
+	$self->queue_resource_command($sid, $sd->{uid}, $req_state, $sd->{target});
+    }
+
+    return $self->run_workers();
+}
+
 sub queue_resource_command {
     my ($self, $sid, $uid, $state, $target) = @_;
 
@@ -437,7 +472,11 @@ sub check_active_workers {
 	    # check status
 	    my $waitpid = waitpid($pid, WNOHANG);
 	    if (defined($waitpid) && ($waitpid == $pid)) {
-		$self->resource_command_finished($sid, $w->{uid}, $?);
+		if (defined($w->{uuid})) {
+		    $self->resource_command_finished($sid, $w->{uid}, $?);
+		} else {
+		    $self->stop_command_finished($sid, $?);
+		}
 	    } else {
 		$count++;
 	    }
@@ -445,6 +484,29 @@ sub check_active_workers {
     }
     
     return $count;
+}
+
+sub stop_command_finished {
+    my ($self, $sid, $status) = @_;
+
+    my $haenv = $self->{haenv};
+
+    my $w = delete $self->{workers}->{$sid};
+    return if !$w; # should not happen
+
+    my $exit_code = -1;
+
+    if ($status == -1) {
+	$haenv->log('err', "resource agent $sid finished - failed to execute");
+    }  elsif (my $sig = ($status & 127)) {
+	$haenv->log('err', "resource agent $sid finished - got signal $sig");
+    } else {
+	$exit_code = ($status >> 8);
+    }
+
+    if ($exit_code != 0) {
+	$self->{shutdown_errors}++;
+    }
 }
 
 sub resource_command_finished {
