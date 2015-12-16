@@ -86,6 +86,7 @@ sub log {
 # network <node> <on|off>
 # reboot <node>
 # shutdown <node>
+# restart-lrm <node>
 
 sub sim_hardware_cmd {
     my ($self, $cmdstr, $logid) = @_;
@@ -109,6 +110,7 @@ sub sim_hardware_cmd {
 		if ($action eq 'on') {
 		    $d->{crm} = PVE::HA::CRM->new($d->{crm_env}) if !$d->{crm};
 		    $d->{lrm} = PVE::HA::LRM->new($d->{lrm_env}) if !$d->{lrm};
+		    $d->{lrm_restart} = undef;
 		} else {
 		    if ($d->{crm}) {
 			$d->{crm_env}->log('info', "killed by poweroff");
@@ -117,6 +119,7 @@ sub sim_hardware_cmd {
 		    if ($d->{lrm}) {
 			$d->{lrm_env}->log('info', "killed by poweroff");
 			$d->{lrm} = undef;
+			$d->{lrm_restart} = undef;
 		    }
 		    $self->watchdog_reset_nolock($node);
 		    $self->write_service_status($node, {});
@@ -141,7 +144,11 @@ sub sim_hardware_cmd {
 	    $self->write_hardware_status_nolock($cstatus);
 
 	    $d->{lrm}->shutdown_request() if $d->{lrm};
-
+	} elsif ($cmd eq 'restart-lrm') {
+	    if ($d->{lrm}) {
+		$d->{lrm_restart} = 1;
+		$d->{lrm}->shutdown_request();
+	    }
 	} else {
 	    die "sim_hardware_cmd: unknown command '$cmdstr'\n";
 	}
@@ -204,7 +211,11 @@ sub run {
 		    my $cstatus = $self->read_hardware_status_nolock();
 		    my $nstatus = $cstatus->{$node} || die "no node status for node '$node'";
 		    my $shutdown = $nstatus->{shutdown};
-		    if ($shutdown eq 'reboot') {
+		    if ($d->{lrm_restart}) {
+			die "lrm restart durin shutdown - not implemented" if $shutdown;
+			$d->{lrm_restart} = undef;
+			$d->{lrm} = PVE::HA::LRM->new($d->{lrm_env});
+		    } elsif ($shutdown eq 'reboot') {
 			$self->sim_hardware_cmd("power $node off", 'reboot');
 			$self->sim_hardware_cmd("power $node on", 'reboot');
 		    } elsif ($shutdown eq 'shutdown') {
