@@ -21,8 +21,7 @@ info     25    node3/lrm: status change wait_for_agent_lock => active
 info     25    node3/lrm: starting service vm:103
 info     25    node3/lrm: service status vm:103 started
 info    120      cmdlist: execute reboot node3
-info    120    node3/lrm: restart LRM, freeze all services
-info    120    node1/crm: service 'vm:103': state changed from 'started' to 'freeze' 
+info    120    node3/lrm: shutdown LRM, stop all services
 info    126    node3/lrm: exit (loop end)
 info    126       reboot: execute power node3 off
 info    125    node3/crm: killed by poweroff
@@ -30,6 +29,7 @@ info    126       reboot: execute power node3 on
 info    125    node3/crm: status change startup => wait_for_quorum
 info    126    node3/lrm: status change startup => wait_for_agent_lock
 info    144    node3/crm: status change wait_for_quorum => slave
-info    160    node1/crm: service 'vm:103': state changed from 'freeze' to 'started' 
-info    165    node3/lrm: status change wait_for_agent_lock => active
+info    145    node3/lrm: status change wait_for_agent_lock => active
+info    145    node3/lrm: starting service vm:103
+info    145    node3/lrm: service status vm:103 started
 info    720     hardware: exit simulation - done

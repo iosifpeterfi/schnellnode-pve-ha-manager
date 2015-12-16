@@ -207,7 +207,7 @@ sub sim_hardware_cmd {
 	
 	if ($cmd eq 'power') {
 	    if ($cstatus->{$node}->{power} ne $action) {
-		if ($action eq 'on') {	      
+		if ($action eq 'on') {
 		    $d->{crm} = $self->fork_daemon($lockfh, 'crm', $node) if !$d->{crm};
 		    $d->{lrm} = $self->fork_daemon($lockfh, 'lrm', $node) if !$d->{lrm};
 		} else {
@@ -222,6 +222,7 @@ sub sim_hardware_cmd {
 			$d->{lrm} = undef;
 		    }
 		    $self->watchdog_reset_nolock($node);
+		    $self->write_service_status($node, {});
 		}
 	    }
 

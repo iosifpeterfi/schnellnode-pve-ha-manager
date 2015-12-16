@@ -106,7 +106,7 @@ sub sim_hardware_cmd {
 	if ($cmd eq 'power') {
 	    die "sim_hardware_cmd: unknown action '$action'" if $action !~ m/^(on|off)$/;
 	    if ($cstatus->{$node}->{power} ne $action) {
-		if ($action eq 'on') {	      
+		if ($action eq 'on') {
 		    $d->{crm} = PVE::HA::CRM->new($d->{crm_env}) if !$d->{crm};
 		    $d->{lrm} = PVE::HA::LRM->new($d->{lrm_env}) if !$d->{lrm};
 		} else {
@@ -118,6 +118,8 @@ sub sim_hardware_cmd {
 			$d->{lrm_env}->log('info', "killed by poweroff");
 			$d->{lrm} = undef;
 		    }
+		    $self->watchdog_reset_nolock($node);
+		    $self->write_service_status($node, {});
 		}
 	    }
 

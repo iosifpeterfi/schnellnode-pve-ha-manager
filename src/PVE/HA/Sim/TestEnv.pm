@@ -123,12 +123,7 @@ sub is_node_shutdown {
 
     die "undefined node status for node '$node'" if !defined($cstatus->{$node});
 
-    if (defined($cstatus->{$node}->{shutdown}) &&
-	$cstatus->{$node}->{shutdown} eq 'shutdown') {
-	return 1;
-    }
-
-    return 0;
+    return defined($cstatus->{$node}->{shutdown}) ? 1 : 0;
 }
 
 1;

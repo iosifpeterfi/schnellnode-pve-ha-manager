@@ -62,4 +62,6 @@ info    523    node2/lrm: service vm:101 - end migrate to node 'node1'
 info    524    node3/crm: service 'vm:101': state changed from 'migrate' to 'started'  (node = node1)
 info    541    node1/lrm: got lock 'ha_agent_node1_lock'
 info    541    node1/lrm: status change wait_for_agent_lock => active
+info    541    node1/lrm: starting service vm:101
+info    541    node1/lrm: service status vm:101 started
 info   1100     hardware: exit simulation - done
