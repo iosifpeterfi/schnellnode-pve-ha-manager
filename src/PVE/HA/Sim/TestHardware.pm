@@ -210,7 +210,7 @@ sub run {
 		    $d->{lrm} = undef;
 		    my $cstatus = $self->read_hardware_status_nolock();
 		    my $nstatus = $cstatus->{$node} || die "no node status for node '$node'";
-		    my $shutdown = $nstatus->{shutdown};
+		    my $shutdown = $nstatus->{shutdown} || '';
 		    if ($d->{lrm_restart}) {
 			die "lrm restart during shutdown - not implemented" if $shutdown;
 			$d->{lrm_restart} = undef;
