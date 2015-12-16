@@ -54,11 +54,12 @@ sub write_lrm_status {
     return $self->{plug}->write_lrm_status($status_obj);
 }
 
-# check if we do a poweroff, can be used to decide if services should be freeze
-sub is_poweroff {
+# check if we do node shutdown
+# we used this to decide if services should be stopped or freezed
+sub is_node_shutdown {
     my ($self) = @_;
 
-    return $self->{plug}->is_poweroff();
+    return $self->{plug}->is_node_shutdown();
 }
 
 # implement a way to send commands to the CRM master

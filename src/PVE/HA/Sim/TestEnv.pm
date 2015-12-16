@@ -115,7 +115,7 @@ sub can_fork {
     return 0;
 }
 
-sub is_poweroff {
+sub is_node_shutdown {
     my ($self) = @_;
 
     my $node = $self->{nodename};

@@ -139,7 +139,7 @@ sub write_lrm_status {
     return $self->{hardware}->write_lrm_status($node, $status_obj);
 }
 
-sub is_poweroff {
+sub is_node_shutdown {
     my ($self) = @_;
 
     return 0; # default to freezing services if not overwritten by subclass

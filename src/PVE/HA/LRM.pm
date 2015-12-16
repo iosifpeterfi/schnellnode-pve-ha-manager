@@ -45,7 +45,7 @@ sub shutdown_request {
 
     my $haenv = $self->{haenv};
 
-    my $shutdown = $haenv->is_poweroff();
+    my $shutdown = $haenv->is_node_shutdown();
 
     if ($shutdown) {
 	$haenv->log('info', "shutdown LRM, stop all services");
