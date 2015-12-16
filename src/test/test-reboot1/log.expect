@@ -21,7 +21,7 @@ info     25    node3/lrm: status change wait_for_agent_lock => active
 info     25    node3/lrm: starting service vm:103
 info     25    node3/lrm: service status vm:103 started
 info    120      cmdlist: execute reboot node3
-info    120    node3/lrm: got shutdown request
+info    120    node3/lrm: restart LRM, freeze all services
 info    120    node1/crm: service 'vm:103': state changed from 'started' to 'freeze' 
 info    126    node3/lrm: exit (loop end)
 info    126       reboot: execute power node3 off

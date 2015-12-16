@@ -138,10 +138,8 @@ sub sim_hardware_cmd {
 
 	    $self->write_hardware_status_nolock($cstatus);
 
-	    if ($d->{lrm}) {
-		$d->{lrm_env}->log('info', "got shutdown request");
-		$d->{lrm}->shutdown_request();
-	    }
+	    $d->{lrm}->shutdown_request() if $d->{lrm};
+
 	} else {
 	    die "sim_hardware_cmd: unknown command '$cmdstr'\n";
 	}

@@ -43,9 +43,19 @@ sub new {
 sub shutdown_request {
     my ($self) = @_;
 
-    $self->{shutdown_request} = 1;
+    my $haenv = $self->{haenv};
 
-    $self->{mode} = 'restart'; # fixme: detect shutdown/reboot
+    my $shutdown = $haenv->is_poweroff();
+
+    if ($shutdown) {
+	$haenv->log('info', "shutdown LRM, stop all services");
+	$self->{mode} = 'shutdown';
+    } else {
+	$haenv->log('info', "restart LRM, freeze all services");
+	$self->{mode} = 'restart';
+    }
+
+    $self->{shutdown_request} = 1;
 
     eval { $self->update_lrm_status(); };
     if (my $err = $@) {
@@ -241,17 +251,21 @@ sub do_one_iteration {
 
 	    if ($self->{shutdown_request}) {
 
-		# fixme: request service stop or relocate ?
+		if ($self->{mode} eq 'restart') {
 
-		my $service_count = $self->active_service_count();
+		    my $service_count = $self->active_service_count();
 
-		if ($service_count == 0) {
+		    if ($service_count == 0) {
 
-		    if ($self->{ha_agent_wd}) {
-			$haenv->watchdog_close($self->{ha_agent_wd});
-			delete $self->{ha_agent_wd};
+			if ($self->{ha_agent_wd}) {
+			    $haenv->watchdog_close($self->{ha_agent_wd});
+			    delete $self->{ha_agent_wd};
+			}
+
+			$shutdown = 1;
 		    }
-
+		} else {
+		    # fixme: stop all services
 		    $shutdown = 1;
 		}
 	    } else {
