@@ -1,3 +1,9 @@
+pve-ha-manager (1.0-15) unstable; urgency=medium
+
+  * stop all resources on node shutdown (instead of freeze)
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 16 Dec 2015 10:33:30 +0100
+
 pve-ha-manager (1.0-14) unstable; urgency=medium
 
   * allow to configure watchdog module in /etc/default/pve-ha-manager
