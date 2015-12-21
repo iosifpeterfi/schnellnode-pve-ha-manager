@@ -133,7 +133,8 @@ sub sim_hardware_cmd {
 	    $self->write_hardware_status_nolock($cstatus);
 
 	} elsif ($cmd eq 'network') {
-	    die "sim_hardware_cmd: unknown action '$action'" if $action !~ m/^(on|off)$/;
+	    die "sim_hardware_cmd: unknown network action '$action'"
+		if $action !~ m/^(on|off)$/;
 	    $cstatus->{$node}->{network} = $action;
 
 	    $self->write_hardware_status_nolock($cstatus);
