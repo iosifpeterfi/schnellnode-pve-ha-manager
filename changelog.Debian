@@ -1,3 +1,9 @@
+pve-ha-manager (1.0-16) unstable; urgency=medium
+
+  * check_active_workers: fix typo /uuid/uid/
+
+ -- Proxmox Support Team <support@proxmox.com>  Mon, 21 Dec 2015 10:21:30 +0100
+
 pve-ha-manager (1.0-15) unstable; urgency=medium
 
   * stop all resources on node shutdown (instead of freeze)
