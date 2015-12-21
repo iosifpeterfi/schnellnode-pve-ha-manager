@@ -64,7 +64,7 @@ sub shutdown_request {
 	    my $sd = $ss->{$sid};
 	    next if !$sd->{node};
 	    next if $sd->{node} ne $nodename;
-	    # Note: use undef uuid to mark shutdown/stop jobs
+	    # Note: use undef uid to mark shutdown/stop jobs
 	    $self->queue_resource_command($sid, undef, 'request_stop');
 	}
 
@@ -472,7 +472,7 @@ sub check_active_workers {
 	    # check status
 	    my $waitpid = waitpid($pid, WNOHANG);
 	    if (defined($waitpid) && ($waitpid == $pid)) {
-		if (defined($w->{uuid})) {
+		if (defined($w->{uid})) {
 		    $self->resource_command_finished($sid, $w->{uid}, $?);
 		} else {
 		    $self->stop_command_finished($sid, $?);
