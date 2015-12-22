@@ -345,17 +345,26 @@ sub exec_resource_agent {
 
 	    $self->log("info", "service $sid - start $cmd to node '$target'");
 
-	    if ($cmd eq 'relocate' && $ss->{$sid}) {
-		$self->log("info", "stopping service $sid (relocate)");
-		$self->sleep(1);
-		$ss->{$sid} = 0;
-		$hardware->write_service_status($nodename, $ss);
+	    if ($cmd eq 'relocate') {
+
+		if ($ss->{$sid}) {
+		    $self->log("info", "stopping service $sid (relocate)");
+		    $self->sleep(1); # time to stop service
+		    $ss->{$sid} = 0;
+		    $hardware->write_service_status($nodename, $ss);
+		}
+
 		$self->log("info", "service status $sid stopped");
+
+	    } else {
+		$self->sleep(2); # (live) migration time
 	    }
 
-	    $self->sleep(2);
 	    $self->change_service_location($sid, $nodename, $target);
 	    $self->log("info", "service $sid - end $cmd to node '$target'");
+	    # ensure that the old node doesn't has the service anymore
+	    $ss->{$sid} = 0;
+	    $hardware->write_service_status($nodename, $ss);
 
 	    return 0;
 
