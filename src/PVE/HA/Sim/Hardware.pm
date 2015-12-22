@@ -142,20 +142,26 @@ sub change_service_location {
     $self->write_service_config($conf);
 }
 
-sub queue_crm_commands {
+sub queue_crm_commands_nolock {
     my ($self, $cmd) = @_;
 
     chomp $cmd;
 
-    my $code = sub {
-	my $data = '';
-	my $filename = "$self->{statusdir}/crm_commands";
-	if (-f $filename) {
-	    $data = PVE::Tools::file_get_contents($filename);
-	}
-	$data .= "$cmd\n";
-	PVE::Tools::file_set_contents($filename, $data);
-    };
+    my $data = '';
+    my $filename = "$self->{statusdir}/crm_commands";
+    if (-f $filename) {
+	$data = PVE::Tools::file_get_contents($filename);
+    }
+    $data .= "$cmd\n";
+    PVE::Tools::file_set_contents($filename, $data);
+
+    return undef;
+}
+
+sub queue_crm_commands {
+    my ($self, $cmd) = @_;
+
+    my $code = sub { $self->queue_crm_commands_nolock($cmd); };
  
     $self->global_lock($code);
 
