@@ -1,0 +1,2 @@
+Test an user triggered service disable and enable cycle. The services should
+successfully stop and then start again.

@@ -87,6 +87,7 @@ sub log {
 # reboot <node>
 # shutdown <node>
 # restart-lrm <node>
+# service <sid> <enabled|disabled>
 
 sub sim_hardware_cmd {
     my ($self, $cmdstr, $logid) = @_;
@@ -95,12 +96,20 @@ sub sim_hardware_cmd {
 
 	my $cstatus = $self->read_hardware_status_nolock();
 
-	my ($cmd, $node, $action) = split(/\s+/, $cmdstr);
+	my ($cmd, $objid, $action, $target) = split(/\s+/, $cmdstr);
 
-	die "sim_hardware_cmd: no node specified" if !$node;
+	die "sim_hardware_cmd: no node or service for command specified"
+	    if !$objid;
 
-	my $d = $self->{nodes}->{$node};
-	die "sim_hardware_cmd: no such node '$node'\n" if !$d;
+	my ($node, $sid, $d);
+
+	if ($cmd eq 'service') {
+	    $sid = PVE::HA::Tools::pve_verify_ha_resource_id($objid);
+	} else {
+	    $node = $objid;
+	    $d = $self->{nodes}->{$node} ||
+		die "sim_hardware_cmd: no such node '$node'\n";
+	}
 
 	$self->log('info', "execute $cmdstr", $logid);
 	
@@ -149,6 +158,15 @@ sub sim_hardware_cmd {
 	    if ($d->{lrm}) {
 		$d->{lrm_restart} = 1;
 		$d->{lrm}->shutdown_request();
+	    }
+	} elsif ($cmd eq 'service') {
+	    if ($action eq 'enabled' || $action eq 'disabled') {
+
+		$self->set_service_state($sid, $action);
+
+	    } else {
+		die "sim_hardware_cmd: unknown service action '$action' " .
+		    "- not implemented\n"
 	    }
 	} else {
 	    die "sim_hardware_cmd: unknown command '$cmdstr'\n";

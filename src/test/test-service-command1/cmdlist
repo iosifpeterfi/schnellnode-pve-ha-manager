@@ -1,0 +1,5 @@
+[
+    [ "power node1 on", "power node2 on", "power node3 on"],
+    [ "service vm:103 disabled" ],
+    [ "service vm:103 enabled" ]
+]
