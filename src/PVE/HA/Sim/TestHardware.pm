@@ -88,6 +88,7 @@ sub log {
 # shutdown <node>
 # restart-lrm <node>
 # service <sid> <enabled|disabled>
+# service <sid> <migrate|relocate> <target>
 
 sub sim_hardware_cmd {
     my ($self, $cmdstr, $logid) = @_;
@@ -163,6 +164,13 @@ sub sim_hardware_cmd {
 	    if ($action eq 'enabled' || $action eq 'disabled') {
 
 		$self->set_service_state($sid, $action);
+
+	    } elsif ($action eq 'migrate' || $action eq 'relocate') {
+
+		die "sim_hardware_cmd: missing target node for '$action' command"
+		    if !$target;
+
+		$self->queue_crm_commands_nolock("$action $sid $target");
 
 	    } else {
 		die "sim_hardware_cmd: unknown service action '$action' " .
