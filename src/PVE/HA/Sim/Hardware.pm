@@ -114,6 +114,19 @@ sub write_service_config {
     return PVE::HA::Tools::write_json_to_file($filename, $conf);
 } 
 
+sub set_service_state {
+    my ($self, $sid, $state) = @_;
+
+    my $conf = $self->read_service_config();
+    die "no such service '$sid'" if !$conf->{$sid};
+
+    $conf->{$sid}->{state} = $state;
+
+    $self->write_service_config($conf);
+
+    return $conf;
+}
+
 sub change_service_location {
     my ($self, $sid, $current_node, $new_node) = @_;
 

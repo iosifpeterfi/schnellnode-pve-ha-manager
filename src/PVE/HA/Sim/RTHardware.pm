@@ -315,17 +315,11 @@ sub set_network_state {
 sub set_service_state {
     my ($self, $sid) = @_;
 
-    $self->{service_config} = $self->read_service_config();
-
     my $d = $self->{service_gui}->{$sid} || die "no such service '$sid'";
-
     my $state = $d->{enable_btn}->get_active() ? 'enabled' : 'disabled';
-    
-    $d = $self->{service_config}->{$sid} || die "no such service '$sid'";
 
-    $d->{state} = $state;
+    $self->{service_config} = $self->SUPER::set_service_state($sid, $state);
 
-    $self->write_service_config($self->{service_config});
 }
 
 sub create_node_control {
