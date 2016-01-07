@@ -172,6 +172,14 @@ sub sim_hardware_cmd {
 
 		$self->queue_crm_commands_nolock("$action $sid $target");
 
+	    } elsif ($action eq 'add') {
+
+		$self->add_service($sid, {state => 'enabled', node => $target});
+
+	    } elsif ($action eq 'delete') {
+
+		$self->delete_service($sid);
+
 	    } else {
 		die "sim_hardware_cmd: unknown service action '$action' " .
 		    "- not implemented\n"

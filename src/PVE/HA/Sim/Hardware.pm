@@ -127,6 +127,33 @@ sub set_service_state {
     return $conf;
 }
 
+sub add_service {
+    my ($self, $sid, $opts) = @_;
+
+    my $conf = $self->read_service_config();
+    die "resource ID '$sid' already defined\n" if $conf->{$sid};
+
+    $conf->{$sid} = $opts;
+
+    $self->write_service_config($conf);
+
+    return $conf;
+}
+
+sub delete_service {
+    my ($self, $sid) = @_;
+
+    my $conf = $self->read_service_config();
+
+    die "no such service '$sid'" if !$conf->{$sid};
+
+    delete $conf->{$sid};
+
+    $self->write_service_config($conf);
+
+    return $conf;
+}
+
 sub change_service_location {
     my ($self, $sid, $current_node, $new_node) = @_;
 
