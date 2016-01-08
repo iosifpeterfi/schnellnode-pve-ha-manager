@@ -410,6 +410,7 @@ sub next_state_request_stop {
 	    &$change_service_state($self, $sid, 'stopped');
 	    return;
 	} else {
+	    $haenv->log('err', "service '$sid' stop failed (exit code $exit_code)");
 	    &$change_service_state($self, $sid, 'error'); # fixme: what state?
 	    return;
 	}

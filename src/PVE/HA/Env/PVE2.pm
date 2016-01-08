@@ -458,6 +458,7 @@ sub exec_resource_agent {
 	    $self->log("info", "service status $sid stopped");
 	    return SUCCESS;
 	} else {
+	    $self->log("info", "unable to stop stop service $sid (still running)");
 	    return ERROR;
 	}
 
