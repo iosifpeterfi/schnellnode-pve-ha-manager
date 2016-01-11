@@ -127,6 +127,7 @@ main(void)
             }
             fprintf(stderr, "Loading watchdog module '%s'\n", wd_module);
             system(cmd);
+            free(cmd);
         } else {
             system("modprobe -q softdog"); // load softdog by default
         }
