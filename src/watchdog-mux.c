@@ -125,6 +125,7 @@ main(void)
                 perror("assemble modprobe command failed");
                 exit(EXIT_FAILURE);
             }
+            fprintf(stderr, "Loading watchdog module '%s'\n", wd_module);
             system(cmd);
         } else {
             system("modprobe -q softdog"); // load softdog by default
