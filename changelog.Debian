@@ -1,3 +1,9 @@
+pve-ha-manager (1.0-17) unstable; urgency=medium
+
+  * Resources.pm: use PVE::API2::LXC
+
+ -- Proxmox Support Team <support@proxmox.com>  Mon, 11 Jan 2016 12:25:38 +0100
+
 pve-ha-manager (1.0-16) unstable; urgency=medium
 
   * check_active_workers: fix typo /uuid/uid/
