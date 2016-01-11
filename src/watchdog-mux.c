@@ -106,8 +106,7 @@ main(void)
     socklen_t peer_addr_size;
     struct epoll_event ev, events[MAX_EVENTS];
     int listen_sock, nfds, epollfd, sigfd;
-    int unlink_socket = 0;
-    
+
     struct stat fs;
 
     if (stat(WD_ACTIVE_MARKER, &fs) == 0) {
@@ -157,7 +156,6 @@ main(void)
 
     /* always unlink socket path then create socket */
     unlink(WD_SOCK_PATH);
-    unlink_socket = 1;
 
     listen_sock = socket(AF_UNIX, SOCK_STREAM, 0);
     if (listen_sock == -1) {
@@ -350,15 +348,13 @@ main(void)
         fprintf(stderr, "clean exit\n");
         watchdog_close();
     }
-    
-    if (unlink_socket)
-	    unlink(WD_SOCK_PATH);
-    
+
+    unlink(WD_SOCK_PATH);
+
     exit(EXIT_SUCCESS);
 
 err:
-    if (unlink_socket)
-	    unlink(WD_SOCK_PATH);
+    unlink(WD_SOCK_PATH);
 
     exit(EXIT_FAILURE);
 }
