@@ -211,6 +211,7 @@ use strict;
 use warnings;
 
 use PVE::LXC;
+use PVE::API2::LXC;
 use PVE::API2::LXC::Status;
 
 use base qw(PVE::HA::Resources);
