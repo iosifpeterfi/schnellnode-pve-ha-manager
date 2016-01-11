@@ -18,8 +18,6 @@
 #include <linux/types.h>
 #include <linux/watchdog.h>
 
-#include <systemd/sd-daemon.h>
-
 #define WD_SOCK_PATH "/run/watchdog-mux.sock"
 #define WD_ACTIVE_MARKER "/run/watchdog-mux.active"
 
@@ -107,7 +105,7 @@ main(void)
     struct sockaddr_un my_addr, peer_addr;
     socklen_t peer_addr_size;
     struct epoll_event ev, events[MAX_EVENTS];
-    int socket_count, listen_sock, nfds, epollfd, sigfd;
+    int listen_sock, nfds, epollfd, sigfd;
     int unlink_socket = 0;
     
     struct stat fs;
@@ -157,45 +155,30 @@ main(void)
     fprintf(stderr, "Watchdog driver '%s', version %x\n",
             wdinfo.identity, wdinfo.firmware_version);
 
-    socket_count = sd_listen_fds(0);
-    
-    if (socket_count > 1) {
+    /* always unlink socket path then create socket */
+    unlink(WD_SOCK_PATH);
+    unlink_socket = 1;
 
-        perror("too many file descriptors received.\n");
-        goto err;
-	    
-    } else if (socket_count == 1) {
-
-        listen_sock = SD_LISTEN_FDS_START + 0;
-	
-    } else {
-
-	unlink_socket = 1;
-	
-        unlink(WD_SOCK_PATH);
-
-        listen_sock = socket(AF_UNIX, SOCK_STREAM, 0);
-        if (listen_sock == -1) {
-            perror("socket create");
-            exit(EXIT_FAILURE);
-        }
-
-        memset(&my_addr, 0, sizeof(struct sockaddr_un));
-        my_addr.sun_family = AF_UNIX;
-        strncpy(my_addr.sun_path, WD_SOCK_PATH, sizeof(my_addr.sun_path) - 1);
-	    
-        if (bind(listen_sock, (struct sockaddr *) &my_addr,
-                 sizeof(struct sockaddr_un)) == -1) {
-	    perror("socket bind");
-	    exit(EXIT_FAILURE);
-        }
-   
-        if (listen(listen_sock, LISTEN_BACKLOG) == -1) {
-	    perror("socket listen");
-	    goto err;
-        }
+    listen_sock = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (listen_sock == -1) {
+      perror("socket create");
+      exit(EXIT_FAILURE);
     }
-    
+    memset(&my_addr, 0, sizeof(struct sockaddr_un));
+    my_addr.sun_family = AF_UNIX;
+    strncpy(my_addr.sun_path, WD_SOCK_PATH, sizeof(my_addr.sun_path) - 1);
+
+    if (bind(listen_sock, (struct sockaddr *) &my_addr,
+	     sizeof(struct sockaddr_un)) == -1) {
+      perror("socket bind");
+      exit(EXIT_FAILURE);
+    }
+
+    if (listen(listen_sock, LISTEN_BACKLOG) == -1) {
+      perror("socket listen");
+      goto err;
+    }
+
     epollfd = epoll_create(10);
     if (epollfd == -1) {
         perror("epoll_create");

@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# Abort if any command returns an error value
+set -e
+
+# This script is called as the last step of the installation of the
+# package.  All the package's files are in place, dpkg has already
+# done its automatic conffile handling, and all the packages we depend
+# of are already fully installed and configured.
+
+# The following idempotent stuff doesn't generally need protecting
+# against being run in the abort-* cases.
+
+# Use debconf. (installs templates)
+. /usr/share/debconf/confmodule
+# all done with debconf here.
+db_stop
+
+case "$1" in
+  triggered)
+    # We don't print a status message here, as dpkg already said
+    # "Processing triggers for ...".
+    exit 0;;
+
+  configure)
+
+      # remove the systemd watchdog mux socket service
+      # as watchdog-mux should handle this on it's own
+      rm -f /etc/systemd/system/sockets.target.wants/watchdog-mux.socket
+      rm -f /var/lib/systemd/deb-systemd-helper-enabled/sockets.target.wants/watchdog-mux.socket
+      rm -f /var/lib/systemd/deb-systemd-helper-enabled/watchdog-mux.socket.dsh-also
+      ;;
+
+  abort-upgrade|abort-remove|abort-deconfigure)
+    exit 0
+    ;;
+
+  *)
+    echo "postinst called with unknown argument \`$1'" >&2
+    exit 1
+    ;;
+
+esac
+
+
+exit 0

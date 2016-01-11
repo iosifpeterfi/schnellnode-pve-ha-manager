@@ -45,7 +45,7 @@ ha-manager.bash-completion:
 
 
 watchdog-mux: watchdog-mux.c
-	gcc watchdog-mux.c -o watchdog-mux -Wall -Wl,-z,relro $$(pkg-config --libs --cflags libsystemd-daemon)
+	gcc watchdog-mux.c -o watchdog-mux -Wall -Wl,-z,relro
 
 .PHONY: install
 install: watchdog-mux pve-ha-crm pve-ha-lrm ha-manager.1.pod ha-manager.1.gz pve-ha-crm.1.pod pve-ha-crm.1.gz pve-ha-lrm.1.pod pve-ha-lrm.1.gz ha-manager.bash-completion pve-ha-lrm.bash-completion pve-ha-crm.bash-completion
