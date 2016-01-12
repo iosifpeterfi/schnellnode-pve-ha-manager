@@ -26,9 +26,13 @@ case "$1" in
 
       # remove the systemd watchdog mux socket service
       # as watchdog-mux should handle this on it's own
-      rm -f /etc/systemd/system/sockets.target.wants/watchdog-mux.socket
-      rm -f /var/lib/systemd/deb-systemd-helper-enabled/sockets.target.wants/watchdog-mux.socket
-      rm -f /var/lib/systemd/deb-systemd-helper-enabled/watchdog-mux.socket.dsh-also
+      if [ -e  /etc/systemd/system/sockets.target.wants/watchdog-mux.socket ]; then
+	  rm -f /etc/systemd/system/sockets.target.wants/watchdog-mux.socket
+	  rm -f /var/lib/systemd/deb-systemd-helper-enabled/sockets.target.wants/watchdog-mux.socket
+	  rm -f /var/lib/systemd/deb-systemd-helper-enabled/watchdog-mux.socket.dsh-also
+	  systemctl daemon-reload
+      fi
+
       ;;
 
   abort-upgrade|abort-remove|abort-deconfigure)
