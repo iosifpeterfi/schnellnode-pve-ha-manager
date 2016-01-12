@@ -1,3 +1,13 @@
+pve-ha-manager (1.0-18) unstable; urgency=medium
+
+  * pve-ha-lrm.service: depend on lxc.service
+
+  * output watchdog module name if it gets loaded
+
+  * remove watchdog-mux.socket
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 12 Jan 2016 12:27:49 +0100
+
 pve-ha-manager (1.0-17) unstable; urgency=medium
 
   * Resources.pm: use PVE::API2::LXC
