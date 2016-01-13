@@ -89,19 +89,19 @@ sub parse_section_header {
 }
 
 sub start {
-    my ($class, $haenv, $params) = @_;
+    my ($class, $haenv, $id) = @_;
 
     die "implement in subclass";
 }
 
 sub shutdown {
-    my ($class, $haenv, $param) = @_;
+    my ($class, $haenv, $id) = @_;
 
     die "implement in subclass";
 }
 
 sub migrate {
-    my ($class, $haenv, $params) = @_;
+    my ($class, $haenv, $id, $target, $online) = @_;
 
     die "implement in subclass";
 }
@@ -176,22 +176,48 @@ sub exists {
 }
 
 sub start {
-    my ($class, $haenv, $params) = @_;
+    my ($class, $haenv, $id) = @_;
+
+    my $nodename = $haenv->nodename();
+
+    my $params = {
+	node => $nodename,
+	vmid => $id
+    };
 
     my $upid = PVE::API2::Qemu->vm_start($params);
     $haenv->upid_wait($upid);
 }
 
 sub shutdown {
-    my ($class, $haenv, $param) = @_;
+    my ($class, $haenv, $id) = @_;
 
-    my $upid = PVE::API2::Qemu->vm_shutdown($param);
+    my $nodename = $haenv->nodename();
+    my $shutdown_timeout = 60; # fixme: make this configurable
+
+    my $params = {
+	node => $nodename,
+	vmid => $id,
+	timeout => $shutdown_timeout,
+	forceStop => 1,
+    };
+
+    my $upid = PVE::API2::Qemu->vm_shutdown($params);
     $haenv->upid_wait($upid);
 }
 
 
 sub migrate {
-    my ($class, $haenv, $params) = @_;
+    my ($class, $haenv, $id, $target, $online) = @_;
+
+    my $nodename = $haenv->nodename();
+
+    my $params = {
+	node => $nodename,
+	vmid => $id,
+	target => $target,
+	online => $online,
+    };
 
     my $upid = PVE::API2::Qemu->migrate_vm($params);
     $haenv->upid_wait($upid);
@@ -256,21 +282,47 @@ sub exists {
 }
 
 sub start {
-    my ($class, $haenv, $params) = @_;
+    my ($class, $haenv, $id) = @_;
+
+    my $nodename = $haenv->nodename();
+
+    my $params = {
+	node => $nodename,
+	vmid => $id
+    };
 
     my $upid = PVE::API2::LXC::Status->vm_start($params);
     $haenv->upid_wait($upid);
 }
 
 sub shutdown {
-    my ($class, $haenv, $params) = @_;
+    my ($class, $haenv, $id) = @_;
+
+    my $nodename = $haenv->nodename();
+    my $shutdown_timeout = 60; # fixme: make this configurable
+
+    my $params = {
+	node => $nodename,
+	vmid => $id,
+	timeout => $shutdown_timeout,
+	forceStop => 1,
+    };
 
     my $upid = PVE::API2::LXC::Status->vm_shutdown($params);
     $haenv->upid_wait($upid);
 }
 
 sub migrate {
-    my ($class, $haenv, $params) = @_;
+    my ($class, $haenv, $id, $target, $online) = @_;
+
+    my $nodename = $haenv->nodename();
+
+    my $params = {
+	node => $nodename,
+	vmid => $id,
+	target => $target,
+	online => $online,
+    };
 
     my $upid = PVE::API2::LXC->migrate_vm($params);
     $haenv->upid_wait($upid);

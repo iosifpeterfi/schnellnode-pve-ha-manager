@@ -418,12 +418,7 @@ sub exec_resource_agent {
 
 	$self->log("info", "starting service $sid");
 
-	my $params = {
-	    node => $nodename,
-	    vmid => $vmid
-	};
-
-	$plugin->start($self, $params);
+	$plugin->start($self, $vmid);
 
 	$running = $plugin->check_running($vmid);
 
@@ -441,16 +436,7 @@ sub exec_resource_agent {
 
 	$self->log("info", "stopping service $sid");
 
-	my $timeout = 60; # fixme: make this configurable
-
-	my $params = {
-	    node => $nodename,
-	    vmid => $vmid,
-	    timeout => $timeout,
-	    forceStop => 1,
-	};
-
-	$plugin->shutdown($self, $params);
+	$plugin->shutdown($self, $vmid);
 
 	$running = $plugin->check_running($vmid);
 
@@ -475,17 +461,9 @@ sub exec_resource_agent {
 	    return SUCCESS;
 	}
 
-	# we always do (live) migration
-	my $params = {
-	    node => $nodename,
-	    vmid => $vmid,
-	    target => $target,
-	    online => 1,
-	};
-
 	my $oldconfig = $plugin->config_file($vmid, $nodename);
 
-	$plugin->migrate($self, $params);
+	$plugin->migrate($self, $vmid, $target, 1);
 
 	# something went wrong if old config file is still there
 	if (-f $oldconfig) {
