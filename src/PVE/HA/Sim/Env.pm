@@ -335,6 +335,11 @@ sub exec_resource_agent {
 
     } elsif ($cmd eq 'migrate' || $cmd eq 'relocate') {
 
+	if ($cd->{type} eq 'ct' && $cmd eq 'migrate' && $ss->{$sid}) {
+	    $self->log('err', "unable to live migrate running container");
+	    return 1;
+	}
+
 	my $target = $params[0];
 	die "$cmd '$sid' failed - missing target\n" if !defined($target);
 

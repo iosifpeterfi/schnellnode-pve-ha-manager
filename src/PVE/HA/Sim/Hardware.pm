@@ -93,9 +93,9 @@ sub read_service_config {
 
 	die "service '$sid' without assigned node!" if !$d->{node};
 
-	if ($sid =~ m/^vm:(\d+)$/) {
-	    $d->{type} = 'vm'; 
-	    $d->{name} = $1;
+	if ($sid =~ m/^(vm|ct):(\d+)$/) {
+	    $d->{type} = $1;
+	    $d->{name} = $2;
 	} else {
 	    die "implement me";
 	}
