@@ -586,8 +586,13 @@ sub next_state_started {
 					   $cd, $sd->{node}, $try_next);
 
 	    if ($node && ($sd->{node} ne $node)) {
-		$haenv->log('info', "migrate service '$sid' to node '$node' (running)");
-		&$change_service_state($self, $sid, 'migrate', node => $sd->{node}, target => $node);
+		if ($cd->{type} eq 'vm') {
+		    $haenv->log('info', "migrate service '$sid' to node '$node' (running)");
+		    &$change_service_state($self, $sid, 'migrate', node => $sd->{node}, target => $node);
+		} else {
+		    $haenv->log('info', "relocate service '$sid' to node '$node'");
+		    &$change_service_state($self, $sid, 'relocate', node => $sd->{node}, target => $node);
+		}
 	    } else {
 		# do nothing
 	    }

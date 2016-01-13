@@ -219,6 +219,11 @@ sub migrate {
 	online => $online,
     };
 
+    # explicitly shutdown if $online isn't true (relocate)
+    if (!$online && $class->check_running($id)) {
+	$class->shutdown($haenv, $id);
+    }
+
     my $upid = PVE::API2::Qemu->migrate_vm($params);
     $haenv->upid_wait($upid);
 }
@@ -321,8 +326,13 @@ sub migrate {
 	node => $nodename,
 	vmid => $id,
 	target => $target,
-	online => $online,
+	online => 0, # we cannot migrate CT (yet) online, only relocate
     };
+
+    # always relocate container for now
+    if ($class->check_running($id)) {
+	$class->shutdown($haenv, $id);
+    }
 
     my $upid = PVE::API2::LXC->migrate_vm($params);
     $haenv->upid_wait($upid);

@@ -461,9 +461,11 @@ sub exec_resource_agent {
 	    return SUCCESS;
 	}
 
+	my $online = ($cmd eq 'migrate') ? 1 : 0;
+
 	my $oldconfig = $plugin->config_file($vmid, $nodename);
 
-	$plugin->migrate($self, $vmid, $target, 1);
+	$plugin->migrate($self, $vmid, $target, $online);
 
 	# something went wrong if old config file is still there
 	if (-f $oldconfig) {
