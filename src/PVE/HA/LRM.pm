@@ -399,6 +399,7 @@ sub run_workers {
 		    my $res = -1;
 		    eval {
 			$res = $haenv->exec_resource_agent($sid, $cd, $w->{state}, $w->{target});
+			$res = $res << 8 if $res > 0;
 		    };
 		    if (my $err = $@) {
 			$haenv->log('err', $err);
