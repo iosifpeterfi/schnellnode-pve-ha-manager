@@ -1,0 +1,5 @@
+Test failback senario.
+
+All nodes has quorum and one CT per node3 is running.
+Then we shutdown node3, and the CT will be migraded.
+When the node come back, the CT will move back to node3.

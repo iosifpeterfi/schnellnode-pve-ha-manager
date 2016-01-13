@@ -1,0 +1,6 @@
+[
+    [ "power node1 on", "power node2 on", "power node3 on"],
+    [ "shutdown node3" ],
+    [ "delay 200" ],
+    [ "power node3 on" ]
+]
