@@ -206,6 +206,14 @@ sub do_one_iteration {
 		    delete $self->{ha_manager_wd};
 		}
 
+		# release the manager lock, so another CRM slave can get it
+		# and continue to work without waiting for the lock timeout
+		$haenv->log('info', "voluntary release CRM lock");
+		if (!$haenv->release_ha_manager_lock()) {
+		    $haenv->log('notice', "CRM lock release failed, let the" .
+				" lock timeout");
+		}
+
 		$shutdown = 1;
 
 	    } else {

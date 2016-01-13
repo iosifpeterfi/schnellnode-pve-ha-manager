@@ -215,6 +215,15 @@ sub get_ha_manager_lock {
     return $self->sim_get_lock('ha_manager_lock');
 }
 
+# release the cluster wide manager lock.
+# when released another CRM may step up and get the lock, thus this should only
+# get called when shutting down/deactivating the current master
+sub release_ha_manager_lock {
+    my ($self) = @_;
+
+    return $self->sim_get_lock('ha_manager_lock', 1);
+}
+
 sub get_ha_agent_lock_name {
     my ($self, $node) = @_;
 
