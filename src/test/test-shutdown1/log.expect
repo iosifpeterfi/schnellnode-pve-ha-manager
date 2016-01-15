@@ -30,13 +30,13 @@ info    125    node3/crm: killed by poweroff
 info    140    node1/crm: node 'node3': state changed from 'online' => 'unknown'
 info    180    node1/crm: service 'vm:103': state changed from 'started' to 'fence' 
 info    180    node1/crm: node 'node3': state changed from 'unknown' => 'fence'
-info    260    node1/crm: got lock 'ha_agent_node3_lock'
-info    260    node1/crm: fencing: acknowleged - got agent lock for node 'node3'
-info    260    node1/crm: node 'node3': state changed from 'fence' => 'unknown'
-info    260    node1/crm: service 'vm:103': state changed from 'fence' to 'stopped' 
-info    280    node1/crm: service 'vm:103': state changed from 'stopped' to 'started'  (node = node1)
-info    281    node1/lrm: got lock 'ha_agent_node1_lock'
-info    281    node1/lrm: status change wait_for_agent_lock => active
-info    281    node1/lrm: starting service vm:103
-info    281    node1/lrm: service status vm:103 started
+info    180    node1/crm: got lock 'ha_agent_node3_lock'
+info    180    node1/crm: fencing: acknowleged - got agent lock for node 'node3'
+info    180    node1/crm: node 'node3': state changed from 'fence' => 'unknown'
+info    180    node1/crm: service 'vm:103': state changed from 'fence' to 'stopped' 
+info    180    node1/crm: service 'vm:103': state changed from 'stopped' to 'started'  (node = node1)
+info    181    node1/lrm: got lock 'ha_agent_node1_lock'
+info    181    node1/lrm: status change wait_for_agent_lock => active
+info    181    node1/lrm: starting service vm:103
+info    181    node1/lrm: service status vm:103 started
 info    720     hardware: exit simulation - done

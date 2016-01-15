@@ -239,6 +239,19 @@ sub get_ha_agent_lock {
     return $self->sim_get_lock($lck);
 }
 
+
+# release the respective node agent lock.
+# this should only get called if the nodes LRM gracefully shuts down with
+# all services already cleanly stopped!
+sub release_ha_agent_lock {
+    my ($self) = @_;
+
+    my $node = $self->nodename();
+
+    my $lock = $self->get_ha_agent_lock_name($node);
+    return $self->sim_get_lock($lock, 1);
+}
+
 # return true when cluster is quorate
 sub quorate {
     my ($self) = @_;

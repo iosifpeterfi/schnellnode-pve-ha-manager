@@ -31,6 +31,7 @@ info    126       reboot: execute power node3 on
 info    125    node3/crm: status change startup => wait_for_quorum
 info    126    node3/lrm: status change startup => wait_for_agent_lock
 info    144    node3/crm: status change wait_for_quorum => slave
+info    145    node3/lrm: got lock 'ha_agent_node3_lock'
 info    145    node3/lrm: status change wait_for_agent_lock => active
 info    145    node3/lrm: starting service vm:103
 info    145    node3/lrm: service status vm:103 started

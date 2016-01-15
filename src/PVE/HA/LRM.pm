@@ -295,6 +295,9 @@ sub do_one_iteration {
 			}
 
 			$shutdown = 1;
+
+			# shutdown with all services stopped thus release the lock
+			$haenv->release_ha_agent_lock();
 		    }
 		}
 	    } else {
