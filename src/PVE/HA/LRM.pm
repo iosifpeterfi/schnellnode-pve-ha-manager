@@ -295,12 +295,12 @@ sub do_one_iteration {
 				$haenv->watchdog_close($self->{ha_agent_wd});
 				delete $self->{ha_agent_wd};
 			    }
+
+			    # shutdown with all services stopped thus release the lock
+			    $haenv->release_ha_agent_lock();
 			}
 
 			$shutdown = 1;
-
-			# shutdown with all services stopped thus release the lock
-			$haenv->release_ha_agent_lock();
 		    }
 		}
 	    } else {
