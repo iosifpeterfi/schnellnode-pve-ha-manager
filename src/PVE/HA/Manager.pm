@@ -546,7 +546,7 @@ sub next_state_started {
 		} elsif ($sd->{node} eq $target) {
 		    $haenv->log('info', "ignore service '$sid' $cmd request - service already on node '$target'");
 		} else {
-		    $haenv->log('info', "$cmd service '$sid' to node '$target' (running)");
+		    $haenv->log('info', "$cmd service '$sid' to node '$target'");
 		    &$change_service_state($self, $sid, $cmd, node => $sd->{node}, target => $target);
 		}
 	    } else {

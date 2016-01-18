@@ -22,7 +22,7 @@ info     25    node3/lrm: starting service vm:103
 info     25    node3/lrm: service status vm:103 started
 info    120      cmdlist: execute service vm:103 relocate node1
 info    120    node1/crm: got crm command: relocate vm:103 node1
-info    120    node1/crm: relocate service 'vm:103' to node 'node1' (running)
+info    120    node1/crm: relocate service 'vm:103' to node 'node1'
 info    120    node1/crm: service 'vm:103': state changed from 'started' to 'relocate'  (node = node3, target = node1)
 info    125    node3/lrm: service vm:103 - start relocate to node 'node1'
 info    125    node3/lrm: stopping service vm:103 (relocate)
