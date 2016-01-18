@@ -1,3 +1,19 @@
+pve-ha-manager (1.0-19) unstable; urgency=medium
+
+  * remove 'running' from migrate/relocate log message
+
+  * LRM: release agent lock on graceful shutdown
+
+  * LRM: release agent lock also on restart
+
+  * CRM: release lock on shutdown request
+
+  * TestHardware: correct shutdown/reboot behaviour of CRM and LRM
+
+  * resource agents: fix relocate
+
+ -- Proxmox Support Team <support@proxmox.com>  Mon, 18 Jan 2016 12:41:08 +0100
+
 pve-ha-manager (1.0-18) unstable; urgency=medium
 
   * pve-ha-lrm.service: depend on lxc.service
