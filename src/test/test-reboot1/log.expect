@@ -25,14 +25,15 @@ info    120    node3/lrm: shutdown LRM, stop all services
 info    125    node3/lrm: stopping service vm:103
 info    125    node3/lrm: service status vm:103 stopped
 info    126    node3/lrm: exit (loop end)
-info    126       reboot: execute power node3 off
-info    125    node3/crm: killed by poweroff
-info    126       reboot: execute power node3 on
-info    125    node3/crm: status change startup => wait_for_quorum
-info    126    node3/lrm: status change startup => wait_for_agent_lock
-info    144    node3/crm: status change wait_for_quorum => slave
+info    126       reboot: execute crm node3 stop
+info    145    node3/crm: exit (loop end)
+info    145       reboot: execute power node3 off
+info    145       reboot: execute power node3 on
+info    145    node3/crm: status change startup => wait_for_quorum
+info    140    node3/lrm: status change startup => wait_for_agent_lock
 info    145    node3/lrm: got lock 'ha_agent_node3_lock'
 info    145    node3/lrm: status change wait_for_agent_lock => active
 info    145    node3/lrm: starting service vm:103
 info    145    node3/lrm: service status vm:103 started
+info    164    node3/crm: status change wait_for_quorum => slave
 info    720     hardware: exit simulation - done

@@ -1,0 +1,5 @@
+This tests if the manager lock gets released AND the services from the node with
+the manager lock get cleanly shutdown without changing the state of the service
+in the cluster.
+That means that the powered off node gets fenced by the new master and the
+service will be relocated and started again.

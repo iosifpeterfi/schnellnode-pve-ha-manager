@@ -160,6 +160,19 @@ sub sim_hardware_cmd {
 		$d->{lrm_restart} = 1;
 		$d->{lrm}->shutdown_request();
 	    }
+	} elsif ($cmd eq 'crm') {
+
+	    if ($action eq 'stop') {
+		if ($d->{crm}) {
+		    $d->{crm_stop} = 1;
+		    $d->{crm}->shutdown_request();
+		}
+	    } elsif ($action eq 'start') {
+		$d->{crm} = PVE::HA::CRM->new($d->{crm_env}) if !$d->{crm};
+	    } else {
+		die "sim_hardware_cmd: unknown action '$action'";
+	    }
+
 	} elsif ($cmd eq 'service') {
 	    if ($action eq 'enabled' || $action eq 'disabled') {
 
@@ -221,12 +234,30 @@ sub run {
 
 		$d->{crm_env}->loop_start_hook($self->get_time());
 
-		die "implement me (CRM exit)" if !$crm->do_one_iteration();
+		my $exit_crm = !$crm->do_one_iteration();
 
 		$d->{crm_env}->loop_end_hook();
 
 		my $nodetime = $d->{crm_env}->get_time();
 		$self->{cur_time} = $nodetime if $nodetime > $self->{cur_time};
+
+		if ($exit_crm) {
+		    $d->{crm_env}->log('info', "exit (loop end)");
+		    $d->{crm} = undef;
+
+		    my $cstatus = $self->read_hardware_status_nolock();
+		    my $nstatus = $cstatus->{$node} || die "no node status for node '$node'";
+		    my $shutdown = $nstatus->{shutdown} || '';
+		    if ($shutdown eq 'reboot') {
+			$self->sim_hardware_cmd("power $node off", 'reboot');
+			$self->sim_hardware_cmd("power $node on", 'reboot');
+		    } elsif ($shutdown eq 'shutdown') {
+			$self->sim_hardware_cmd("power $node off", 'shutdown');
+		    } elsif (!$d->{crm_stop}) {
+			die "unexpected CRM exit - not implemented"
+		    }
+		    $d->{crm_stop} = undef;
+		}
 	    }
 
 	    if (my $lrm = $d->{lrm}) {
@@ -250,11 +281,9 @@ sub run {
 			die "lrm restart during shutdown - not implemented" if $shutdown;
 			$d->{lrm_restart} = undef;
 			$d->{lrm} = PVE::HA::LRM->new($d->{lrm_env});
-		    } elsif ($shutdown eq 'reboot') {
-			$self->sim_hardware_cmd("power $node off", 'reboot');
-			$self->sim_hardware_cmd("power $node on", 'reboot');
-		    } elsif ($shutdown eq 'shutdown') {
-			$self->sim_hardware_cmd("power $node off", 'shutdown');
+		    } elsif ($shutdown eq 'reboot' || $shutdown eq 'shutdown') {
+			# exit the LRM before the CRM to reflect real world behaviour
+			$self->sim_hardware_cmd("crm $node stop", $shutdown);
 		    } else {
 			die "unexpected LRM exit - not implemented"
 		    }

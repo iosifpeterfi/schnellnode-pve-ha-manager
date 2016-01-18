@@ -1,0 +1,46 @@
+info      0     hardware: starting simulation
+info     20      cmdlist: execute power node1 on
+info     20    node1/crm: status change startup => wait_for_quorum
+info     20    node1/lrm: status change startup => wait_for_agent_lock
+info     20      cmdlist: execute power node2 on
+info     20    node2/crm: status change startup => wait_for_quorum
+info     20    node2/lrm: status change startup => wait_for_agent_lock
+info     20      cmdlist: execute power node3 on
+info     20    node3/crm: status change startup => wait_for_quorum
+info     20    node3/lrm: status change startup => wait_for_agent_lock
+info     20    node1/crm: got lock 'ha_manager_lock'
+info     20    node1/crm: status change wait_for_quorum => master
+info     20    node1/crm: node 'node1': state changed from 'unknown' => 'online'
+info     20    node1/crm: node 'node2': state changed from 'unknown' => 'online'
+info     20    node1/crm: node 'node3': state changed from 'unknown' => 'online'
+info     20    node1/crm: adding new service 'vm:100' on node 'node1'
+info     21    node1/lrm: got lock 'ha_agent_node1_lock'
+info     21    node1/lrm: status change wait_for_agent_lock => active
+info     21    node1/lrm: starting service vm:100
+info     21    node1/lrm: service status vm:100 started
+info     22    node2/crm: status change wait_for_quorum => slave
+info     24    node3/crm: status change wait_for_quorum => slave
+info    120      cmdlist: execute shutdown node1
+info    120    node1/lrm: shutdown LRM, stop all services
+info    121    node1/lrm: stopping service vm:100
+info    121    node1/lrm: service status vm:100 stopped
+info    122    node1/lrm: exit (loop end)
+info    122     shutdown: execute crm node1 stop
+info    140    node1/crm: voluntary release CRM lock
+info    141    node1/crm: exit (loop end)
+info    141     shutdown: execute power node1 off
+info    141    node2/crm: got lock 'ha_manager_lock'
+info    141    node2/crm: status change slave => master
+info    141    node2/crm: node 'node1': state changed from 'online' => 'unknown'
+info    220    node2/crm: service 'vm:100': state changed from 'started' to 'fence' 
+info    220    node2/crm: node 'node1': state changed from 'unknown' => 'fence'
+info    220    node2/crm: got lock 'ha_agent_node1_lock'
+info    220    node2/crm: fencing: acknowleged - got agent lock for node 'node1'
+info    220    node2/crm: node 'node1': state changed from 'fence' => 'unknown'
+info    220    node2/crm: service 'vm:100': state changed from 'fence' to 'stopped' 
+info    220    node2/crm: service 'vm:100': state changed from 'stopped' to 'started'  (node = node2)
+info    221    node2/lrm: got lock 'ha_agent_node2_lock'
+info    221    node2/lrm: status change wait_for_agent_lock => active
+info    221    node2/lrm: starting service vm:100
+info    221    node2/lrm: service status vm:100 started
+info    720     hardware: exit simulation - done
