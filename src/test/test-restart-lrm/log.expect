@@ -26,5 +26,6 @@ info    120    node1/crm: service 'vm:103': state changed from 'started' to 'fre
 info    126    node3/lrm: exit (loop end)
 info    126    node3/lrm: status change startup => wait_for_agent_lock
 info    160    node1/crm: service 'vm:103': state changed from 'freeze' to 'started' 
+info    165    node3/lrm: got lock 'ha_agent_node3_lock'
 info    165    node3/lrm: status change wait_for_agent_lock => active
 info    720     hardware: exit simulation - done

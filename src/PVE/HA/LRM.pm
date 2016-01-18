@@ -282,6 +282,9 @@ sub do_one_iteration {
 			    }
 
 			    $shutdown = 1;
+
+			    # restart with no or freezed services, release the lock
+			    $haenv->release_ha_agent_lock();
 			}
 		    }
 		} else {
