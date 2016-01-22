@@ -17,6 +17,15 @@ use File::Copy;
 use File::Path qw(make_path remove_tree);
 use PVE::HA::Config;
 
+# virtual resource classes
+use PVE::HA::Sim::Resources::VirtVM;
+use PVE::HA::Sim::Resources::VirtCT;
+
+PVE::HA::Sim::Resources::VirtVM->register();
+PVE::HA::Sim::Resources::VirtCT->register();
+
+PVE::HA::Sim::Resources->init();
+
 my $watchdog_timeout = 60;
 
 
