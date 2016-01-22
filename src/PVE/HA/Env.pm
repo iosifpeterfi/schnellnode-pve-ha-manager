@@ -26,6 +26,12 @@ sub nodename {
     return $self->{plug}->nodename();
 }
 
+sub hardware {
+    my ($self) = @_;
+
+    return $self->{plug}->hardware();
+}
+
 # manager status is stored on cluster, protected by ha_manager_lock
 sub read_manager_status {
     my ($self) = @_;

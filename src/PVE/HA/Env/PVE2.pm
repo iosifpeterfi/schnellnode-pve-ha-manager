@@ -39,6 +39,12 @@ sub nodename {
     return $self->{nodename};
 }
 
+sub hardware {
+    my ($self) = @_;
+
+    die "hardware is for testing and simulation only";
+}
+
 sub read_manager_status {
     my ($self) = @_;
 

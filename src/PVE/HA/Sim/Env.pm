@@ -38,6 +38,12 @@ sub nodename {
     return $self->{nodename};
 }
 
+sub hardware {
+    my ($self) = @_;
+
+    return $self->{hardware};
+}
+
 sub sim_get_lock {
     my ($self, $lock_name, $unlock) = @_;
 
