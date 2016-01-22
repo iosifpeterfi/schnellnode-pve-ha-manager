@@ -92,7 +92,7 @@ sub migrate {
     };
 
     # always relocate container for now
-    if ($class->check_running($id)) {
+    if ($class->check_running($haenv, $id)) {
 	$class->shutdown($haenv, $id);
     }
 
@@ -101,7 +101,7 @@ sub migrate {
 }
 
 sub check_running {
-    my ($class, $vmid) = @_;
+    my ($class, $haenv, $vmid) = @_;
 
     return PVE::LXC::check_running($vmid);
 }

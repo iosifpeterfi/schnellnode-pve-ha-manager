@@ -430,7 +430,7 @@ sub exec_resource_agent {
 
     my $vmid = $service_name;
 
-    my $running = $plugin->check_running($vmid);
+    my $running = $plugin->check_running($self, $vmid);
 
     if ($cmd eq 'started') {
 
@@ -440,7 +440,7 @@ sub exec_resource_agent {
 
 	$plugin->start($self, $vmid);
 
-	$running = $plugin->check_running($vmid);
+	$running = $plugin->check_running($self, $vmid);
 
 	if ($running) {
 	    $self->log("info", "service status $sid started");
@@ -458,7 +458,7 @@ sub exec_resource_agent {
 
 	$plugin->shutdown($self, $vmid);
 
-	$running = $plugin->check_running($vmid);
+	$running = $plugin->check_running($self, $vmid);
 
 	if (!$running) {
 	    $self->log("info", "service status $sid stopped");

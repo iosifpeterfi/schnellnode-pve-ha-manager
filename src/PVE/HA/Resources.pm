@@ -119,7 +119,7 @@ sub exists {
 }
 
 sub check_running {
-    my ($class, $id) = @_;
+    my ($class, $haenv, $id) = @_;
 
     die "implement in subclass";
 }

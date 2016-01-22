@@ -92,7 +92,7 @@ sub migrate {
     };
 
     # explicitly shutdown if $online isn't true (relocate)
-    if (!$online && $class->check_running($id)) {
+    if (!$online && $class->check_running($haenv, $id)) {
 	$class->shutdown($haenv, $id);
     }
 
@@ -101,9 +101,11 @@ sub migrate {
 }
 
 sub check_running {
-    my ($class, $vmid) = @_;
+    my ($class, $haenv, $vmid) = @_;
 
-    return PVE::QemuServer::check_running($vmid, 1);
+    my $nodename = $haenv->nodename();
+
+    return PVE::QemuServer::check_running($vmid, 1, $nodename);
 }
 
 1;
