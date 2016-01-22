@@ -10,6 +10,7 @@ use POSIX qw(:sys_wait_h);
 use PVE::SafeSyslog;
 use PVE::Tools;
 use PVE::HA::Tools ':exit_codes';
+use PVE::HA::Resources;
 
 # Server can have several states:
 
@@ -390,7 +391,7 @@ sub run_workers {
 			# do work
 			my $res = -1;
 			eval {
-			    $res = $haenv->exec_resource_agent($sid, $cd, $w->{state}, $w->{target});
+			    $res = $self->exec_resource_agent($sid, $cd, $w->{state}, $w->{target});
 			};
 			if (my $err = $@) {
 			    $haenv->log('err', $err);
@@ -404,7 +405,7 @@ sub run_workers {
 		} else {
 		    my $res = -1;
 		    eval {
-			$res = $haenv->exec_resource_agent($sid, $cd, $w->{state}, $w->{target});
+			$res = $self->exec_resource_agent($sid, $cd, $w->{state}, $w->{target});
 			$res = $res << 8 if $res > 0;
 		    };
 		    if (my $err = $@) {
@@ -600,5 +601,116 @@ sub handle_service_exitcode {
     return $exit_code;
 
 }
+
+sub exec_resource_agent {
+    my ($self, $sid, $service_config, $cmd, @params) = @_;
+
+    # setup execution environment
+
+    $ENV{'PATH'} = '/sbin:/bin:/usr/sbin:/usr/bin';
+
+    PVE::INotify::inotify_close();
+
+    PVE::INotify::inotify_init();
+
+    PVE::Cluster::cfs_update();
+
+    my $haenv = $self->{haenv};
+
+    my $nodename = $haenv->nodename();
+
+    my (undef, $service_type, $service_name) = PVE::HA::Tools::parse_sid($sid);
+
+    my $plugin = PVE::HA::Resources->lookup($service_type);
+    if (!$plugin) {
+	$haenv->log('err', "service type '$service_type' not implemented");
+	return EUNKNOWN_SERVICE_TYPE;
+    }
+
+    if ($service_config->{node} ne $nodename) {
+	$haenv->log('err', "service '$sid' not on this node");
+	return EWRONG_NODE;
+    }
+
+    my $id = $service_name;
+
+    my $running = $plugin->check_running($haenv, $id);
+
+    if ($cmd eq 'started') {
+
+	return SUCCESS if $running;
+
+	$haenv->log("info", "starting service $sid");
+
+	$plugin->start($haenv, $id);
+
+	$running = $plugin->check_running($haenv, $id);
+
+	if ($running) {
+	    $haenv->log("info", "service status $sid started");
+	    return SUCCESS;
+	} else {
+	    $haenv->log("warning", "unable to start service $sid");
+	    return ERROR;
+	}
+
+    } elsif ($cmd eq 'request_stop' || $cmd eq 'stopped') {
+
+	return SUCCESS if !$running;
+
+	$haenv->log("info", "stopping service $sid");
+
+	$plugin->shutdown($haenv, $id);
+
+	$running = $plugin->check_running($haenv, $id);
+
+	if (!$running) {
+	    $haenv->log("info", "service status $sid stopped");
+	    return SUCCESS;
+	} else {
+	    $haenv->log("info", "unable to stop stop service $sid (still running)");
+	    return ERROR;
+	}
+
+    } elsif ($cmd eq 'migrate' || $cmd eq 'relocate') {
+
+	my $target = $params[0];
+	if (!defined($target)) {
+	    die "$cmd '$sid' failed - missing target\n" if !defined($target);
+	    return EINVALID_PARAMETER;
+	}
+
+	if ($service_config->{node} eq $target) {
+	    # already there
+	    return SUCCESS;
+	}
+
+	my $online = ($cmd eq 'migrate') ? 1 : 0;
+
+	$plugin->migrate($haenv, $id, $target, $online);
+
+	# something went wrong if service is still on this node
+	if ($plugin->is_on_node($haenv, $nodename, $id)) {
+	    $haenv->log("err", "service $sid not moved (migration error)");
+	    return ERROR;
+	}
+
+	return SUCCESS;
+
+    } elsif ($cmd eq 'error') {
+
+	if ($running) {
+	    $haenv->log("err", "service $sid is in an error state while running");
+	} else {
+	    $haenv->log("warning", "service $sid is not running and in an error state");
+	}
+	return SUCCESS; # error always succeeds
+
+    }
+
+    $haenv->log("err", "implement me (cmd '$cmd')");
+    return EUNKNOWN_COMMAND;
+}
+
 
 1;

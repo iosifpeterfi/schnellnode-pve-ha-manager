@@ -211,12 +211,6 @@ sub watchdog_close {
     return $self->{plug}->watchdog_close($wfh);
 }
 
-sub exec_resource_agent {
-    my ($self, $sid, $service_config, $cmd, @params) = @_;
-
-    return $self->{plug}->exec_resource_agent($sid, $service_config, $cmd, @params)
-}
-
 # hack to support regression tests
 sub can_fork {
     my ($self) = @_;
