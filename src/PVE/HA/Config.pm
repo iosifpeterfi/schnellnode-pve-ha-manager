@@ -6,8 +6,11 @@ use JSON;
 
 use PVE::HA::Tools;
 use PVE::HA::Groups;
-use PVE::HA::Resources;
 use PVE::Cluster qw(cfs_register_file cfs_read_file cfs_write_file cfs_lock_file);
+
+# virtual resource classes
+use PVE::HA::Resources::PVEVM;
+use PVE::HA::Resources::PVECT;
 
 PVE::HA::Groups->register();
 
