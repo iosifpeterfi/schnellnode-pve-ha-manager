@@ -7,6 +7,7 @@ use JSON;
 use PVE::HA::Tools;
 use PVE::HA::Groups;
 use PVE::Cluster qw(cfs_register_file cfs_read_file cfs_write_file cfs_lock_file);
+use PVE::HA::Resources;
 
 PVE::HA::Groups->register();
 
@@ -28,8 +29,8 @@ sub import {
 
     if ($envtype eq 'testenv') {
 
-	use PVE::HA::Sim::Resources::VirtVM;
-	use PVE::HA::Sim::Resources::VirtCT;
+	require PVE::HA::Sim::Resources::VirtVM;
+	require PVE::HA::Sim::Resources::VirtCT;
 
 	PVE::HA::Sim::Resources::VirtVM->register();
 	PVE::HA::Sim::Resources::VirtCT->register();
