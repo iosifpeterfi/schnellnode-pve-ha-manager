@@ -8,17 +8,46 @@ use PVE::HA::Tools;
 use PVE::HA::Groups;
 use PVE::Cluster qw(cfs_register_file cfs_read_file cfs_write_file cfs_lock_file);
 
-# virtual resource classes
-use PVE::HA::Resources::PVEVM;
-use PVE::HA::Resources::PVECT;
-
 PVE::HA::Groups->register();
 
 PVE::HA::Groups->init();
 
-PVE::HA::Resources::PVEVM->register();
-PVE::HA::Resources::PVECT->register();
-#PVE::HA::Resources::IPAddr->register();
+my $class_env_type;
+
+sub import {
+    my ($class, $envtype) = @_;
+
+    if (!$envtype) {
+	$envtype = $class_env_type || 'pve';
+    }
+
+    if ($class_env_type) {
+	return if $class_env_type eq $envtype; # already initialized
+	die "got unexpected import type '$envtype' (expected '$class_env_type')";
+    }
+
+    if ($envtype eq 'testenv') {
+
+	use PVE::HA::Sim::Resources::VirtVM;
+	use PVE::HA::Sim::Resources::VirtCT;
+
+	PVE::HA::Sim::Resources::VirtVM->register();
+	PVE::HA::Sim::Resources::VirtCT->register();
+
+    } elsif ($envtype eq 'pve') {
+
+	use PVE::HA::Resources::PVEVM;
+	use PVE::HA::Resources::PVECT;
+
+	PVE::HA::Resources::PVEVM->register();
+	PVE::HA::Resources::PVECT->register();
+
+    } else {
+	die "unknown import argument (environment type '$envtype')";
+    }
+
+    $class_env_type = $envtype;
+}
 
 PVE::HA::Resources->init();
 

@@ -6,13 +6,14 @@ use JSON;
 use lib '..';
 
 use PVE::Tools;
+use PVE::HA::Config 'testenv';
+
 use PVE::HA::Sim::TestHardware;
 
 sub show_usage {
     print "usage: $0 <testdir>\n";
     exit(-1);
 };
-
 
 my $testdir = shift || show_usage();
 my $hardware = PVE::HA::Sim::TestHardware->new($testdir);

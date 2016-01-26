@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use lib '..';
-use PVE::HA::Config;
+use PVE::HA::Config 'testenv';
 use PVE::HA::Manager;
 
 use Data::Dumper;
