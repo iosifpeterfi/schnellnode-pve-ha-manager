@@ -6,7 +6,7 @@ use JSON;
 use lib '..';
 
 use PVE::Tools;
-use PVE::HA::Config 'testenv';
+use PVE::HA::Config;
 
 use PVE::HA::Sim::TestHardware;
 

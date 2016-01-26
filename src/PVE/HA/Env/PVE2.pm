@@ -15,7 +15,14 @@ use PVE::RPCEnvironment;
 use PVE::HA::Tools ':exit_codes';
 use PVE::HA::Env;
 use PVE::HA::Config;
+use PVE::HA::Resources;
+use PVE::HA::Resources::PVEVM;
+use PVE::HA::Resources::PVECT;
 
+PVE::HA::Resources::PVEVM->register();
+PVE::HA::Resources::PVECT->register();
+
+PVE::HA::Resources->init();
 
 my $lockdir = "/etc/pve/priv/lock";
 

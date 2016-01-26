@@ -10,6 +10,14 @@ use Fcntl qw(:DEFAULT :flock);
 
 use PVE::HA::Tools;
 use PVE::HA::Env;
+use PVE::HA::Resources;
+use PVE::HA::Sim::Resources::VirtVM;
+use PVE::HA::Sim::Resources::VirtCT;
+
+PVE::HA::Sim::Resources::VirtVM->register();
+PVE::HA::Sim::Resources::VirtCT->register();
+
+PVE::HA::Resources->init();
 
 sub new {
     my ($this, $nodename, $hardware, $log_id) = @_;
