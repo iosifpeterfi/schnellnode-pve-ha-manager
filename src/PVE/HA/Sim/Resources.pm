@@ -34,16 +34,6 @@ sub config_file {
     return "$nodename/$service_type:$id";
 }
 
-sub is_on_node {
-    my ($class, $haenv, $node, $id) = @_;
-
-    my $service_type = $class->type();
-    my $hardware = $haenv->hardware();
-    my $ss = $hardware->read_service_status($node);
-
-    return defined($ss->{"$service_type:$id"}) ? 1 : 0;
-}
-
 sub start {
     my ($class, $haenv, $id) = @_;
 
@@ -113,6 +103,9 @@ sub migrate {
     # ensure that the old node doesn't has the service anymore
     delete $ss->{$sid};
     $hardware->write_service_status($nodename, $ss);
+
+    # check if resource really moved
+    return defined($ss->{$sid}) ? 0 : 1;
 }
 
 

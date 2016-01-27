@@ -96,8 +96,13 @@ sub migrate {
 	$class->shutdown($haenv, $id);
     }
 
+    my $oldconfig = $class->config_file($id, $nodename);
+
     my $upid = PVE::API2::LXC->migrate_vm($params);
     $haenv->upid_wait($upid);
+
+    # check if vm really moved
+    return !(-f $oldconfig);
 }
 
 sub check_running {

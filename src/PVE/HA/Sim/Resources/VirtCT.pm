@@ -29,7 +29,7 @@ sub migrate {
 	$online = 0;
     }
 
-    $class->SUPER::migrate($haenv, $id, $target, $online);
+    return $class->SUPER::migrate($haenv, $id, $target, $online);
 
 }
 

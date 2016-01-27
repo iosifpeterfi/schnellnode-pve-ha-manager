@@ -683,10 +683,10 @@ sub exec_resource_agent {
 
 	my $online = ($cmd eq 'migrate') ? 1 : 0;
 
-	$plugin->migrate($haenv, $id, $target, $online);
+	my $res = $plugin->migrate($haenv, $id, $target, $online);
 
 	# something went wrong if service is still on this node
-	if ($plugin->is_on_node($haenv, $nodename, $id)) {
+	if (!$res) {
 	    $haenv->log("err", "service $sid not moved (migration error)");
 	    return ERROR;
 	}
