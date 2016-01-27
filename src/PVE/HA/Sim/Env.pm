@@ -320,4 +320,10 @@ sub can_fork {
     return 1;
 }
 
+sub after_fork {
+    my ($self) = @_;
+
+    # nothing to clean up in the simulation environment
+}
+
 1;

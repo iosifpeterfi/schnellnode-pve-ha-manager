@@ -413,4 +413,14 @@ sub can_fork {
     return 1;
 }
 
+sub after_fork {
+    my ($self) = @_;
+
+    # close inherited inotify FD from parent and reopen our own
+    PVE::INotify::inotify_close();
+    PVE::INotify::inotify_init();
+
+    PVE::Cluster::cfs_update();
+}
+
 1;

@@ -218,4 +218,10 @@ sub can_fork {
     return $self->{plug}->can_fork();
 }
 
+sub after_fork {
+    my ($self) = @_;
+
+    return $self->{plug}->after_fork();
+}
+
 1;

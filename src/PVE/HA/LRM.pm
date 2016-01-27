@@ -388,6 +388,8 @@ sub run_workers {
 			$haenv->log('err', "fork worker failed");
 			$count = 0; last; # abort, try later
 		    } elsif ($pid == 0) {
+			$haenv->after_fork(); # cleanup
+
 			# do work
 			my $res = -1;
 			eval {
@@ -608,12 +610,6 @@ sub exec_resource_agent {
     # setup execution environment
 
     $ENV{'PATH'} = '/sbin:/bin:/usr/sbin:/usr/bin';
-
-    PVE::INotify::inotify_close();
-
-    PVE::INotify::inotify_init();
-
-    PVE::Cluster::cfs_update();
 
     my $haenv = $self->{haenv};
 
