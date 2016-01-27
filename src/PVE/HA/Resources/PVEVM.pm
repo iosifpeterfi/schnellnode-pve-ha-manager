@@ -3,6 +3,8 @@ package PVE::HA::Resources::PVEVM;
 use strict;
 use warnings;
 
+use PVE::HA::Tools;
+
 use PVE::QemuServer;
 use PVE::API2::Qemu;
 
@@ -58,7 +60,7 @@ sub start {
     };
 
     my $upid = PVE::API2::Qemu->vm_start($params);
-    $haenv->upid_wait($upid);
+    PVE::HA::Tools::upid_wait($upid, $haenv);
 }
 
 sub shutdown {
@@ -75,7 +77,7 @@ sub shutdown {
     };
 
     my $upid = PVE::API2::Qemu->vm_shutdown($params);
-    $haenv->upid_wait($upid);
+    PVE::HA::Tools::upid_wait($upid, $haenv);
 }
 
 
@@ -99,7 +101,7 @@ sub migrate {
     my $oldconfig = $class->config_file($id, $nodename);
 
     my $upid = PVE::API2::Qemu->migrate_vm($params);
-    $haenv->upid_wait($upid);
+    PVE::HA::Tools::upid_wait($upid, $haenv);
 
     # check if vm really moved
     return !(-f $oldconfig);

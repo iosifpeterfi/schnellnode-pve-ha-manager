@@ -6,6 +6,7 @@ use JSON;
 use PVE::JSONSchema;
 use PVE::Tools;
 use PVE::Cluster;
+use PVE::ProcFSTools;
 
 # return codes used in the ha environment
 # mainly by the resource agents
@@ -163,6 +164,17 @@ sub count_fenced_services {
     }
     
     return $count;
+}
+
+sub upid_wait {
+    my ($upid, $haenv) = @_;
+
+    my $waitfunc = sub {
+	my $task = PVE::Tools::upid_encode(shift);
+	$haenv->log('info', "Task '$task' still active, waiting");
+    };
+
+    PVE::ProcFSTools::upid_wait($upid, $waitfunc, 5);
 }
 
 # bash auto completion helper

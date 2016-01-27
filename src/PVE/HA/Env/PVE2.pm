@@ -395,18 +395,6 @@ sub watchdog_close {
     }
 }
 
-sub upid_wait {
-    my ($self, $upid) = @_;
-
-    my $task = PVE::Tools::upid_decode($upid);
-
-    CORE::sleep(1);
-    while (PVE::ProcFSTools::check_process_running($task->{pid}, $task->{pstart})) {
-	$self->log('debug', "Task still active, waiting");
-	CORE::sleep(1);
-    }
-}
-
 sub can_fork {
     my ($self) = @_;
 

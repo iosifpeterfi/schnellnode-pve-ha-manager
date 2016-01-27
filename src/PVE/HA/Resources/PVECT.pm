@@ -3,6 +3,8 @@ package PVE::HA::Resources::PVECT;
 use strict;
 use warnings;
 
+use PVE::HA::Tools;
+
 use PVE::LXC;
 use PVE::API2::LXC;
 use PVE::API2::LXC::Status;
@@ -59,7 +61,7 @@ sub start {
     };
 
     my $upid = PVE::API2::LXC::Status->vm_start($params);
-    $haenv->upid_wait($upid);
+    PVE::HA::Tools::upid_wait($upid, $haenv);
 }
 
 sub shutdown {
@@ -76,7 +78,7 @@ sub shutdown {
     };
 
     my $upid = PVE::API2::LXC::Status->vm_shutdown($params);
-    $haenv->upid_wait($upid);
+    PVE::HA::Tools::upid_wait($upid, $haenv);
 }
 
 sub migrate {
@@ -99,7 +101,7 @@ sub migrate {
     my $oldconfig = $class->config_file($id, $nodename);
 
     my $upid = PVE::API2::LXC->migrate_vm($params);
-    $haenv->upid_wait($upid);
+    PVE::HA::Tools::upid_wait($upid, $haenv);
 
     # check if vm really moved
     return !(-f $oldconfig);
