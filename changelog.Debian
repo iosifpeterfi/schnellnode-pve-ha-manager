@@ -1,3 +1,9 @@
+pve-ha-manager (1.0-21) unstable; urgency=medium
+
+  * Fix postinstall script not removing watchdog-mux.socket
+
+ -- Proxmox Support Team <support@proxmox.com>  Thu, 04 Feb 2016 18:23:47 +0100
+
 pve-ha-manager (1.0-20) unstable; urgency=medium
 
   * LRM: do not release lock on shutdown errors
