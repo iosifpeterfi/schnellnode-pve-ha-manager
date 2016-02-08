@@ -109,12 +109,6 @@ sub read_crm_commands {
     return PVE::HA::Config::read_crm_commands();
 }
 
-sub service_config_exists {
-    my ($self) = @_;
-
-    return PVE::HA::Config::resources_config_exists();
-}
-
 sub read_service_config {
     my ($self) = @_;
 

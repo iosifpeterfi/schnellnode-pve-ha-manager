@@ -159,12 +159,6 @@ sub is_node_shutdown {
     return 0; # default to freezing services if not overwritten by subclass
 }
 
-sub service_config_exists {
-    my ($self) = @_;
-    
-    return 1;
-}
-
 sub read_service_config {
     my ($self) = @_;
 

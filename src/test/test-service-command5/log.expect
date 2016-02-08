@@ -22,4 +22,6 @@ info     25    node3/lrm: starting service vm:103
 info     25    node3/lrm: service status vm:103 started
 info    120      cmdlist: execute service vm:103 delete
 info    120    node1/crm: removing stale service 'vm:103' (no config)
+info    122    node2/crm: status change slave => wait_for_quorum
+info    124    node3/crm: status change slave => wait_for_quorum
 info    720     hardware: exit simulation - done

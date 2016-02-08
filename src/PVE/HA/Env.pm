@@ -81,12 +81,6 @@ sub read_crm_commands {
     return $self->{plug}->read_crm_commands();
 }
 
-sub service_config_exists {
-    my ($self) = @_;
-
-    return $self->{plug}->service_config_exists();
-}
-
 sub read_service_config {
     my ($self) = @_;
 

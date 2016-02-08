@@ -147,6 +147,23 @@ sub write_json_to_file {
     PVE::Tools::file_set_contents($filename, $raw);
 }
 
+sub has_services {
+    my ($haenv, $node) = @_;
+
+    return undef if !PVE::HA::Config::resources_config_exists();
+
+    my $conf = $haenv->read_service_config();
+
+    # if no node defined any service count is fine
+    return scalar(%{$conf}) if !$node;
+
+    foreach my $d (values %$conf) {
+	return 1 if $d->{node} eq $node;
+    }
+
+    return undef;
+}
+
 sub count_fenced_services {
     my ($ss, $node) = @_;
 
