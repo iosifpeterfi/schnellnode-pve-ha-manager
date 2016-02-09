@@ -18,12 +18,13 @@ use constant {
     EUNKNOWN_SERVICE_TYPE => 4, # no plugin for this type service found
     EUNKNOWN_COMMAND => 5,
     EINVALID_PARAMETER => 6,
+    EUNKNOWN_SERVICE => 7, # service not found
 };
 
 # get constants out of package in a somewhat easy way
 use base 'Exporter';
 our @EXPORT_OK = qw(SUCCESS ERROR EWRONG_NODE EUNKNOWN_SERVICE_TYPE
- EUNKNOWN_COMMAND EINVALID_PARAMETER ETRY_AGAIN);
+ EUNKNOWN_COMMAND EINVALID_PARAMETER ETRY_AGAIN EUNKNOWN_SERVICE);
 our %EXPORT_TAGS = ( 'exit_codes' => [@EXPORT_OK] );
 
 PVE::JSONSchema::register_format('pve-ha-resource-id', \&pve_verify_ha_resource_id);

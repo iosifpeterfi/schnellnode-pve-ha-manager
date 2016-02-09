@@ -376,11 +376,6 @@ sub run_workers {
 	foreach my $sid (keys %{$self->{workers}}) {
 	    last if $count >= $max_workers;
 	    my $w = $self->{workers}->{$sid};
-	    my $cd = $sc->{$sid};
-	    if (!$cd) {
-		$haenv->log('err', "missing resource configuration for '$sid'");
-		next;
-	    }
 	    if (!$w->{pid}) {
 		if ($haenv->can_fork()) {
 		    my $pid = fork();
@@ -393,7 +388,7 @@ sub run_workers {
 			# do work
 			my $res = -1;
 			eval {
-			    $res = $self->exec_resource_agent($sid, $cd, $w->{state}, $w->{target});
+			    $res = $self->exec_resource_agent($sid, $sc->{$sid}, $w->{state}, $w->{target});
 			};
 			if (my $err = $@) {
 			    $haenv->log('err', $err);
@@ -407,7 +402,7 @@ sub run_workers {
 		} else {
 		    my $res = -1;
 		    eval {
-			$res = $self->exec_resource_agent($sid, $cd, $w->{state}, $w->{target});
+			$res = $self->exec_resource_agent($sid, $sc->{$sid}, $w->{state}, $w->{target});
 			$res = $res << 8 if $res > 0;
 		    };
 		    if (my $err = $@) {
@@ -573,7 +568,12 @@ sub handle_service_exitcode {
     my $tries = $self->{restart_tries};
 
     my $sc = $haenv->read_service_config();
-    my $cd = $sc->{$sid};
+
+    my $max_restart = 0;
+
+    if (my $cd = $sc->{$sid}) {
+	$max_restart = $cd->{max_restart};
+    }
 
     if ($cmd eq 'started') {
 
@@ -588,7 +588,7 @@ sub handle_service_exitcode {
 	    $tries->{$sid} = 0 if !defined($tries->{$sid});
 
 	    $tries->{$sid}++;
-	    if ($tries->{$sid} >= $cd->{max_restart}) {
+	    if ($tries->{$sid} >= $max_restart) {
 		$haenv->log('err', "unable to start service $sid on local node".
 			   " after $tries->{$sid} retries");
 		$tries->{$sid} = 0;
@@ -621,6 +621,11 @@ sub exec_resource_agent {
     if (!$plugin) {
 	$haenv->log('err', "service type '$service_type' not implemented");
 	return EUNKNOWN_SERVICE_TYPE;
+    }
+
+    if (!$service_config) {
+	$haenv->log('err', "missing resource configuration for '$sid'");
+	return EUNKNOWN_SERVICE;
     }
 
     if ($service_config->{node} ne $nodename) {
