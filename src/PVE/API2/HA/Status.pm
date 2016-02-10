@@ -99,6 +99,19 @@ __PACKAGE__->register_method ({
 	    push @$res, { id => 'master', type => 'master', node => $master, 
 			  status => $status_text, timestamp => $status->{timestamp} };
 	} 
+
+	# compute active services for all nodes
+	my $active_count = {};
+	foreach my $sid (sort keys %{$status->{service_status}}) {
+	    my $sd = $status->{service_status}->{$sid};
+	    next if !$sd->{node};
+	    $active_count->{$sd->{node}} = 0 if !defined($active_count->{$sd->{node}});
+	    my $req_state = $sd->{state};
+	    next if !defined($req_state);
+	    next if $req_state eq 'stopped';
+	    next if $req_state eq 'freeze';
+	    $active_count->{$sd->{node}}++;
+	}
 	
 	foreach my $node (sort keys %{$status->{node_status}}) {
 	    my $lrm_status = $haenv->read_lrm_status($node);
@@ -108,6 +121,20 @@ __PACKAGE__->register_method ({
 			      status => "$node (unable to read lrm status)"}; 
 	    } else {
 		my $status_str = &$timestamp_to_status($ctime, $lrm_status->{timestamp});
+		if ($status_str eq 'active') {
+		    my $lrm_mode = $lrm_status->{mode} || 'active';
+		    my $lrm_state = $lrm_status->{state} || 'unknown';
+		    if ($lrm_mode ne 'active') {
+			$status_str = "$lrm_mode mode";
+		    } else {
+			if ($lrm_state eq 'wait_for_agent_lock' && !$active_count->{$node}) {
+			    $status_str = 'idle';
+			} else {
+			    $status_str = $lrm_state;
+			}
+		    }
+		}
+
 		my $time_str = localtime($lrm_status->{timestamp});
 		my $status_text = "$node ($status_str, $time_str)";
 		push @$res, { id => $id, type => 'lrm',  node => $node, 

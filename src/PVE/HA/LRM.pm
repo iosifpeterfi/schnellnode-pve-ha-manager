@@ -115,6 +115,7 @@ sub update_lrm_status {
     return 0 if !$haenv->quorate();
     
     my $lrm_status = {	
+	state => $self->{status}->{state},
 	mode => $self->{mode},
 	results => $self->{results},
 	timestamp => $haenv->get_time(),
