@@ -1,0 +1,42 @@
+info      0     hardware: starting simulation
+info     20      cmdlist: execute power node1 on
+info     20    node1/crm: status change startup => wait_for_quorum
+info     20    node1/lrm: status change startup => wait_for_agent_lock
+info     20      cmdlist: execute power node2 on
+info     20    node2/crm: status change startup => wait_for_quorum
+info     20    node2/lrm: status change startup => wait_for_agent_lock
+info     20      cmdlist: execute power node3 on
+info     20    node3/crm: status change startup => wait_for_quorum
+info     20    node3/lrm: status change startup => wait_for_agent_lock
+info     20    node1/crm: got lock 'ha_manager_lock'
+info     20    node1/crm: status change wait_for_quorum => master
+info     20    node1/crm: node 'node1': state changed from 'unknown' => 'online'
+info     20    node1/crm: node 'node2': state changed from 'unknown' => 'online'
+info     20    node1/crm: node 'node3': state changed from 'unknown' => 'online'
+info     20    node1/crm: adding new service 'fa:1001' on node 'node3'
+info     22    node2/crm: status change wait_for_quorum => slave
+info     24    node3/crm: status change wait_for_quorum => slave
+info     25    node3/lrm: got lock 'ha_agent_node3_lock'
+info     25    node3/lrm: status change wait_for_agent_lock => active
+info     25    node3/lrm: starting service fa:1001
+info     25    node3/lrm: service status fa:1001 started
+info    120      cmdlist: execute service fa:1001 disabled
+info    120    node1/crm: service 'fa:1001': state changed from 'started' to 'request_stop' 
+info    125    node3/lrm: stopping service fa:1001
+info    125    node3/lrm: unable to stop stop service fa:1001 (still running)
+err     140    node1/crm: service 'fa:1001' stop failed (exit code 1)
+info    140    node1/crm: service 'fa:1001': state changed from 'request_stop' to 'error' 
+info    140    node1/crm: service 'fa:1001': state changed from 'error' to 'stopped' 
+info    145    node3/lrm: stopping service fa:1001
+info    145    node3/lrm: unable to stop stop service fa:1001 (still running)
+info    165    node3/lrm: stopping service fa:1001
+info    165    node3/lrm: unable to stop stop service fa:1001 (still running)
+info    185    node3/lrm: stopping service fa:1001
+info    185    node3/lrm: unable to stop stop service fa:1001 (still running)
+info    205    node3/lrm: stopping service fa:1001
+info    205    node3/lrm: unable to stop stop service fa:1001 (still running)
+info    220      cmdlist: execute service fa:1001 delete
+info    220    node1/crm: removing stale service 'fa:1001' (no config)
+info    222    node2/crm: status change slave => wait_for_quorum
+info    224    node3/crm: status change slave => wait_for_quorum
+info    820     hardware: exit simulation - done

@@ -1,0 +1,3 @@
+Test the behaviour if a service fails to stop, we should get an error
+until the user kills the process or deletes the service from HA.
+For simplicity we do the latter here.

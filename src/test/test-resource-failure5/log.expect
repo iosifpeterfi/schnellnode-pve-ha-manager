@@ -1,0 +1,38 @@
+info      0     hardware: starting simulation
+info     20      cmdlist: execute power node1 on
+info     20    node1/crm: status change startup => wait_for_quorum
+info     20    node1/lrm: status change startup => wait_for_agent_lock
+info     20      cmdlist: execute power node2 on
+info     20    node2/crm: status change startup => wait_for_quorum
+info     20    node2/lrm: status change startup => wait_for_agent_lock
+info     20      cmdlist: execute power node3 on
+info     20    node3/crm: status change startup => wait_for_quorum
+info     20    node3/lrm: status change startup => wait_for_agent_lock
+info     20    node1/crm: got lock 'ha_manager_lock'
+info     20    node1/crm: status change wait_for_quorum => master
+info     20    node1/crm: node 'node1': state changed from 'unknown' => 'online'
+info     20    node1/crm: node 'node2': state changed from 'unknown' => 'online'
+info     20    node1/crm: node 'node3': state changed from 'unknown' => 'online'
+info     20    node1/crm: adding new service 'fa:130' on node 'node2'
+info     20    node1/crm: service 'fa:130': state changed from 'started' to 'request_stop' 
+info     22    node2/crm: status change wait_for_quorum => slave
+info     23    node2/lrm: got lock 'ha_agent_node2_lock'
+info     23    node2/lrm: status change wait_for_agent_lock => active
+info     24    node3/crm: status change wait_for_quorum => slave
+info     40    node1/crm: service 'fa:130': state changed from 'request_stop' to 'stopped' 
+info    120      cmdlist: execute service fa:130 enabled
+info    120    node1/crm: service 'fa:130': state changed from 'stopped' to 'started'  (node = node2)
+info    123    node2/lrm: starting service fa:130
+warn    123    node2/lrm: unable to start service fa:130
+warn    123    node2/lrm: restart policy: retry number 1 for service 'fa:130'
+info    143    node2/lrm: starting service fa:130
+warn    143    node2/lrm: unable to start service fa:130
+err     143    node2/lrm: unable to start service fa:130 on local node after 1 retries
+err     160    node1/crm: recovery policy for service fa:130 failed, entering error state!
+info    160    node1/crm: service 'fa:130': state changed from 'started' to 'error' 
+warn    163    node2/lrm: service fa:130 is not running and in an error state
+warn    183    node2/lrm: service fa:130 is not running and in an error state
+warn    203    node2/lrm: service fa:130 is not running and in an error state
+info    220      cmdlist: execute service fa:130 disabled
+info    220    node1/crm: service 'fa:130': state changed from 'error' to 'stopped' 
+info    820     hardware: exit simulation - done

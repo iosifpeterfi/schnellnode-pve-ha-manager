@@ -1,0 +1,4 @@
+Test restart in combination with relocate policy.
+Service 'fa:130' fails three times to restart and has a
+'max_restart' policy of 2. So after the second time it
+should be relocated to another node an start there succesfully

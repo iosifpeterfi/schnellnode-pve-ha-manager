@@ -1,0 +1,2 @@
+Test restart policy if service fails one time.
+The LRM should try again to start it and succeed.

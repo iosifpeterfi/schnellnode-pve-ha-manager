@@ -93,13 +93,15 @@ sub read_service_config {
 
 	die "service '$sid' without assigned node!" if !$d->{node};
 
-	if ($sid =~ m/^(vm|ct):(\d+)$/) {
+	if ($sid =~ m/^(vm|ct|fa):(\d+)$/) {
 	    $d->{type} = $1;
 	    $d->{name} = $2;
 	} else {
 	    die "implement me";
 	}
 	$d->{state} = 'disabled' if !$d->{state};
+	$d->{max_restart} = 1 if !defined($d->{max_restart});
+	$d->{max_relocate} = 1 if !defined($d->{max_relocate});
     }
 
     return $conf;

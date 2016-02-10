@@ -13,9 +13,11 @@ use PVE::HA::Env;
 use PVE::HA::Resources;
 use PVE::HA::Sim::Resources::VirtVM;
 use PVE::HA::Sim::Resources::VirtCT;
+use PVE::HA::Sim::Resources::VirtFail;
 
 PVE::HA::Sim::Resources::VirtVM->register();
 PVE::HA::Sim::Resources::VirtCT->register();
+PVE::HA::Sim::Resources::VirtFail->register();
 
 PVE::HA::Resources->init();
 
