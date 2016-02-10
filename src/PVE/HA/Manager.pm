@@ -556,14 +556,25 @@ sub next_state_started {
 
 	    my $try_next = 0;
 	    if ($lrm_res) {
-		if ($lrm_res->{exit_code} == ERROR) {
+		my $ec = $lrm_res->{exit_code};
+		if ($ec == SUCCESS) {
+
+		    $master_status->{relocate_trial}->{$sid} = 0;
+
+		} elsif ($ec == ETRY_AGAIN) {
+
+		    # do nothing, the LRM wants to try again
+
+		} elsif ($ec == ERROR) {
+		    # apply our relocate policy if we got ERROR from the LRM
 
 		    my $try = $master_status->{relocate_trial}->{$sid} || 0;
 
 		    if ($try < $cd->{max_relocate}) {
 
 			$try++;
-			$try_next = 1; # tell select_service_node to relocate
+			# tell select_service_node to relocate if possible
+			$try_next = 1;
 
 			$haenv->log('warning', "starting service $sid on node".
 				   " '$sd->{node}' failed, relocating service.");
@@ -577,8 +588,11 @@ sub next_state_started {
 			return;
 
 		    }
-		} elsif ($lrm_res->{exit_code} == SUCCESS) {
-		    $master_status->{relocate_trial}->{$sid} = 0;
+		} else {
+		    $haenv->log('err', "service '$sid' got unrecoverable error" .
+				" (exit code $ec))");
+		    # we have no save way out (yet) for other errors
+		    &$change_service_state($self, $sid, 'error');
 		}
 	    }
 

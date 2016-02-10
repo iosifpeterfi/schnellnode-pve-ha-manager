@@ -591,7 +591,6 @@ sub handle_service_exitcode {
 
 	    $tries->{$sid} = 0 if !defined($tries->{$sid});
 
-	    $tries->{$sid}++;
 	    if ($tries->{$sid} >= $max_restart) {
 		$haenv->log('err', "unable to start service $sid on local node".
 			   " after $tries->{$sid} retries");
@@ -599,6 +598,10 @@ sub handle_service_exitcode {
 		return ERROR;
 	    }
 
+	    $tries->{$sid}++;
+
+	    $haenv->log('warning', "restart policy: retry number $tries->{$sid}" .
+			" for service '$sid'");
 	    # tell CRM that we retry the start
 	    return ETRY_AGAIN;
 	}
