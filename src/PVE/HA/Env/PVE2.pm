@@ -389,12 +389,6 @@ sub watchdog_close {
     }
 }
 
-sub can_fork {
-    my ($self) = @_;
-
-    return 1;
-}
-
 sub after_fork {
     my ($self) = @_;
 
@@ -403,6 +397,14 @@ sub after_fork {
     PVE::INotify::inotify_init();
 
     PVE::Cluster::cfs_update();
+}
+
+sub get_max_workers {
+    my ($self) = @_;
+
+    my $datacenterconfig = cfs_read_file('datacenter.cfg');
+
+    return $datacenterconfig->{max_workers} || 4;
 }
 
 1;

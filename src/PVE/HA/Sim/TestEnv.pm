@@ -109,12 +109,6 @@ sub loop_end_hook {
     $self->{cur_time} += 1; # easier for simulation
 }
 
-sub can_fork {
-    my ($self) = @_;
-
-    return 0;
-}
-
 sub is_node_shutdown {
     my ($self) = @_;
 
@@ -124,6 +118,13 @@ sub is_node_shutdown {
     die "undefined node status for node '$node'" if !defined($cstatus->{$node});
 
     return defined($cstatus->{$node}->{shutdown}) ? 1 : 0;
+}
+
+# must be 0 as we do not want to fork in the regression tests
+sub get_max_workers {
+    my ($self) = @_;
+
+    return 0;
 }
 
 1;

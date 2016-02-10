@@ -205,17 +205,18 @@ sub watchdog_close {
     return $self->{plug}->watchdog_close($wfh);
 }
 
-# hack to support regression tests
-sub can_fork {
-    my ($self) = @_;
-
-    return $self->{plug}->can_fork();
-}
-
 sub after_fork {
     my ($self) = @_;
 
     return $self->{plug}->after_fork();
+}
+
+# maximal number of workers to fork,
+# return 0 as a hack to support regression tests
+sub get_max_workers {
+    my ($self) = @_;
+
+    return $self->{plug}->get_max_workers();
 }
 
 1;

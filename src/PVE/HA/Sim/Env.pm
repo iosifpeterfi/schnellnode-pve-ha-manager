@@ -308,16 +308,17 @@ sub watchdog_close {
     return $self->{hardware}->watchdog_close($wfh);
 }
 
-sub can_fork {
-    my ($self) = @_;
-
-    return 1;
-}
-
 sub after_fork {
     my ($self) = @_;
 
     # nothing to clean up in the simulation environment
+}
+
+
+sub get_max_workers {
+    my ($self) = @_;
+
+    return 4;
 }
 
 1;

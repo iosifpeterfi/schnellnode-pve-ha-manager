@@ -366,8 +366,8 @@ sub run_workers {
 
     my $starttime = $haenv->get_time();
 
-    # start workers
-    my $max_workers = 4;
+    # number of workers to start, if 0 we exec the command directly witouth forking
+    my $max_workers = $haenv->get_max_workers();
 
     my $sc = $haenv->read_service_config();
 
@@ -375,10 +375,13 @@ sub run_workers {
 	my $count =  $self->check_active_workers();
 
 	foreach my $sid (keys %{$self->{workers}}) {
-	    last if $count >= $max_workers;
+	    last if $count >= $max_workers && $max_workers > 0;
+
 	    my $w = $self->{workers}->{$sid};
 	    if (!$w->{pid}) {
-		if ($haenv->can_fork()) {
+		# only fork if we may else call exec_resource_agent
+		# directly (e.g. for regression tests)
+		if ($max_workers > 0) {
 		    my $pid = fork();
 		    if (!defined($pid)) {
 			$haenv->log('err', "fork worker failed");
