@@ -87,10 +87,11 @@ sub read_service_config {
     return $self->{plug}->read_service_config();
 }
 
-sub change_service_location {
+# this is normally only allowed by the master to recover a _fenced_ service
+sub steal_service {
     my ($self, $sid, $current_node, $new_node) = @_;
 
-    return $self->{plug}->change_service_location($sid, $current_node, $new_node);
+    return $self->{plug}->steal_service($sid, $current_node, $new_node);
 }
 
 sub read_group_config {

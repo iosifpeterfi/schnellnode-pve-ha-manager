@@ -144,7 +144,8 @@ sub read_service_config {
     return $conf;
 }
 
-sub change_service_location {
+# this is only allowed by the master to recover a _fenced_ service
+sub steal_service {
     my ($self, $sid, $current_node, $new_node) = @_;
 
     my (undef, $type, $name) = PVE::HA::Tools::parse_sid($sid);

@@ -43,8 +43,8 @@ info    166     hardware: server 'node3' stopped by poweroff (watchdog)
 info    240    node1/crm: got lock 'ha_agent_node3_lock'
 info    240    node1/crm: fencing: acknowleged - got agent lock for node 'node3'
 info    240    node1/crm: node 'node3': state changed from 'fence' => 'unknown'
-info    240    node1/crm: service 'vm:103': state changed from 'fence' to 'stopped' 
-info    260    node1/crm: service 'vm:103': state changed from 'stopped' to 'started'  (node = node2)
-info    263    node2/lrm: starting service vm:103
-info    263    node2/lrm: service status vm:103 started
+info    240    node1/crm: recover service 'vm:103' from fenced node 'node3' to node 'node2'
+info    240    node1/crm: service 'vm:103': state changed from 'fence' to 'started'  (node = node2)
+info    243    node2/lrm: starting service vm:103
+info    243    node2/lrm: service status vm:103 started
 info    720     hardware: exit simulation - done

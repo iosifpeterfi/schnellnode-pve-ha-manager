@@ -173,7 +173,8 @@ sub read_group_config {
     return $self->{hardware}->read_group_config();
 }
 
-sub change_service_location {
+# this is normally only allowed by the master to recover a _fenced_ service
+sub steal_service {
     my ($self, $sid, $current_node, $new_node) = @_;
 
     return $self->{hardware}->change_service_location($sid, $current_node, $new_node);

@@ -213,6 +213,44 @@ my $change_service_state = sub {
     $haenv->log('info', "service '$sid': state changed from '${old_state}' to '${new_state}' $text_state");
 };
 
+# after a node was fenced this recovers the service to a new node
+my $recover_fenced_service = sub {
+    my ($self, $sid, $cd) = @_;
+
+    my ($haenv, $ss) = ($self->{haenv}, $self->{ss});
+
+    my $sd = $ss->{$sid};
+
+    if ($sd->{state} ne 'fence') { # should not happen
+	$haenv->log('err', "cannot recover service '$sid' from fencing," .
+		    " wrong state '$sd->{state}'");
+	return;
+    }
+
+    my $fenced_node = $sd->{node}; # for logging purpose
+
+    $self->recompute_online_node_usage(); # we want the most current node state
+
+    my $recovery_node = select_service_node($self->{groups},
+					    $self->{online_node_usage},
+					    $cd, $sd->{node});
+
+    if ($recovery_node) {
+	$haenv->log('info', "recover service '$sid' from fenced node " .
+		    "'$fenced_node' to node '$recovery_node'");
+
+	$haenv->steal_service($sid, $sd->{node}, $recovery_node);
+
+	# $sd *is normally read-only*, fencing is the exception
+	$cd->{node} = $sd->{node} = $recovery_node;
+	&$change_service_state($self, $sid, 'started', node => $recovery_node);
+    } else {
+	# no node found, let the service in 'fence' state and try again
+	$haenv->log('err', "recovering service '$sid' from fenced node " .
+		    "'$fenced_node' failed, no recovery node found");
+    }
+};
+
 # read LRM status for all nodes 
 sub read_lrm_status {
     my ($self) = @_;
@@ -380,8 +418,8 @@ sub manage {
 
 	    next if !$fenced_nodes->{$sd->{node}};
 
-	    # node fence was successful - mark service as stopped
-	    &$change_service_state($self, $sid, 'stopped');	    
+	    # node fence was successful - recover service
+	    &$recover_fenced_service($self, $sid, $sc->{$sid});
 	}
 
 	last if !$repeat;
@@ -471,14 +509,8 @@ sub next_state_stopped {
 	    } elsif ($sd->{node} eq $target) {
 		$haenv->log('info', "ignore service '$sid' $cmd request - service already on node '$target'");
 	    } else {
-		eval {
-		    $haenv->change_service_location($sid, $sd->{node}, $target);
-		    $cd->{node} = $sd->{node} = $target; # fixme: $sd is read-only??!!	    
-		    $haenv->log('info', "$cmd service '$sid' to node '$target' (stopped)");
-		};
-		if (my $err = $@) {
-		    $haenv->log('err', "$cmd service '$sid' to node '$target' failed - $err");
-		}
+		&$change_service_state($self, $sid, $cmd, node => $target);
+		return;
 	    }
 	} else {
 	    $haenv->log('err', "unknown command '$cmd' for service '$sid'"); 
@@ -491,24 +523,9 @@ sub next_state_stopped {
     } 
 
     if ($cd->{state} eq 'enabled') {
-	if (my $node = select_service_node($self->{groups}, $self->{online_node_usage}, $cd, $sd->{node})) {
-	    if ($node && ($sd->{node} ne $node)) {
-		eval {
-		    $haenv->change_service_location($sid, $sd->{node}, $node);
-		    $cd->{node} = $sd->{node} = $node; # fixme: $sd is read-only??!!
-		};
-		if (my $err = $@) {
-		    $haenv->log('err', "move service '$sid' to node '$node' failed - $err");
-		} else {
-		    &$change_service_state($self, $sid, 'started', node => $node);
-		}
-	    } else {
-		&$change_service_state($self, $sid, 'started', node => $node);
-	    }
-	} else {
-	    # fixme: warn 
-	}
-
+	# simply mark it started, if it's on the wrong node
+	# next_state_started will fix that for us
+	&$change_service_state($self, $sid, 'started', node => $sd->{node});
 	return;
     }
 

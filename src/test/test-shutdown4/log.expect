@@ -37,8 +37,8 @@ info    220    node2/crm: node 'node1': state changed from 'unknown' => 'fence'
 info    220    node2/crm: got lock 'ha_agent_node1_lock'
 info    220    node2/crm: fencing: acknowleged - got agent lock for node 'node1'
 info    220    node2/crm: node 'node1': state changed from 'fence' => 'unknown'
-info    220    node2/crm: service 'vm:100': state changed from 'fence' to 'stopped' 
-info    220    node2/crm: service 'vm:100': state changed from 'stopped' to 'started'  (node = node2)
+info    220    node2/crm: recover service 'vm:100' from fenced node 'node1' to node 'node2'
+info    220    node2/crm: service 'vm:100': state changed from 'fence' to 'started'  (node = node2)
 info    221    node2/lrm: got lock 'ha_agent_node2_lock'
 info    221    node2/lrm: status change wait_for_agent_lock => active
 info    221    node2/lrm: starting service vm:100

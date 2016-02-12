@@ -98,7 +98,7 @@ sub migrate {
 	$haenv->sleep(2); # (live) migration time
     }
 
-    $haenv->change_service_location($sid, $nodename, $target);
+    $hardware->change_service_location($sid, $nodename, $target);
     $haenv->log("info", "service $sid - end $cmd to node '$target'");
     # ensure that the old node doesn't has the service anymore
     delete $ss->{$sid};
