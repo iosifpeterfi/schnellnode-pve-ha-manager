@@ -1,3 +1,15 @@
+pve-ha-manager (1.0-22) unstable; urgency=medium
+
+  * fix 'change_service_location' misuse and recovery from fencing
+
+  * add VirtFail resource and use it in new regression tests
+
+  * improve relocation policy code in manager and LRM
+
+  * improve verbosity of API status call
+
+ -- Proxmox Support Team <support@proxmox.com>  Mon, 15 Feb 2016 10:57:44 +0100
+
 pve-ha-manager (1.0-21) unstable; urgency=medium
 
   * Fix postinstall script not removing watchdog-mux.socket
