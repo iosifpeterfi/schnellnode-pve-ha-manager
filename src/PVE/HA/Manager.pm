@@ -207,10 +207,10 @@ my $change_service_state = sub {
     $self->recompute_online_node_usage();
 
     $sd->{uid} = compute_new_uuid($new_state);
-    
 
-    $text_state = " ($text_state)" if $text_state;
-    $haenv->log('info', "service '$sid': state changed from '${old_state}' to '${new_state}' $text_state");
+    $text_state = "  ($text_state)" if $text_state;
+    $haenv->log('info', "service '$sid': state changed from '${old_state}'" .
+		" to '${new_state}'$text_state");
 };
 
 # after a node was fenced this recovers the service to a new node
@@ -495,7 +495,7 @@ sub next_state_stopped {
     if ($sd->{node} ne $cd->{node}) {
 	# this can happen if we fence a node with active migrations
 	# hack: modify $sd (normally this should be considered read-only)
-	$haenv->log('info', "fixup service '$sid' location ($sd->{node} => $cd->{node}");
+	$haenv->log('info', "fixup service '$sid' location ($sd->{node} => $cd->{node})");
 	$sd->{node} = $cd->{node}; 
     }
 

@@ -32,7 +32,7 @@ info    141     shutdown: execute power node1 off
 info    141    node2/crm: got lock 'ha_manager_lock'
 info    141    node2/crm: status change slave => master
 info    141    node2/crm: node 'node1': state changed from 'online' => 'unknown'
-info    220    node2/crm: service 'vm:100': state changed from 'started' to 'fence' 
+info    220    node2/crm: service 'vm:100': state changed from 'started' to 'fence'
 info    220    node2/crm: node 'node1': state changed from 'unknown' => 'fence'
 info    220    node2/crm: got lock 'ha_agent_node1_lock'
 info    220    node2/crm: fencing: acknowleged - got agent lock for node 'node1'

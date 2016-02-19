@@ -41,7 +41,7 @@ info    162     hardware: server 'node1' stopped by poweroff (watchdog)
 info    222    node3/crm: got lock 'ha_manager_lock'
 info    222    node3/crm: status change slave => master
 info    222    node3/crm: node 'node1': state changed from 'online' => 'unknown'
-info    282    node3/crm: service 'vm:101': state changed from 'started' to 'fence' 
+info    282    node3/crm: service 'vm:101': state changed from 'started' to 'fence'
 info    282    node3/crm: node 'node1': state changed from 'unknown' => 'fence'
 info    282    node3/crm: got lock 'ha_agent_node1_lock'
 info    282    node3/crm: fencing: acknowleged - got agent lock for node 'node1'

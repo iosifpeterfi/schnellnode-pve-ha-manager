@@ -14,12 +14,12 @@ info     20    node1/crm: node 'node1': state changed from 'unknown' => 'online'
 info     20    node1/crm: node 'node2': state changed from 'unknown' => 'online'
 info     20    node1/crm: node 'node3': state changed from 'unknown' => 'online'
 info     20    node1/crm: adding new service 'fa:110' on node 'node2'
-info     20    node1/crm: service 'fa:110': state changed from 'started' to 'request_stop' 
+info     20    node1/crm: service 'fa:110': state changed from 'started' to 'request_stop'
 info     22    node2/crm: status change wait_for_quorum => slave
 info     23    node2/lrm: got lock 'ha_agent_node2_lock'
 info     23    node2/lrm: status change wait_for_agent_lock => active
 info     24    node3/crm: status change wait_for_quorum => slave
-info     40    node1/crm: service 'fa:110': state changed from 'request_stop' to 'stopped' 
+info     40    node1/crm: service 'fa:110': state changed from 'request_stop' to 'stopped'
 info    120      cmdlist: execute service fa:110 enabled
 info    120    node1/crm: service 'fa:110': state changed from 'stopped' to 'started'  (node = node2)
 info    123    node2/lrm: starting service fa:110

@@ -21,12 +21,12 @@ info     25    node3/lrm: status change wait_for_agent_lock => active
 info     25    node3/lrm: starting service fa:1001
 info     25    node3/lrm: service status fa:1001 started
 info    120      cmdlist: execute service fa:1001 disabled
-info    120    node1/crm: service 'fa:1001': state changed from 'started' to 'request_stop' 
+info    120    node1/crm: service 'fa:1001': state changed from 'started' to 'request_stop'
 info    125    node3/lrm: stopping service fa:1001
 info    125    node3/lrm: unable to stop stop service fa:1001 (still running)
 err     140    node1/crm: service 'fa:1001' stop failed (exit code 1)
-info    140    node1/crm: service 'fa:1001': state changed from 'request_stop' to 'error' 
-info    140    node1/crm: service 'fa:1001': state changed from 'error' to 'stopped' 
+info    140    node1/crm: service 'fa:1001': state changed from 'request_stop' to 'error'
+info    140    node1/crm: service 'fa:1001': state changed from 'error' to 'stopped'
 info    145    node3/lrm: stopping service fa:1001
 info    145    node3/lrm: unable to stop stop service fa:1001 (still running)
 info    165    node3/lrm: stopping service fa:1001

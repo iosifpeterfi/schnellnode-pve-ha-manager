@@ -21,10 +21,10 @@ info     25    node3/lrm: status change wait_for_agent_lock => active
 info     25    node3/lrm: starting service vm:103
 info     25    node3/lrm: service status vm:103 started
 info    120      cmdlist: execute service vm:103 disabled
-info    120    node1/crm: service 'vm:103': state changed from 'started' to 'request_stop' 
+info    120    node1/crm: service 'vm:103': state changed from 'started' to 'request_stop'
 info    125    node3/lrm: stopping service vm:103
 info    125    node3/lrm: service status vm:103 stopped
-info    140    node1/crm: service 'vm:103': state changed from 'request_stop' to 'stopped' 
+info    140    node1/crm: service 'vm:103': state changed from 'request_stop' to 'stopped'
 info    220      cmdlist: execute service vm:103 enabled
 info    220    node1/crm: service 'vm:103': state changed from 'stopped' to 'started'  (node = node3)
 info    225    node3/lrm: starting service vm:103
