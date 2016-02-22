@@ -25,8 +25,7 @@ info    120    node1/crm: got crm command: relocate vm:103 node2
 info    120    node1/crm: service 'vm:103': state changed from 'stopped' to 'relocate'  (node = node3, target = node2)
 info    125    node3/lrm: service vm:103 - start relocate to node 'node2'
 info    125    node3/lrm: service vm:103 - end relocate to node 'node2'
-info    140    node1/crm: service 'vm:103': state changed from 'relocate' to 'started'  (node = node2)
-info    140    node1/crm: service 'vm:103': state changed from 'started' to 'request_stop'
+info    140    node1/crm: service 'vm:103': state changed from 'relocate' to 'request_stop'  (node = node2)
 info    143    node2/lrm: got lock 'ha_agent_node2_lock'
 info    143    node2/lrm: status change wait_for_agent_lock => active
 info    160    node1/crm: service 'vm:103': state changed from 'request_stop' to 'stopped'

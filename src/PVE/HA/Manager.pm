@@ -469,12 +469,13 @@ sub next_state_migrate_relocate {
     # check result from LRM daemon
     if ($lrm_res) {
 	my $exit_code = $lrm_res->{exit_code};
+	my $req_state = $cd->{state} eq 'enabled' ? 'started' : 'request_stop';
 	if ($exit_code == SUCCESS) {
-	    &$change_service_state($self, $sid, 'started', node => $sd->{target});
+	    &$change_service_state($self, $sid, $req_state, node => $sd->{target});
 	    return;
 	} else {
 	    $haenv->log('err', "service '$sid' - migration failed (exit code $exit_code)");
-	    &$change_service_state($self, $sid, 'started', node => $sd->{node});
+	    &$change_service_state($self, $sid, $req_state, node => $sd->{node});
 	    return;
 	}
     }
