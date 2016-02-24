@@ -517,12 +517,14 @@ sub next_state_stopped {
 	} else {
 	    $haenv->log('err', "unknown command '$cmd' for service '$sid'"); 
 	}
-    } 
+    }
 
     if ($cd->{state} eq 'disabled') {
-	# do nothing
+	# NOTE: do nothing here, the stop state is an exception as we do not
+	# process the LRM result here, thus the LRM always tries to stop the
+	# service (protection for the case no CRM is active)
 	return;
-    } 
+    }
 
     if ($cd->{state} eq 'enabled') {
 	# simply mark it started, if it's on the wrong node
@@ -608,6 +610,7 @@ sub next_state_started {
 				" (exit code $ec))");
 		    # we have no save way out (yet) for other errors
 		    &$change_service_state($self, $sid, 'error');
+		    return;
 		}
 	    }
 
@@ -623,12 +626,13 @@ sub next_state_started {
 		    &$change_service_state($self, $sid, 'relocate', node => $sd->{node}, target => $node);
 		}
 	    } else {
-		# do nothing
+		# ensure service get started again if it went unexpected down
+		$sd->{uid} = compute_new_uuid($sd->{state});
 	    }
 	}
 
 	return;
-    } 
+    }
 
     $haenv->log('err', "service '$sid' - unknown state '$cd->{state}' in service configuration");
 }

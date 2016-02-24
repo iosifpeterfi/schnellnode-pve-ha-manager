@@ -455,6 +455,14 @@ sub manage_resources {
 sub queue_resource_command {
     my ($self, $sid, $uid, $state, $target) = @_;
 
+    # do not queue the excatly same command twice as this may lead to
+    # an inconsistent HA state when the first command fails but the CRM
+    # does not process its failure right away and the LRM starts a second
+    # try, without the CRM knowing of it (race condition)
+    # The 'stopped' command is an exception as we do not process its result
+    # in the CRM and we want to execute it always (even with no active CRM)
+    return if $state ne 'stopped' && $uid && defined($self->{results}->{$uid});
+
     if (my $w = $self->{workers}->{$sid}) {
 	return if $w->{pid}; # already started
 	# else, delete and overwrite queue entry with new command
