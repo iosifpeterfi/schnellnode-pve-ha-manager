@@ -473,6 +473,10 @@ sub next_state_migrate_relocate {
 	if ($exit_code == SUCCESS) {
 	    &$change_service_state($self, $sid, $req_state, node => $sd->{target});
 	    return;
+	} elsif ($exit_code == EWRONG_NODE) {
+	    $haenv->log('err', "service '$sid' - migration failed: service" .
+			" registered on wrong node!");
+	    &$change_service_state($self, $sid, 'error');
 	} else {
 	    $haenv->log('err', "service '$sid' - migration failed (exit code $exit_code)");
 	    &$change_service_state($self, $sid, $req_state, node => $sd->{node});

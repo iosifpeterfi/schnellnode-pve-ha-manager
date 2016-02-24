@@ -1,0 +1,26 @@
+info      0     hardware: starting simulation
+info     20      cmdlist: execute power node1 on
+info     20    node1/crm: status change startup => wait_for_quorum
+info     20    node1/lrm: status change startup => wait_for_agent_lock
+info     20      cmdlist: execute power node2 on
+info     20    node2/crm: status change startup => wait_for_quorum
+info     20    node2/lrm: status change startup => wait_for_agent_lock
+info     20      cmdlist: execute power node3 on
+info     20    node3/crm: status change startup => wait_for_quorum
+info     20    node3/lrm: status change startup => wait_for_agent_lock
+info     20    node1/crm: got lock 'ha_manager_lock'
+info     20    node1/crm: status change wait_for_quorum => master
+info     20    node1/crm: node 'node1': state changed from 'unknown' => 'online'
+info     20    node1/crm: node 'node2': state changed from 'unknown' => 'online'
+info     20    node1/crm: node 'node3': state changed from 'unknown' => 'online'
+info     22    node2/crm: status change wait_for_quorum => slave
+info     24    node3/crm: status change wait_for_quorum => slave
+info     25    node3/lrm: got lock 'ha_agent_node3_lock'
+info     25    node3/lrm: status change wait_for_agent_lock => active
+err      25    node3/lrm: service 'vm:103' not on this node
+err      40    node1/crm: service 'vm:103' - migration failed: service registered on wrong node!
+info     40    node1/crm: service 'vm:103': state changed from 'migrate' to 'error'
+err      45    node3/lrm: service vm:103 is in an error state and needs manual intervention. Look up 'ERROR RECOVERY' in the documentation.
+info    120      cmdlist: execute service vm:103 migrate node1
+info    120    node1/crm: got crm command: migrate vm:103 node1
+info    720     hardware: exit simulation - done
