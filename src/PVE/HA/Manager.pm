@@ -580,10 +580,6 @@ sub next_state_started {
 
 		    $master_status->{relocate_trial}->{$sid} = 0;
 
-		} elsif ($ec == ETRY_AGAIN) {
-
-		    # do nothing, the LRM wants to try again
-
 		} elsif ($ec == ERROR) {
 		    # apply our relocate policy if we got ERROR from the LRM
 

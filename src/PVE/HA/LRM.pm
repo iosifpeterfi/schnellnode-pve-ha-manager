@@ -538,6 +538,8 @@ sub resource_command_finished {
 
     $exit_code = $self->handle_service_exitcode($sid, $w->{state}, $exit_code);
 
+    return if $exit_code == ETRY_AGAIN; # tell nobody, simply retry
+
     $self->{results}->{$uid} = {
 	sid => $w->{sid},
 	state => $w->{state},
