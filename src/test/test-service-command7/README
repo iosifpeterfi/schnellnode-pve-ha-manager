@@ -1,0 +1,6 @@
+Test a migration from a service which (through a glitch) isn't
+anymore on the source node.
+
+This should *not* trigger and inf. migrate->started_>migrate
+cycle but rather place the service in the error state
+(unrecoverable state)
