@@ -645,6 +645,15 @@ sub exec_resource_agent {
 	return EUNKNOWN_SERVICE;
     }
 
+    # process error state early
+    if ($cmd eq 'error') {
+
+	$haenv->log('err', "service $sid is in an error state and needs manual " .
+		    "intervention. Look up 'ERROR RECOVERY' in the documentation.");
+
+	return SUCCESS; # error always succeeds
+    }
+
     if ($service_config->{node} ne $nodename) {
 	$haenv->log('err', "service '$sid' not on this node");
 	return EWRONG_NODE;
@@ -714,15 +723,6 @@ sub exec_resource_agent {
 	}
 
 	return SUCCESS;
-
-    } elsif ($cmd eq 'error') {
-
-	if ($running) {
-	    $haenv->log("err", "service $sid is in an error state while running");
-	} else {
-	    $haenv->log("warning", "service $sid is not running and in an error state");
-	}
-	return SUCCESS; # error always succeeds
 
     }
 
