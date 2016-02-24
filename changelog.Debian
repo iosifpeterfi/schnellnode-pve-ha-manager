@@ -1,3 +1,15 @@
+pve-ha-manager (1.0-23) unstable; urgency=medium
+
+  * fix infinite started <=> migrate cycle
+
+  * exec_resource_agent: process error state early
+
+  * avoid out of sync command execution in LRM
+
+  * do not pass ETRY_AGAIN back to the CRM
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 24 Feb 2016 12:15:21 +0100
+
 pve-ha-manager (1.0-22) unstable; urgency=medium
 
   * fix 'change_service_location' misuse and recovery from fencing
