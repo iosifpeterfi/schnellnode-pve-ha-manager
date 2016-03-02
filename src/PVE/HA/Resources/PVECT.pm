@@ -34,7 +34,7 @@ sub options {
 sub config_file {
     my ($class, $vmid, $nodename) = @_;
 
-    return PVE::LXC::config_file($vmid, $nodename);
+    return PVE::LXC::Config->config_file($vmid, $nodename);
 }
 
 sub exists {
