@@ -1,4 +1,4 @@
-SOURCES=VirtVM.pm VirtCT.pm
+SOURCES=VirtVM.pm VirtCT.pm VirtFail.pm
 
 .PHONY: installsim
 installsim:
