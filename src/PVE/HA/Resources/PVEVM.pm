@@ -5,6 +5,7 @@ use warnings;
 
 use PVE::HA::Tools;
 
+use PVE::QemuConfig;
 use PVE::QemuServer;
 use PVE::API2::Qemu;
 
@@ -33,7 +34,7 @@ sub options {
 sub config_file {
     my ($class, $vmid, $nodename) = @_;
 
-    return PVE::QemuServer::config_file($vmid, $nodename);
+    return PVE::QemuConfig->config_file($vmid, $nodename);
 }
 
 sub exists {
