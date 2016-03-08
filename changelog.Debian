@@ -1,3 +1,9 @@
+pve-ha-manager (1.0-25) unstable; urgency=medium
+
+  * Use config_file from PVE::QemuConfig
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 08 Mar 2016 11:50:49 +0100
+
 pve-ha-manager (1.0-24) unstable; urgency=medium
 
   * simulator: install all virtual resources
