@@ -76,29 +76,36 @@ __PACKAGE__->register_method ({
 	my ($param) = @_;
 
 	my $res = [];
-	
-	if (PVE::Cluster::check_cfs_quorum(1)) {
-	    push @$res, { id => 'quorum', type => 'quorum', 
+
+	my $quorate = PVE::Cluster::check_cfs_quorum(1);
+	if ($quorate) {
+	    push @$res, { id => 'quorum', type => 'quorum',
 			  node => $nodename, status => "OK", quorate => 1 };
 	} else {
-	    push @$res, { id => 'quorum', type => 'quorum', node => $nodename, 
+	    push @$res, { id => 'quorum', type => 'quorum', node => $nodename,
 			  status => "No quorum on node '$nodename'!", quorate => 0 };
 	}
-	
+
 	my $haenv = PVE::HA::Env::PVE2->new($nodename);
-	
+
 	my $status = $haenv->read_manager_status();
+
+	my $service_config = $haenv->read_service_config();
 
 	my $ctime = $haenv->get_time();
 
 	if (defined($status->{master_node}) && defined($status->{timestamp})) {
 	    my $master = $status->{master_node};
 	    my $status_str = &$timestamp_to_status($ctime, $status->{timestamp});
+	    # mark crm idle if it has no service configured and is not active
+	    if ($quorate && $status_str ne 'active' && !keys %{$service_config}) {
+		$status_str = 'idle';
+	    }
 	    my $time_str = localtime($status->{timestamp});
 	    my $status_text = "$master ($status_str, $time_str)";
-	    push @$res, { id => 'master', type => 'master', node => $master, 
+	    push @$res, { id => 'master', type => 'master', node => $master,
 			  status => $status_text, timestamp => $status->{timestamp} };
-	} 
+	}
 
 	# compute active services for all nodes
 	my $active_count = {};
