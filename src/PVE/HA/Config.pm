@@ -17,6 +17,7 @@ my $manager_status_filename = "ha/manager_status";
 my $ha_groups_config = "ha/groups.cfg";
 my $ha_resources_config = "ha/resources.cfg";
 my $crm_commands_filename = "ha/crm_commands";
+my $ha_fence_config = "ha/fence.cfg";
 
 cfs_register_file($crm_commands_filename, 
 		  sub { my ($fn, $raw) = @_; return defined($raw) ? $raw : ''; },
@@ -30,6 +31,9 @@ cfs_register_file($ha_resources_config,
 cfs_register_file($manager_status_filename, 
 		  \&json_reader, 
 		  \&json_writer);
+cfs_register_file($ha_fence_config,
+		  \&PVE::HA::FenceConfig::parse_config,
+		  \&PVE::HA::FenceConfig::write_config);
 
 sub json_reader {
     my ($filename, $data) = @_;
@@ -105,8 +109,14 @@ sub read_manager_status {
 
 sub write_manager_status {
     my ($status_obj) = @_;
-    
+
     cfs_write_file($manager_status_filename, $status_obj);
+}
+
+sub read_fence_config {
+    my () = @_;
+
+    cfs_read_file($ha_fence_config);
 }
 
 sub lock_ha_domain {

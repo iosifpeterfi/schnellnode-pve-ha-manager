@@ -1,0 +1,16 @@
+[try] 0
+[node1-cmd] fence_pve --ip="192.168.XX.XX" --password="12345" --action=off --plug=100
+[node2-cmd] fence_pve --ip="192.168.XX.XX" --password="12345" --action=off --plug=101
+[node3-cmd] fence_pve --ip="192.168.XX.XX" --password="12345" --action=off --plug=102
+[try] 1
+[node1-cmd] fence_ilo --ip="192.168.XY.XY" --password="54321" --action=off --plug=100
+[node2-cmd] fence_ilo --ip="192.168.XY.XY" --password="54321" --action=off --plug=101
+[node3-cmd] fence_ilo --ip="192.168.XY.XY" --password="54321" --action=off --plug=102
+[try] 2
+[node1-cmd] fence_apc_snmp --ip="192.168.XY.YXY" --password="12345" --action=off --plug=100
+[node2-cmd] fence_apc_snmp --ip="192.168.XY.YXY" --password="12345" --action=off --plug=101
+[node3-cmd] fence_apc_snmp --ip="192.168.XY.YXY" --password="12345" --action=off --plug=102
+[try] 3
+[node1-cmd] none
+[node2-cmd] none
+[node3-cmd] none

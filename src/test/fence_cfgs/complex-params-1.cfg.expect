@@ -1,0 +1,8 @@
+[try] 0
+[node1-cmd] fence_pve --ip="192.168.15.38" --username="fäöµ€" --password="12\"345" --plug=500 -x
+[node2-cmd] fence_pve --ip="192.168.15.38" --username="fäöµ€" --password="12\"345" --plug=501
+[node3-cmd] none
+[try] 1
+[node1-cmd] none
+[node2-cmd] none
+[node3-cmd] none

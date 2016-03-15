@@ -1,0 +1,1 @@
+[FenceConfig] error in 'fence_cfgs/double-device-1.cfg' at 7: device 'unique_dev:1' already declared

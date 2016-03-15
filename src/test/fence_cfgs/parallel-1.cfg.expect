@@ -1,0 +1,21 @@
+[try] 0
+[node1-cmd] fence_apc --ip=192.168.XX.XY --username=fencing --password=12345 --action=off --ssh --plug=1 --switch=1
+[node1-cmd] fence_apc --ip=192.168.YY.YX --username=fencing --password=12345 --action=off --ssh --delay=5 --plug=1 --switch=1
+[node2-cmd] fence_apc --ip=192.168.XX.XY --username=fencing --password=12345 --action=off --ssh --plug=2 --switch=1
+[node2-cmd] fence_apc --ip=192.168.YY.YX --username=fencing --password=12345 --action=off --ssh --delay=5 --plug=2 --switch=1
+[node3-cmd] fence_apc --ip=192.168.XX.XY --username=fencing --password=12345 --action=off --ssh --plug=3 --switch=1
+[node3-cmd] fence_apc --ip=192.168.YY.YX --username=fencing --password=12345 --action=off --ssh --delay=5 --plug=3 --switch=1
+[try] 1
+[node1-cmd] fence_cisco_mds --ip=192.168.XYZ.ZXY --username=fencing --password=12345 --action=off --ssh --plug=10 --switch=1
+[node1-cmd] fence_cisco_mds --ip=192.168.XYZ.ZYX --username=fencing --password=12345 --action=reboot --ssh --plug=10 --switch=1
+[node1-cmd] fence_cisco_mds --ip=192.168.XYZ.YXZ --username=fencing --password=12345 --action=off --plug=10 --switch=1
+[node2-cmd] fence_cisco_mds --ip=192.168.XYZ.ZXY --username=fencing --password=12345 --action=off --ssh --plug=20 --switch=1
+[node2-cmd] fence_cisco_mds --ip=192.168.XYZ.ZYX --username=fencing --password=12345 --action=reboot --ssh --plug=20 --switch=1
+[node2-cmd] fence_cisco_mds --ip=192.168.XYZ.YXZ --username=fencing --password=12345 --action=off --plug=20 --switch=1
+[node3-cmd] fence_cisco_mds --ip=192.168.XYZ.ZXY --username=fencing --password=12345 --action=off --ssh --plug=30 --switch=1
+[node3-cmd] fence_cisco_mds --ip=192.168.XYZ.ZYX --username=fencing --password=12345 --action=reboot --ssh --plug=30 --switch=1
+[node3-cmd] fence_cisco_mds --ip=192.168.XYZ.YXZ --username=fencing --password=12345 --action=off --plug=30 --switch=1
+[try] 2
+[node1-cmd] none
+[node2-cmd] none
+[node3-cmd] none
