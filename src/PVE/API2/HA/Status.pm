@@ -151,10 +151,19 @@ __PACKAGE__->register_method ({
 
 	foreach my $sid (sort keys %{$status->{service_status}}) {
 	    my $d = $status->{service_status}->{$sid};
-	    push @$res, { id => "service:$sid", type => 'service', sid => $sid, 
+	    push @$res, { id => "service:$sid", type => 'service', sid => $sid,
 			  node => $d->{node}, status => "$sid ($d->{node}, $d->{state})" };
 	}
-		
+
+	# show also service which aren't yet processed by the CRM
+	foreach my $sid (sort keys %$service_config) {
+	    next if $status->{service_status}->{$sid};
+	    my $d = $service_config->{$sid};
+	    push @$res, { id => "service:$sid", type => 'service', sid => $sid,
+			  status => "$sid ($d->{node}, queued)",
+			  node => $d->{node} };
+	}
+
 	return $res;
     }});
 
