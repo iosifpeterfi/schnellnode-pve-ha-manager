@@ -6,12 +6,6 @@ use PVE::Tools;
 use PVE::Cluster qw(cfs_register_file cfs_read_file cfs_write_file);
 use Data::Dumper;
 
-my $__die = sub {
-    my ($fn, $lineno, $error_message) = @_;
-
-    die "error in '$fn' at $lineno: $error_message\n";
-};
-
 sub parse_config {
     my ($fn, $raw) = @_;
 
@@ -22,72 +16,75 @@ sub parse_config {
     my $lineno = 0;
     my $priority = 0;
 
-    while ($raw =~ /^\h*(.*?)\h*$/gm) {
-	my $line = $1;
-	$lineno++;
+    eval  {
+	while ($raw =~ /^\h*(.*?)\h*$/gm) {
+	    my $line = $1;
+	    $lineno++;
 
-	next if !$line || $line =~ /^#/;
+	    next if !$line || $line =~ /^#/;
 
-	if ($line =~ m/^(device|connect)\s+(\S+)\s+(\S+)\s+(.+)$/) {
-	    my ($command, $dev_name, $target) = ($1, $2, $3);
+	    if ($line =~ m/^(device|connect)\s+(\S+)\s+(\S+)\s+(.+)$/) {
+		my ($command, $dev_name, $target) = ($1, $2, $3);
 
-	    # allow spaces, and other special chars inside of quoted strings
-	    # with escape support
-	    my @arg_array = $4 =~ /(\w+(?:=(?:(?:\"(?:[^"\\]|\\.)*\")|\S+))?)/g;
+		# allow spaces, and other special chars inside of quoted strings
+		# with escape support
+		my @arg_array = $4 =~ /(\w+(?:=(?:(?:\"(?:[^"\\]|\\.)*\")|\S+))?)/g;
 
-	    my $dev_number = 1; # default
+		my $dev_number = 1; # default
 
-	    # check for parallel devices
-	    if ($dev_name =~ m/^(\w+)(:(\d+))?/) {
-		$dev_name = $1;
-		$dev_number = $3 if $3;
+		# check for parallel devices
+		if ($dev_name =~ m/^(\w+)(:(\d+))?/) {
+		    $dev_name = $1;
+		    $dev_number = $3 if $3;
+		}
+
+		if ($command eq "device") {
+
+		    my $dev = $config->{$dev_name} || {};
+
+		    die "device '$dev_name:$dev_number' already declared\n"
+			if $dev && $dev->{sub_devs}->{$dev_number};
+
+		    $dev->{sub_devs}->{$dev_number} = {
+			agent => $target,
+			args => [ @arg_array ]
+		    };
+		    $dev->{priority} = $priority++ if !$dev->{priority};
+
+		    $config->{$dev_name} = $dev;
+
+		} else { # connect nodes to devices
+
+		    die "device '$dev_name' must be declared before you can connect to it\n"
+			if !$config->{$dev_name};
+
+		    die "No parallel device '$dev_name:$dev_number' found\n"
+			if !$config->{$dev_name}->{sub_devs}->{$dev_number};
+
+		    my $sdev = $config->{$dev_name}->{sub_devs}->{$dev_number};
+
+		    my ($node) = $target =~ /node=(\w+)/;
+		    die "node=nodename needed to connect device '$dev_name' to node\n" 
+			if !$node;
+
+		    die "node '$node' already connected to device '$dev_name:$dev_number'\n" 
+			if $sdev->{node_args}->{$node};
+
+		    $sdev->{node_args}->{$node} = [ @arg_array ];
+
+		    $config->{$dev_name}->{sub_devs}->{$dev_number} = $sdev;
+		}
+
+	    } else {
+		warn "$fn ignore line $lineno: $line\n"
 	    }
-
-	    if ($command eq "device") {
-
-		my $dev = $config->{$dev_name} || {};
-
-		&$__die($fn, $lineno, "device '$dev_name:$dev_number' already declared")
-		    if ($dev && $dev->{sub_devs}->{$dev_number});
-
-		$dev->{sub_devs}->{$dev_number} = {
-		    agent => $target,
-		    args => [ @arg_array ]
-		};
-		$dev->{priority} = $priority++ if !$dev->{priority};
-
-		$config->{$dev_name} = $dev;
-
-	    } else { # connect nodes to devices
-
-		&$__die($fn, $lineno, "device '$dev_name' must be declared before" .
-			       " you can connect to it") if !$config->{$dev_name};
-
-		&$__die($fn, $lineno, "No parallel device '$dev_name:$dev_number' found")
-		    if !$config->{$dev_name}->{sub_devs}->{$dev_number};
-
-		my $sdev = $config->{$dev_name}->{sub_devs}->{$dev_number};
-
-		my ($node) = $target =~ /node=(\w+)/;
-		&$__die($fn, $lineno, "node=nodename needed to connect device ".
-			  "'$dev_name' to node") if !$node;
-
-		&$__die($fn, $lineno, "node '$node' already connected to device ".
-			  "'$dev_name:$dev_number'") if $sdev->{node_args}->{$node};
-
-		$sdev->{node_args}->{$node} = [ @arg_array ];
-
-		$config->{$dev_name}->{sub_devs}->{$dev_number} = $sdev;
-
-	    }
-
-	} else {
-	    warn "$fn ignore line $lineno: $line\n"
 	}
+    };
+    if (my $err = $@) {
+	die "error in '$fn' at $lineno: $err";
     }
 
     return $config;
-
 }
 
 sub write_config {
