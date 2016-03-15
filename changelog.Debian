@@ -1,3 +1,11 @@
+pve-ha-manager (1.0-26) unstable; urgency=medium
+
+  * status: show added but not yet active services
+
+  * status: mark CRM as idle if no service is configured
+
+ -- Proxmox Support Team <support@proxmox.com>  Tue, 15 Mar 2016 12:49:18 +0100
+
 pve-ha-manager (1.0-25) unstable; urgency=medium
 
   * Use config_file from PVE::QemuConfig
