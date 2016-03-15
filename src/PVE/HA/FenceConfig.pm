@@ -26,9 +26,7 @@ sub parse_config {
 	    if ($line =~ m/^(device|connect)\s+(\S+)\s+(\S+)\s+(.+)$/) {
 		my ($command, $dev_name, $target) = ($1, $2, $3);
 
-		# allow spaces, and other special chars inside of quoted strings
-		# with escape support
-		my @arg_array = $4 =~ /(\w+(?:=(?:(?:\"(?:[^"\\]|\\.)*\")|\S+))?)/g;
+		my $arg_array = PVE::Tools::split_args($4);
 
 		my $dev_number = 1; # default
 
@@ -47,7 +45,7 @@ sub parse_config {
 
 		    $dev->{sub_devs}->{$dev_number} = {
 			agent => $target,
-			args => [ @arg_array ]
+			args =>  $arg_array,
 		    };
 		    $dev->{priority} = $priority++ if !$dev->{priority};
 
@@ -70,7 +68,7 @@ sub parse_config {
 		    die "node '$node' already connected to device '$dev_name:$dev_number'\n" 
 			if $sdev->{node_args}->{$node};
 
-		    $sdev->{node_args}->{$node} = [ @arg_array ];
+		    $sdev->{node_args}->{$node} = $arg_array;
 
 		    $config->{$dev_name}->{sub_devs}->{$dev_number} = $sdev;
 		}
@@ -119,9 +117,12 @@ sub gen_arg_str {
 
     my @shell_args = ();
     foreach my $arg (@arguments) {
+	my ($key, $val) = split /=/, $arg;
 	# we need to differ long and short opts!
-	my $prefix = (length($arg) == 1) ? '-' : '--';
-	push @shell_args, "$prefix$arg";
+	my $prefix = (length($key) == 1) ? '-' : '--';
+	# shellquote values and add them again
+	$key  .= '='. PVE::Tools::shellquote($val) if $val;
+	push @shell_args, "$prefix$key";
     }
 
     return join (' ', @shell_args);
