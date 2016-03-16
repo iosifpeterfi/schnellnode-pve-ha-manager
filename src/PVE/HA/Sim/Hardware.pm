@@ -15,7 +15,8 @@ use IO::File;
 use Fcntl qw(:DEFAULT :flock);
 use File::Copy;
 use File::Path qw(make_path remove_tree);
-use PVE::HA::Config 'testenv';
+use PVE::HA::Config;
+use PVE::HA::FenceConfig;
 
 my $watchdog_timeout = 60;
 
@@ -114,7 +115,29 @@ sub write_service_config {
 
     my $filename = "$self->{statusdir}/service_config";
     return PVE::HA::Tools::write_json_to_file($filename, $conf);
-} 
+}
+
+sub read_fence_config {
+    my ($self) = @_;
+
+    my $raw = undef;
+
+    my $filename = "$self->{statusdir}/fence.cfg";
+    if (-e $filename) {
+	$raw = PVE::Tools::file_get_contents($filename);
+    }
+
+    return PVE::HA::FenceConfig::parse_config($filename, $raw);
+}
+
+sub exec_fence_agent {
+    my ($self, $agent, $node, @param) = @_;
+
+    # let all agent succeed and behave the same for now
+    $self->sim_hardware_cmd("power $node off", $agent);
+
+    return 0; # EXIT_SUCCESS
+}
 
 sub set_service_state {
     my ($self, $sid, $state) = @_;
@@ -306,6 +329,9 @@ sub new {
 	$self->write_hardware_status_nolock($cstatus);
     }
 
+    if (-f "$testdir/fence.cfg") {
+	copy("$testdir/fence.cfg", "$statusdir/fence.cfg");
+    }
 
     my $cstatus = $self->read_hardware_status_nolock();
 

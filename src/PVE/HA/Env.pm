@@ -87,6 +87,24 @@ sub read_service_config {
     return $self->{plug}->read_service_config();
 }
 
+sub read_fence_config {
+    my ($self) = @_;
+
+    return $self->{plug}->read_fence_config();
+}
+
+sub fencing_mode {
+    my ($self) = @_;
+
+    return $self->{plug}->fencing_mode();
+}
+
+sub exec_fence_agent {
+    my ($self, $agent, $node, @param) = @_;
+
+    return $self->{plug}->exec_fence_agent($agent, $node, @param);
+}
+
 # this is normally only allowed by the master to recover a _fenced_ service
 sub steal_service {
     my ($self, $sid, $current_node, $new_node) = @_;

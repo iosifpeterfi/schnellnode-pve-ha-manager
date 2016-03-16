@@ -15,6 +15,7 @@ use PVE::RPCEnvironment;
 use PVE::HA::Tools ':exit_codes';
 use PVE::HA::Env;
 use PVE::HA::Config;
+use PVE::HA::FenceConfig;
 use PVE::HA::Resources;
 use PVE::HA::Resources::PVEVM;
 use PVE::HA::Resources::PVECT;
@@ -142,6 +143,34 @@ sub read_service_config {
     }
 
     return $conf;
+}
+
+sub read_fence_config {
+    my ($self) = @_;
+
+    return PVE::HA::Config::read_fence_config();
+}
+
+sub fencing_mode {
+    my ($self) = @_;
+
+    my $datacenterconfig = cfs_read_file('datacenter.cfg');
+
+    return 'watchdog' if !$datacenterconfig->{fencing};
+
+    return $datacenterconfig->{fencing};
+}
+
+sub exec_fence_agent {
+    my ($self, $agent, $node, @param) = @_;
+
+    # setup execution environment
+    $ENV{'PATH'} = '/sbin:/bin:/usr/sbin:/usr/bin';
+
+    my $cmd = "$agent " . PVE::HA::FenceConfig::gen_arg_str(@param);
+
+    exec($cmd);
+    exit -1;
 }
 
 # this is only allowed by the master to recover a _fenced_ service

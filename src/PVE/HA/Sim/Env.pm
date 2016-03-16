@@ -167,6 +167,28 @@ sub read_service_config {
     return $self->{hardware}->read_service_config();
 }
 
+sub read_fence_config {
+    my ($self) = @_;
+
+    return $self->{hardware}->read_fence_config();
+}
+
+# the test/sim framework has hardware enabled fencing if
+# it has devices configured
+sub fencing_mode {
+    my ($self) = @_;
+
+    my $cfg = $self->read_fence_config();
+
+    return (defined($cfg) && keys %{$cfg}) ? 'hardware' : 'watchdog';
+}
+
+sub exec_fence_agent {
+    my ($self, $agent, $node, @param) = @_;
+
+    return $self->{hardware}->exec_fence_agent($agent, $node, @param);
+}
+
 sub read_group_config {
     my ($self) = @_;
 
