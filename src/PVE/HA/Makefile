@@ -1,5 +1,5 @@
 SOURCES=CRM.pm Env.pm Groups.pm Resources.pm Config.pm LRM.pm Manager.pm \
-	NodeStatus.pm Tools.pm FenceConfig.pm
+	NodeStatus.pm Tools.pm FenceConfig.pm Fence.pm
 
 .PHONY: install
 install:
