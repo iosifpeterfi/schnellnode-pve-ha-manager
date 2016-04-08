@@ -53,19 +53,3 @@ our $cmddef = {
 };
 
 1;
-
-__END__
-
-=head1 NAME
-
-pve-ha-lrm - PVE Local HA Ressource Manager Daemon
-
-=head1 SYNOPSIS
-
-=include synopsis
-
-=head1 DESCRIPTION
-
-This is the Local HA Ressource Manager.
-
-=include pve_copyright
