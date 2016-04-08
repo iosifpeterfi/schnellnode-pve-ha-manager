@@ -8,6 +8,7 @@ MANDIR=${PREFIX}/share/man
 DOCDIR=${PREFIX}/share/doc/${PACKAGE}
 SIMDOCDIR=${PREFIX}/share/doc/${SIMPACKAGE}
 MAN1DIR=${MANDIR}/man1/
+MAN8DIR=${MANDIR}/man8/
 BASHCOMPLDIR=${PREFIX}/share/bash-completion/completions/
 export PERLDIR=${PREFIX}/share/perl5
 
@@ -46,13 +47,14 @@ install: watchdog-mux pve-ha-crm pve-ha-lrm ha-manager.1 pve-ha-crm.8 pve-ha-lrm
 	install -m 0644 -D pve-ha-lrm.bash-completion ${DESTDIR}${BASHCOMPLDIR}/pve-ha-lrm
 	install -m 0644 -D ha-manager.bash-completion ${DESTDIR}${BASHCOMPLDIR}/ha-manager
 	make -C PVE install
-	install -d ${DESTDIR}/usr/share/man/man1
-	install -m 0644 pve-ha-crm.8 ${DESTDIR}/usr/share/man/man1/
-	gzip -9 ${DESTDIR}/usr/share/man/man1/pve-ha-crm.8
-	install -m 0644 pve-ha-lrm.8 ${DESTDIR}/usr/share/man/man1/
-	gzip -9 ${DESTDIR}/usr/share/man/man1/pve-ha-lrm.8
-	install -m 0644 ha-manager.1 ${DESTDIR}/usr/share/man/man1/
-	gzip -9 ${DESTDIR}/usr/share/man/man1/ha-manager.1
+	install -d ${DESTDIR}/${MAN8DIR}
+	install -m 0644 pve-ha-crm.8 ${DESTDIR}/${MAN8DIR}
+	gzip -9 ${DESTDIR}/${MAN8DIR}/pve-ha-crm.8
+	install -m 0644 pve-ha-lrm.8 ${DESTDIR}/${MAN8DIR}
+	gzip -9 ${DESTDIR}/${MAN8DIR}/pve-ha-lrm.8
+	install -d ${DESTDIR}/${MAN1DIR}
+	install -m 0644 ha-manager.1 ${DESTDIR}/${MAN1DIR}
+	gzip -9 ${DESTDIR}/${MAN1DIR}/ha-manager.1
 
 .PHONY: installsim
 installsim: pve-ha-simulator
