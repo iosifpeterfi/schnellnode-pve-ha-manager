@@ -1,3 +1,9 @@
+pve-ha-manager (1.0-27) unstable; urgency=medium
+
+  * use pve-doc-generator to generate man pages
+
+ -- Proxmox Support Team <support@proxmox.com>  Fri, 08 Apr 2016 08:25:07 +0200
+
 pve-ha-manager (1.0-26) unstable; urgency=medium
 
   * status: show added but not yet active services
