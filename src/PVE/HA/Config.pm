@@ -192,4 +192,23 @@ sub service_is_ha_managed {
 
     return undef;
 }
+
+sub get_service_status {
+    my ($sid) = @_;
+
+    my $status = { managed => 0 };
+
+    my $conf = cfs_read_file($ha_resources_config);
+
+    if (&$servive_check_ha_state($conf, $sid)) {
+	my $manager_status = cfs_read_file($manager_status_filename);
+
+	$status->{managed} = 1;
+	$status->{group} = $conf->{ids}->{$sid}->{group};
+	$status->{state} = $manager_status->{service_status}->{$sid}->{state};
+    }
+
+    return $status;
+}
+
 1;
