@@ -180,6 +180,13 @@ __PACKAGE__->register_method ({
 	    die "types does not match\n" if $param_type ne $type;
 	}
 
+	if (my $group = $param->{group}) {
+	    my $group_cfg = PVE::HA::Config::read_group_config();
+
+	    die "HA group '$group' does not exist\n"
+		if !$group_cfg->{ids}->{$group};
+	}
+
 	PVE::HA::Config::lock_ha_domain(
 	    sub {
 
