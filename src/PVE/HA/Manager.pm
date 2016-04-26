@@ -9,8 +9,6 @@ use PVE::Tools;
 use PVE::HA::Tools ':exit_codes';
 use PVE::HA::NodeStatus;
 
-my $fence_delay = 60;
-
 sub new {
     my ($this, $haenv) = @_;
 
@@ -548,7 +546,7 @@ sub next_state_started {
     my $ns = $self->{ns};
 
     if (!$ns->node_is_online($sd->{node})) {
-	if ($ns->node_is_offline_delayed($sd->{node}, $fence_delay)) {
+	if ($ns->node_is_offline_delayed($sd->{node})) {
 	    &$change_service_state($self, $sid, 'fence');
 	}
 	return;
@@ -651,7 +649,7 @@ sub next_state_error {
 	return;
     }
 
-    if ($ns->node_is_offline_delayed($sd->{node}, $fence_delay)) {
+    if ($ns->node_is_offline_delayed($sd->{node})) {
 	&$change_service_state($self, $sid, 'fence');
 	return;
     }

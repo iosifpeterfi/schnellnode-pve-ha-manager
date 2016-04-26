@@ -5,6 +5,8 @@ use warnings;
 
 use Data::Dumper;
 
+my $fence_delay = 60;
+
 sub new {
     my ($this, $haenv, $status) = @_;
 
@@ -44,6 +46,8 @@ sub node_is_online {
 
 sub node_is_offline_delayed {
     my ($self, $node, $delay) = @_;
+
+    $delay = $fence_delay if !defined($delay);
 
     my $haenv = $self->{haenv};
 
