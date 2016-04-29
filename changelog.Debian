@@ -1,3 +1,9 @@
+pve-ha-manager (1.0-30) unstable; urgency=medium
+
+  * Env: allow debug logging
+
+ -- Proxmox Support Team <support@proxmox.com>  Fri, 29 Apr 2016 16:50:34 +0200
+
 pve-ha-manager (1.0-29) unstable; urgency=medium
 
   * Resources: deny setting nonexistent group
