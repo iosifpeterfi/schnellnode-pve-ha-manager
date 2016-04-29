@@ -39,6 +39,8 @@ sub get_time {
 sub log {
     my ($self, $level, $msg) = @_;
 
+    return if $level eq 'debug';
+
     chomp $msg;
 
     my $time = $self->get_time();
