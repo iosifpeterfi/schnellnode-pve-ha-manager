@@ -452,7 +452,7 @@ sub next_state_request_stop {
 	}
     }
 
-    if ($ns->node_is_offline_delayed($sd->{node}, $fence_delay)) {
+    if ($ns->node_is_offline_delayed($sd->{node})) {
 	&$change_service_state($self, $sid, 'fence');
 	return;
     }
@@ -482,7 +482,7 @@ sub next_state_migrate_relocate {
 	}
     }
 
-    if ($ns->node_is_offline_delayed($sd->{node}, $fence_delay)) {
+    if ($ns->node_is_offline_delayed($sd->{node})) {
 	&$change_service_state($self, $sid, 'fence');
 	return;
     }
