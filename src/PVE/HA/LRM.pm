@@ -180,6 +180,8 @@ sub active_service_count {
 	next if !defined($req_state);
 	next if $req_state eq 'stopped';
 	next if $req_state eq 'freeze';
+	# erroneous services are not managed by HA, don't count them as active
+	next if $req_state eq 'error';
 
 	$count++;
     }
