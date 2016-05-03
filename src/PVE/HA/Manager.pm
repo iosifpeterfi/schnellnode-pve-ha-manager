@@ -54,8 +54,13 @@ sub flush_master_status {
 sub select_service_node {
     my ($groups, $online_node_usage, $service_conf, $current_node, $try_next) = @_;
 
-    my $group = { 'nodes' => { $service_conf->{node} => 1 } }; # default group
+    my $group = {};
+    # add all online nodes to default group to allow try_next when no group set
+    foreach my $node (keys %$online_node_usage) {
+	$group->{nodes}->{$node} = 1;
+    }
 
+    # overwrite default if service is bound to a specific group
     $group =  $groups->{ids}->{$service_conf->{group}} if $service_conf->{group} && 
 	$groups->{ids}->{$service_conf->{group}};
 
@@ -85,7 +90,8 @@ sub select_service_node {
 
     my @pri_list = sort {$b <=> $a} keys %$pri_groups;
     return undef if !scalar(@pri_list);
-    
+
+    # stay on current node if possible (avoids random migrations)
     if (!$try_next && $group->{nofailback} && defined($group_members->{$current_node})) {
 	return $current_node;
     }
