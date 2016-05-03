@@ -341,7 +341,12 @@ sub manage {
 	$haenv->log('info', "removing stale service '$sid' (no config)");
 	delete $ss->{$sid};
     }
-    
+
+    # remove stale relocation try entries
+    foreach my $sid (keys %{$ms->{relocate_trial}}) {
+	delete $ms->{relocate_trial}->{$sid} if !$ss->{$sid};
+    }
+
     $self->update_crm_commands();
 
     for (;;) {

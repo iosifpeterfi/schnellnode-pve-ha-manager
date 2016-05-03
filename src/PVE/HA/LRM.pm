@@ -438,6 +438,10 @@ sub manage_resources {
 
     my $ss = $self->{service_status};
 
+    foreach my $sid (keys %{$self->{restart_tries}}) {
+	delete $self->{restart_tries}->{$sid} if !$ss->{$sid};
+    }
+
     foreach my $sid (keys %$ss) {
 	my $sd = $ss->{$sid};
 	next if !$sd->{node};
