@@ -1,3 +1,13 @@
+pve-ha-manager (1.0-31) unstable; urgency=medium
+
+  * selcet_service_node: include all online nodes in default group
+
+  * LRM: do not count erroneous service as active
+
+  * fix relocate/restart trial count leak on service deletion
+
+ -- Proxmox Support Team <support@proxmox.com>  Fri, 06 May 2016 08:26:10 +0200
+
 pve-ha-manager (1.0-30) unstable; urgency=medium
 
   * Env: allow debug logging
