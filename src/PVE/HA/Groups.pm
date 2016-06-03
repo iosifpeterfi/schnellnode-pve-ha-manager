@@ -64,7 +64,7 @@ sub decode_value {
 	my $res = {};
 
 	foreach my $node (PVE::Tools::split_list($value)) {
-	    if (PVE::JSONSchema::pve_verify_node_name($node)) {
+	    if (PVE::HA::Tools::pve_verify_ha_group_node($node)) {
 		$res->{$node} = 1;
 	    }
 	}
