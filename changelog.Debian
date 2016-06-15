@@ -1,3 +1,9 @@
+pve-ha-manager (1.0-32) unstable; urgency=medium
+
+  * use correct verify function for ha-group-node-list
+
+ -- Proxmox Support Team <support@proxmox.com>  Wed, 15 Jun 2016 17:01:12 +0200
+
 pve-ha-manager (1.0-31) unstable; urgency=medium
 
   * selcet_service_node: include all online nodes in default group
