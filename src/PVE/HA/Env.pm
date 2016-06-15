@@ -132,6 +132,12 @@ sub log {
     return $self->{plug}->log($level, @args);
 }
 
+sub sendmail {
+    my ($self, $subject, $text) = @_;
+
+    return $self->{plug}->sendmail($subject, $text);
+}
+
 # acquire a cluster wide manager lock
 sub get_ha_manager_lock {
     my ($self) = @_;

@@ -130,4 +130,10 @@ sub get_max_workers {
     return 0;
 }
 
+sub sendmail {
+    my ($self, $subject, $text) = @_;
+
+    # dismiss mails for regression tests
+}
+
 1;

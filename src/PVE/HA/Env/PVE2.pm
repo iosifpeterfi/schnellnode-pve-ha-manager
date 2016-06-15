@@ -226,6 +226,15 @@ sub log {
     syslog($level, $msg);
 }
 
+sub sendmail {
+    my ($self, $subject, $text) = @_;
+
+    my $mailfrom = 'root@' . $self->nodename();
+    my $mailto = 'root@localhost';
+
+    PVE::Tools::sendmail($mailto, $subject, $text, undef, $mailfrom);
+}
+
 my $last_lock_status = {};
 
 sub get_pve_lock {
