@@ -285,6 +285,9 @@ sub new {
 
     die "missing testdir" if !$testdir;
 
+    die "testdir '$testdir' does not exist or is not a directory!\n"
+        if !-d $testdir;
+
     my $class = ref($this) || $this;
 
     my $self = bless {}, $class;
