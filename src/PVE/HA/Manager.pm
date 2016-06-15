@@ -360,7 +360,7 @@ sub manage {
 	
 	$self->recompute_online_node_usage();
 
-	foreach my $sid (keys %$ss) {
+	foreach my $sid (sort keys %$ss) {
 	    my $sd = $ss->{$sid};
 	    my $cd = $sc->{$sid} || { state => 'disabled' };
 

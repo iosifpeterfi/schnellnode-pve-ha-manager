@@ -376,7 +376,7 @@ sub run_workers {
     while (($haenv->get_time() - $starttime) < 5) {
 	my $count =  $self->check_active_workers();
 
-	foreach my $sid (keys %{$self->{workers}}) {
+	foreach my $sid (sort keys %{$self->{workers}}) {
 	    last if $count >= $max_workers && $max_workers > 0;
 
 	    my $w = $self->{workers}->{$sid};
