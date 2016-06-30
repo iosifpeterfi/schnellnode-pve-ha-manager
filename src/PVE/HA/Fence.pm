@@ -2,218 +2,249 @@ package PVE::HA::Fence;
 
 use strict;
 use warnings;
+
 use POSIX qw( WNOHANG );
+
 use PVE::HA::FenceConfig;
-use Data::Dumper;
 
+sub new {
+    my ($this, $haenv) = @_;
 
- # pid's and additional info of fence processes
-my $fence_jobs = {};
+    my $class = ref($this) || $this;
 
-# fence state of a node
-my $fenced_nodes = {};
+    my $self = bless {
+	haenv => $haenv,
+	workers => {}, # pid's and additional info of fence processes
+	results => {}, # fence state of a node
+    }, $class;
 
-sub has_fencing_job { # update for parallel fencing
-    my ($node) = @_;
-
-    foreach my $job (values %$fence_jobs) {
-	return 1 if ($job->{node} eq $node);
-    }
-    return undef;
+    return $self;
 }
 
 my $virtual_pid = 0; # hack for test framework
 
-sub start_fencing {
-    my ($haenv, $node, $try) = @_;
+sub run_fence_jobs {
+    my ($self, $node, $try) = @_;
 
-    $try = 0 if !defined($try) || $try<0;
+    my $haenv = $self->{haenv};
 
-    my $fence_cfg = $haenv->read_fence_config();
-    my $commands = PVE::HA::FenceConfig::get_commands($node, $try, $fence_cfg);
+    if (!$self->has_fencing_job($node)) {
+	# start new fencing job(s)
+	my $workers = $self->{workers};
+	my $results = $self->{results};
 
-    if (!$commands) {
-	$haenv->log('err', "no commands for node '$node'");
-	$fenced_nodes->{$node}->{failure} = 1;
-	return 0;
-    }
+	$try = 0 if !defined($try) || ($try < 0);
 
-    $haenv->log('notice', "Start fencing of node '$node'");
+	my $fence_cfg = $haenv->read_fence_config();
+	my $commands = PVE::HA::FenceConfig::get_commands($node, $try, $fence_cfg);
 
-    my $can_fork = ($haenv->get_max_workers() > 0) ? 1 : 0;
-
-    $fenced_nodes->{$node}->{needed} = scalar @$commands;
-    $fenced_nodes->{$node}->{triggered} = 0;
-
-    for my $cmd (@$commands)
-    {
-	my $cmd_str = "$cmd->{agent} " .
-	    PVE::HA::FenceConfig::gen_arg_str(@{$cmd->{param}});
-	$haenv->log('notice', "[fence '$node'] execute fence command: $cmd_str");
-
-	if ($can_fork) {
-	    my $pid = fork();
-	    if (!defined($pid)) {
-		$haenv->log('err', "forking fence job failed");
-		return 0;
-	    } elsif ($pid==0) { # child
-		$haenv->exec_fence_agent($cmd->{agent}, $node, @{$cmd->{param}});
-		exit(-1);
-	    } else {
-		$fence_jobs->{$pid} = {cmd=>$cmd_str, node=>$node, try=>$try};
-	    }
-	} else {
-	    my $res = -1;
-	    eval {
-		$res = $haenv->exec_fence_agent($cmd->{agent}, $node, @{$cmd->{param}});
-		$res = $res << 8 if $res > 0;
-	    };
-	    if (my $err = $@) {
-		$haenv->log('err', $err);
-	    }
-
-	    $virtual_pid++;
-	    $fence_jobs->{$virtual_pid} = {cmd => $cmd_str, node => $node,
-					   try => $try, ec => $res};
+	if (!$commands) {
+	    $haenv->log('err', "no fence commands for node '$node'");
+	    $results->{$node}->{failure} = 1;
+	    return 0;
 	}
-    }
 
-    return 1;
+	$haenv->log('notice', "Start fencing node '$node'");
+
+	my $can_fork = ($haenv->get_max_workers() > 0) ? 1 : 0;
+
+	# when parallel devices are configured all must succeed
+	$results->{$node}->{needed} = scalar(@$commands);
+	$results->{$node}->{triggered} = 0;
+
+	for my $cmd (@$commands) {
+	    my $cmd_str = "$cmd->{agent} " .
+		PVE::HA::FenceConfig::gen_arg_str(@{$cmd->{param}});
+	    $haenv->log('notice', "[fence '$node'] execute cmd: $cmd_str");
+
+	    if ($can_fork) {
+
+		my $pid = fork();
+		if (!defined($pid)) {
+		    $haenv->log('err', "forking fence job failed");
+		    return 0;
+		} elsif ($pid == 0) {
+		    $haenv->after_fork(); # cleanup child
+
+		    $haenv->exec_fence_agent($cmd->{agent}, $node, @{$cmd->{param}});
+		    Posix::_exit(-1);
+		} else {
+
+		    $workers->{$pid} = {
+			cmd => $cmd_str,
+			node => $node,
+			try => $try
+		    };
+
+		}
+
+	    } else {
+		# for test framework
+		my $res = -1;
+		eval {
+		    $res = $haenv->exec_fence_agent($cmd->{agent}, $node, @{$cmd->{param}});
+		    $res = $res << 8 if $res > 0;
+		};
+		if (my $err = $@) {
+		    $haenv->log('err', $err);
+		}
+
+		$virtual_pid++;
+		$workers->{$virtual_pid} = {
+		    cmd => $cmd_str,
+		    node => $node,
+		    try => $try,
+		    ec => $res,
+		};
+
+	    }
+	}
+
+	return 1;
+
+    } else {
+	# check already deployed fence jobs
+	$self->process_fencing();
+    }
 }
 
+sub collect_finished_workers {
+    my ($self) = @_;
 
-# check childs and process exit status
-my $check_jobs = sub {
-    my ($haenv) = @_;
+    my $haenv = $self->{haenv};
+    my $workers = $self->{workers};
+
+    my @finished = ();
+
+    if ($haenv->get_max_workers() > 0) { # check if we forked the fence worker
+	foreach my $pid (keys %$workers) {
+	    my $waitpid = waitpid($pid, WNOHANG);
+	    if (defined($waitpid) && ($waitpid == $pid)) {
+		$workers->{$waitpid}->{ec} = $?;
+		push @finished, $waitpid;
+	    }
+	}
+    } else {
+	# all workers finish instantly when not forking
+	@finished = keys %$workers;
+    }
+
+    return @finished;
+};
+
+sub check_worker_results {
+    my ($self) = @_;
+
+    my $haenv = $self->{haenv};
 
     my $succeeded = {};
     my $failed = {};
 
-    my @finished = ();
+    my @finished = $self->collect_finished_workers();
 
-    # pick up all finsihed childs if we can fork
-    if ($haenv->get_max_workers() > 0) {
-	while((my $res = waitpid(-1, WNOHANG))>0) {
-	    $fence_jobs->{$res}->{ec} = $? if $fence_jobs->{$res};
-	    push @finished, $res;
-	}
-    } else {
-	@finished = keys %{$fence_jobs};
-    }
+    foreach my $pid (@finished) {
+	my $w = delete $self->{workers}->{$pid};
+	my $node = $w->{node};
 
-    #    while((my $res = waitpid(-1, WNOHANG))>0) {
-    foreach my $res (@finished) {
-	if (my $job = $fence_jobs->{$res}) {
-	    my $ec = $job->{ec};
-
-	    my $status = {
-		exit_code => $ec,
-		cmd => $job->{cmd},
-		try => $job->{try}
-	    };
-
-	    if ($ec == 0) {
-		$succeeded->{$job->{node}} = $status;
-	    } else {
-		$failed->{$job->{node}} = $status;
-	    }
-
-	    delete $fence_jobs->{$res};
-
+	if ($w->{ec} == 0) {
+	    # succeeded jobs doesn't need the status for now
+	    $succeeded->{$node} = $succeeded->{$node} || 0;
+	    $succeeded->{$node}++;
 	} else {
-	    warn "exit from unknown child (PID=$res)";
+	    $haenv->log('err', "fence job for node '$node' failed, command " .
+	                       "'$w->{cmd}' exited with '$w->{ec}'");
+	    # try count for all currently running workers per node is the same
+	    $failed->{$node}->{tried_device_count} = $w->{try};
 	}
-
     }
 
     return ($succeeded, $failed);
-};
+}
 
-
-my $reset_hard = sub {
-    my ($haenv, $node) = @_;
-
-    while (my ($pid, $job) = each %$fence_jobs) {
-	next if $job->{node} ne $node;
-
-	if ($haenv->max_workers() > 0) {
-	    kill KILL => $pid;
-	    # fixme maybe use an timeout even if kill should not hang?
-	    waitpid($pid, 0); # pick it up directly
-	}
-	delete $fence_jobs->{$pid};
-    }
-
-    delete $fenced_nodes->{$node} if $fenced_nodes->{$node};
-};
-
-
-# pick up jobs and process them
+# get finished workers and process the result
 sub process_fencing {
-    my ($haenv) = @_;
+    my ($self) = @_;
+
+    my $haenv = $self->{haenv};
+    my $results = $self->{results};
 
     my $fence_cfg = $haenv->read_fence_config();
 
-    my ($succeeded, $failed) = &$check_jobs($haenv);
+    my ($succeeded, $failed) = $self->check_worker_results();
 
     foreach my $node (keys %$succeeded) {
 	# count how many fence devices succeeded
-	# this is needed for parallel devices
-	$fenced_nodes->{$node}->{triggered}++;
+	$results->{$node}->{triggered} += $succeeded->{$node};
     }
 
     # try next device for failed jobs
-    while(my ($node, $job) = each %$failed) {
-	$haenv->log('err', "fence job failed: '$job->{cmd}' returned '$job->{exit_code}'");
+    foreach my $node (keys %$failed) {
+	my $tried_device_count = $failed->{$node}->{tried_device_count};
 
-	while($job->{try} < PVE::HA::FenceConfig::count_devices($node, $fence_cfg) )
-	{
-	    &$reset_hard($haenv, $node);
-	    $job->{try}++;
+	# loop until we could start another fence try or we are out of devices to try
+	while ($tried_device_count < PVE::HA::FenceConfig::count_devices($node, $fence_cfg)) {
+	    # clean up the other parallel jobs, if any, as at least one failed
+	    kill_and_cleanup_jobs($haenv, $node);
 
-	    return if start_fencing($node, $job->{try});
+	    $tried_device_count++; # try next available device
+	    return if run_fence_jobs($node, $tried_device_count);
 
-	    $haenv->log('warn', "Couldn't start fence try '$job->{try}'");
+	    $haenv->log('warn', "could not start fence job at try '$tried_device_count'");
 	}
 
-	    $haenv->log('err', "Tried all fence devices\n");
-	    # fixme: returnproper exit code so CRM waits for the agent lock
+	$results->{$node}->{failure} = 1;
+	$haenv->log('err', "tried all fence devices for node '$node'");
     }
+};
+
+sub has_fencing_job {
+    my ($self, $node) = @_;
+
+    my $workers = $self->{workers};
+
+    foreach my $job (values %$workers) {
+	return 1 if ($job->{node} eq $node);
+    }
+
+    return undef;
 }
 
+# if $node is undef we kill and cleanup *all* jobs from all nodes
+sub kill_and_cleanup_jobs {
+    my ($self, $node) = @_;
+
+    my $haenv = $self->{haenv};
+    my $workers = $self->{workers};
+    my $results = $self->{results};
+
+    while (my ($pid, $job) = each %$workers) {
+	next if defined($node) && $job->{node} ne $node;
+
+	if ($haenv->max_workers() > 0) {
+	    kill KILL => $pid;
+	    waitpid($pid, 0);
+	}
+	delete $workers->{$pid};
+    }
+
+    if (defined($node) && $results->{$node}) {
+	delete $results->{$node};
+    } else {
+	$self->{results} = {};
+	$self->{workers} = {};
+    }
+};
 
 sub is_node_fenced {
-    my ($node) = @_;
+    my ($self, $node) = @_;
 
-    my $state = $fenced_nodes->{$node};
+    my $state = $self->{results}->{$node};
     return 0 if !$state;
 
     return -1 if $state->{failure} && $state->{failure} == 1;
 
     return ($state->{needed} && $state->{triggered} &&
-	   $state->{triggered} >= $state->{needed}) ? 1 : 0;
-}
-
-
-sub reset {
-    my ($node, $noerr) = @_;
-
-    delete $fenced_nodes->{$node} if $fenced_nodes->{$node};
-}
-
-
-sub bail_out {
-    my ($haenv) = @_;
-
-    if ($haenv->max_workers() > 0) {
-	foreach my $pid (keys %$fence_jobs) {
-	    kill KILL => $pid;
-	    waitpid($pid, 0); # has to come back directly
-	}
-    }
-
-    $fenced_nodes = {};
-    $fence_jobs = {};
+	    $state->{triggered} >= $state->{needed}) ? 1 : 0;
 }
 
 1;
