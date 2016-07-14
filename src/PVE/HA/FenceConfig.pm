@@ -90,8 +90,15 @@ sub write_config {
 
     my $raw = '';
 
+    my $prev_priority = -1;
+
     foreach my $dev_name (sort {$data->{$a}->{priority} <=> $data->{$b}->{priority}} keys %$data) {
 	my $d = $data->{$dev_name};
+
+	die "Device '$dev_name' reuses priority! Priorities must be unique\n"
+	  if $prev_priority == $d->{priority};
+
+	$prev_priority = $d->{priority};
 
 	foreach my $sub_dev_nr (sort keys %{$d->{sub_devs}}) {
 	    my $sub_dev = $d->{sub_devs}->{$sub_dev_nr};
