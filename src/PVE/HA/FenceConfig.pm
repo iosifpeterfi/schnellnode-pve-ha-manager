@@ -90,19 +90,19 @@ sub write_config {
 
     my $raw = '';
 
-    foreach my $dev_name (sort {$a->{priority} <=> $b->{priority}} keys %$data) {
+    foreach my $dev_name (sort {$data->{$a}->{priority} <=> $data->{$b}->{priority}} keys %$data) {
 	my $d = $data->{$dev_name};
 
 	foreach my $sub_dev_nr (sort keys %{$d->{sub_devs}}) {
 	    my $sub_dev = $d->{sub_devs}->{$sub_dev_nr};
-	    my $dev_arg_str = join (' ', @{$sub_dev->{args}});
+	    my $dev_arg_str = PVE::Tools::cmd2string($sub_dev->{args});
 
 	    $raw .= "\ndevice $dev_name:$sub_dev_nr $sub_dev->{agent} $dev_arg_str\n";
 
 	    foreach my $node (sort keys %{$sub_dev->{node_args}}) {
 		my $node_arg_str = join (' ', @{$sub_dev->{node_args}->{$node}});
 
-		$raw .= "connect $dev_name:$sub_dev_nr $node_arg_str\n";
+		$raw .= "connect $dev_name:$sub_dev_nr node=$node $node_arg_str\n";
 	    }
 	}
     }
