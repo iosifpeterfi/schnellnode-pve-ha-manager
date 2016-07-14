@@ -191,7 +191,7 @@ sub parser_self_check {
 sub run_test {
     my $cfg_fn = shift;
 
-    print "check: $cfg_fn\n";
+    print "* check: $cfg_fn\n";
 
     my $outfile = "$cfg_fn.commands";
     my $expect = "$cfg_fn.expect";
@@ -215,7 +215,7 @@ sub run_test {
 	$res = system('cp', $outfile, $expect);
 	die "test '$cfg_fn' failed\n" if $res != 0;
     }
-    print "end: $cfg_fn (success)\n";
+    print "* end fence test: $cfg_fn (success)\n\n";
 }
 
 
