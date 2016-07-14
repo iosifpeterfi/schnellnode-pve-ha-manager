@@ -119,6 +119,12 @@ sub read_fence_config {
     cfs_read_file($ha_fence_config);
 }
 
+sub write_fence_config {
+    my ($cfg) = @_;
+
+    cfs_write_file($ha_fence_config, $cfg);
+}
+
 sub lock_ha_domain {
     my ($code, $errmsg) = @_;
 
