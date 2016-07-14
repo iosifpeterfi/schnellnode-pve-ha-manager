@@ -417,7 +417,7 @@ sub manage {
 
 	# handle fencing
 	my $fenced_nodes = {};
-	foreach my $sid (keys %$ss) {
+	foreach my $sid (sort keys %$ss) {
 	    my $sd = $ss->{$sid};
 	    next if $sd->{state} ne 'fence';
 

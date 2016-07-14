@@ -142,7 +142,7 @@ sub update {
 	}
     }
 
-    foreach my $node (keys %{$self->{status}}) {
+    foreach my $node (sort keys %{$self->{status}}) {
 	my $d = $node_info->{$node};
 	next if $d && $d->{online};
 
