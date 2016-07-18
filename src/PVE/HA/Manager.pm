@@ -14,21 +14,18 @@ sub new {
 
     my $class = ref($this) || $this;
 
-    my $ms = $haenv->read_manager_status();
+    my $self = bless { haenv => $haenv }, $class;
 
-    $ms->{master_node} = $haenv->nodename();
+    my $old_ms = $haenv->read_manager_status();
 
-    my $ns = PVE::HA::NodeStatus->new($haenv, $ms->{node_status} || {});
+    # we only copy the state part of the manager which cannot be auto generated
+
+    $self->{ns} = PVE::HA::NodeStatus->new($haenv, $old_ms->{node_status} || {});
 
     # fixme: use separate class  PVE::HA::ServiceStatus
-    my $ss = $ms->{service_status} || {};
+    $self->{ss} = $old_ms->{service_status} || {};
 
-    my $self = bless {
-	haenv => $haenv,
-	ms => $ms, # master status
-	ns => $ns, # PVE::HA::NodeStatus
-	ss => $ss, # service status
-    }, $class;
+    $self->{ms} = { master_node => $haenv->nodename() };
 
     return $self;
 }
