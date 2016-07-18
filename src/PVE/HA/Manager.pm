@@ -48,8 +48,8 @@ sub flush_master_status {
     $haenv->write_manager_status($ms);
 } 
 
-sub select_service_node {
-    my ($groups, $online_node_usage, $service_conf, $current_node, $try_next, $tried_nodes) = @_;
+sub get_service_group {
+    my ($groups, $online_node_usage, $service_conf) = @_;
 
     my $group = {};
     # add all online nodes to default group to allow try_next when no group set
@@ -60,6 +60,13 @@ sub select_service_node {
     # overwrite default if service is bound to a specific group
     $group =  $groups->{ids}->{$service_conf->{group}} if $service_conf->{group} && 
 	$groups->{ids}->{$service_conf->{group}};
+
+    return $group;
+}
+
+# groups available nodes with their priority as group index
+sub get_node_priority_groups {
+    my ($group, $online_node_usage) = @_;
 
     my $pri_groups = {};
     my $group_members = {};
@@ -73,7 +80,6 @@ sub select_service_node {
 	$group_members->{$node} = $pri;
     }
 
-    
     # add non-group members to unrestricted groups (priority -1)
     if (!$group->{restricted}) {
 	my $pri = -1;
@@ -83,6 +89,16 @@ sub select_service_node {
 	    $group_members->{$node} = -1;
 	}
     }
+
+    return ($pri_groups, $group_members);
+}
+
+sub select_service_node {
+    my ($groups, $online_node_usage, $service_conf, $current_node, $try_next, $tried_nodes) = @_;
+
+    my $group = get_service_group($groups, $online_node_usage, $service_conf);
+
+    my ($pri_groups, $group_members) = get_node_priority_groups($group, $online_node_usage);
 
     my @pri_list = sort {$b <=> $a} keys %$pri_groups;
     return undef if !scalar(@pri_list);
