@@ -1,0 +1,7 @@
+Test relocate policy on services with no group.
+Service 'fa:130' fails three times to restart and has a 'max_restart' policy
+of 0, thus will be relocated after each start try.
+As it has no group configured all available nodes should get chosen for
+when relocating.
+As we allow to relocate twice but the service fails three times we place
+it in the error state after all tries where used and all nodes where visited

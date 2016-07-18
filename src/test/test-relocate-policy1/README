@@ -1,0 +1,4 @@
+Test if relocate policy selects the lowest populated node in addition to
+only those which weren't tried yet.
+As node 1 has the most services it should get selected as last even if its
+name sorts before the other ones.

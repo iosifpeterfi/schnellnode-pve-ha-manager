@@ -1,0 +1,42 @@
+{
+    "master_node": "node1",
+    "node_status": {
+        "node1": "online",
+        "node2": "online",
+        "node3": "online"
+    },
+    "relocate_tried_nodes": {},
+    "service_status": {
+        "vm:100": {
+            "node": "node1",
+            "state": "started",
+            "uid": "hSIUPNL/lBjgyU4svobXlg"
+        },
+        "vm:101": {
+            "node": "node1",
+            "state": "started",
+            "uid": "vLuiMIZ5KBKzDZv2bkYLvA"
+        },
+        "vm:102": {
+            "node": "node1",
+            "state": "started",
+            "uid": "COPzO9cc+8Z3lUbWn8zCHA"
+        },
+        "vm:103": {
+            "node": "node2",
+            "state": "started",
+            "uid": "iktXhI6tCi8X6h8wQS9Uyw"
+        },
+        "vm:104": {
+            "node": "node2",
+            "state": "started",
+            "uid": "ySWup2on+tY88hdfzS1ymg"
+        },
+        "vm:105": {
+            "node": "node3",
+            "state": "started",
+            "uid": "RGRR9EOAzALG5cVMeWiKWA"
+        }
+    },
+    "timestamp": 10
+}

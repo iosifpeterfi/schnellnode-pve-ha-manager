@@ -1,0 +1,55 @@
+info      0     hardware: starting simulation
+info     20      cmdlist: execute power node1 on
+info     20    node1/crm: status change startup => wait_for_quorum
+info     20    node1/lrm: status change startup => wait_for_agent_lock
+info     20      cmdlist: execute power node2 on
+info     20    node2/crm: status change startup => wait_for_quorum
+info     20    node2/lrm: status change startup => wait_for_agent_lock
+info     20      cmdlist: execute power node3 on
+info     20    node3/crm: status change startup => wait_for_quorum
+info     20    node3/lrm: status change startup => wait_for_agent_lock
+info     20    node1/crm: got lock 'ha_manager_lock'
+info     20    node1/crm: status change wait_for_quorum => master
+info     20    node1/crm: node 'node1': state changed from 'unknown' => 'online'
+info     20    node1/crm: node 'node2': state changed from 'unknown' => 'online'
+info     20    node1/crm: node 'node3': state changed from 'unknown' => 'online'
+info     20    node1/crm: adding new service 'fa:130' on node 'node2'
+info     20    node1/crm: service 'fa:130': state changed from 'started' to 'request_stop'
+info     22    node2/crm: status change wait_for_quorum => slave
+info     23    node2/lrm: got lock 'ha_agent_node2_lock'
+info     23    node2/lrm: status change wait_for_agent_lock => active
+info     24    node3/crm: status change wait_for_quorum => slave
+info     40    node1/crm: service 'fa:130': state changed from 'request_stop' to 'stopped'
+info    120      cmdlist: execute service fa:130 enabled
+info    120    node1/crm: service 'fa:130': state changed from 'stopped' to 'started'  (node = node2)
+info    123    node2/lrm: starting service fa:130
+warn    123    node2/lrm: unable to start service fa:130
+err     123    node2/lrm: unable to start service fa:130 on local node after 0 retries
+warn    140    node1/crm: starting service fa:130 on node 'node2' failed, relocating service.
+info    140    node1/crm: relocate service 'fa:130' to node 'node1'
+info    140    node1/crm: service 'fa:130': state changed from 'started' to 'relocate'  (node = node2, target = node1)
+info    143    node2/lrm: service fa:130 - start relocate to node 'node1'
+info    143    node2/lrm: service fa:130 - end relocate to node 'node1'
+info    160    node1/crm: service 'fa:130': state changed from 'relocate' to 'started'  (node = node1)
+info    161    node1/lrm: got lock 'ha_agent_node1_lock'
+info    161    node1/lrm: status change wait_for_agent_lock => active
+info    161    node1/lrm: starting service fa:130
+warn    161    node1/lrm: unable to start service fa:130
+err     161    node1/lrm: unable to start service fa:130 on local node after 0 retries
+warn    180    node1/crm: starting service fa:130 on node 'node1' failed, relocating service.
+info    180    node1/crm: relocate service 'fa:130' to node 'node3'
+info    180    node1/crm: service 'fa:130': state changed from 'started' to 'relocate'  (node = node1, target = node3)
+info    181    node1/lrm: service fa:130 - start relocate to node 'node3'
+info    181    node1/lrm: service fa:130 - end relocate to node 'node3'
+info    200    node1/crm: service 'fa:130': state changed from 'relocate' to 'started'  (node = node3)
+info    205    node3/lrm: got lock 'ha_agent_node3_lock'
+info    205    node3/lrm: status change wait_for_agent_lock => active
+info    205    node3/lrm: starting service fa:130
+warn    205    node3/lrm: unable to start service fa:130
+err     205    node3/lrm: unable to start service fa:130 on local node after 0 retries
+warn    220    node1/crm: starting service fa:130 on node 'node3' failed, relocating service.
+warn    220    node1/crm: Start Error Recovery: Tried all available  nodes for service 'fa:130', retry start on current node. Tried nodes: node2, node1, node3
+info    225    node3/lrm: starting service fa:130
+info    225    node3/lrm: service status fa:130 started
+info    240    node1/crm: relocation policy successful for 'fa:130' on node 'node3', failed nodes: node2, node1, node3
+info    720     hardware: exit simulation - done

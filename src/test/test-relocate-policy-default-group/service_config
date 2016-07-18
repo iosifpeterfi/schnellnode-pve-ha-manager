@@ -1,0 +1,3 @@
+{
+    "fa:130": { "node": "node2", "max_restart": "0", "max_relocate": "2"  }
+}

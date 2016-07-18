@@ -49,7 +49,7 @@ sub flush_master_status {
 } 
 
 sub select_service_node {
-    my ($groups, $online_node_usage, $service_conf, $current_node, $try_next) = @_;
+    my ($groups, $online_node_usage, $service_conf, $current_node, $try_next, $tried_nodes) = @_;
 
     my $group = {};
     # add all online nodes to default group to allow try_next when no group set
@@ -84,7 +84,6 @@ sub select_service_node {
 	}
     }
 
-
     my @pri_list = sort {$b <=> $a} keys %$pri_groups;
     return undef if !scalar(@pri_list);
 
@@ -96,6 +95,13 @@ sub select_service_node {
     # select node from top priority node list
 
     my $top_pri = $pri_list[0];
+
+    # try to avoid nodes where the service failed already if we want to relocate
+    if ($try_next) {
+	foreach my $node (@$tried_nodes) {
+	    delete $pri_groups->{$top_pri}->{$node};
+	}
+    }
 
     my @nodes = sort { 
 	$online_node_usage->{$a} <=> $online_node_usage->{$b} || $a cmp $b
@@ -639,8 +645,8 @@ sub next_state_started {
 		}
 	    }
 
-	    my $node = select_service_node($self->{groups}, $self->{online_node_usage}, 
-					   $cd, $sd->{node}, $try_next);
+	    my $node = select_service_node($self->{groups}, $self->{online_node_usage},
+					   $cd, $sd->{node}, $try_next, $sd->{failed_nodes});
 
 	    if ($node && ($sd->{node} ne $node)) {
 		if ($cd->{type} eq 'vm') {
@@ -651,6 +657,11 @@ sub next_state_started {
 		    &$change_service_state($self, $sid, 'relocate', node => $sd->{node}, target => $node);
 		}
 	    } else {
+		if ($try_next && !defined($node)) {
+		    $haenv->log('warning', "Start Error Recovery: Tried all available " .
+		                " nodes for service '$sid', retry start on current node. " .
+		                "Tried nodes: " . join(', ', @{$sd->{failed_nodes}}));
+		}
 		# ensure service get started again if it went unexpected down
 		$sd->{uid} = compute_new_uuid($sd->{state});
 	    }

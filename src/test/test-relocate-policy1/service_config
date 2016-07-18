@@ -1,0 +1,9 @@
+{
+    "vm:100": { "node": "node1", "state": "enabled" },
+    "vm:101": { "node": "node1", "state": "enabled" },
+    "vm:102": { "node": "node1", "state": "enabled" },
+    "vm:103": { "node": "node2", "state": "enabled" },
+    "vm:104": { "node": "node2", "state": "enabled" },
+    "vm:105": { "node": "node3", "state": "enabled" },
+    "fa:130": { "node": "node3", "max_restart": "0", "max_relocate": "3"  }
+}
