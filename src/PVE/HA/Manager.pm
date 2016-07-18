@@ -187,6 +187,7 @@ my $change_service_state = sub {
 
     my $old_state = $sd->{state};
     my $old_node = $sd->{node};
+    my $old_failed_nodes = $sd->{failed_nodes};
 
     die "no state change" if $old_state eq $new_state; # just to be sure
 
@@ -196,6 +197,7 @@ my $change_service_state = sub {
 
     $sd->{state} = $new_state;
     $sd->{node} = $old_node;
+    $sd->{failed_nodes} = $old_failed_nodes;
 
     my $text_state = '';
     foreach my $k (sort keys %params) {
@@ -342,12 +344,8 @@ sub manage {
     foreach my $sid (keys %$ss) {
 	next if $sc->{$sid};
 	$haenv->log('info', "removing stale service '$sid' (no config)");
+	# remove all service related state information
 	delete $ss->{$sid};
-    }
-
-    # remove stale relocation try entries
-    foreach my $sid (keys %{$ms->{relocate_trial}}) {
-	delete $ms->{relocate_trial}->{$sid} if !$ss->{$sid};
     }
 
     $self->update_crm_commands();
@@ -546,6 +544,16 @@ sub next_state_stopped {
     $haenv->log('err', "service '$sid' - unknown state '$cd->{state}' in service configuration");
 }
 
+sub record_service_failed_on_node {
+	my ($self, $sid, $node) = @_;
+
+	if(!defined($self->{ss}->{$sid}->{failed_nodes})) {
+	    $self->{ss}->{$sid}->{failed_nodes} = [];
+	}
+
+	push @{$self->{ss}->{$sid}->{failed_nodes}}, $node;
+}
+
 sub next_state_started {
     my ($self, $sid, $cd, $sd, $lrm_res) = @_;
 
@@ -586,36 +594,43 @@ sub next_state_started {
 	} else {
 
 	    my $try_next = 0;
+
 	    if ($lrm_res) {
+
 		my $ec = $lrm_res->{exit_code};
 		if ($ec == SUCCESS) {
 
-		    $master_status->{relocate_trial}->{$sid} = 0;
+		    if (defined($sd->{failed_nodes})) {
+			$haenv->log('info', "relocation policy successful for '$sid'," .
+				    " failed nodes: " . join(', ', @{$sd->{failed_nodes}}) );
+		    }
+
+		    delete $sd->{failed_nodes};
 
 		} elsif ($ec == ERROR) {
 		    # apply our relocate policy if we got ERROR from the LRM
+		    $self->record_service_failed_on_node($sid, $sd->{node});
 
-		    my $try = $master_status->{relocate_trial}->{$sid} || 0;
+		    if (scalar(@{$sd->{failed_nodes}}) <= $cd->{max_relocate}) {
 
-		    if ($try < $cd->{max_relocate}) {
-
-			$try++;
 			# tell select_service_node to relocate if possible
 			$try_next = 1;
 
 			$haenv->log('warning', "starting service $sid on node".
 				   " '$sd->{node}' failed, relocating service.");
-			$master_status->{relocate_trial}->{$sid} = $try;
 
 		    } else {
 
-			$haenv->log('err', "recovery policy for service".
-				   " $sid failed, entering error state!");
+			$haenv->log('err', "recovery policy for service $sid " .
+			            "failed, entering error state. Failed nodes: ".
+			            join(', ', @{$sd->{failed_nodes}}));
 			&$change_service_state($self, $sid, 'error');
 			return;
 
 		    }
 		} else {
+		    $self->record_service_failed_on_node($sid, $sd->{node});
+
 		    $haenv->log('err', "service '$sid' got unrecoverable error" .
 				" (exit code $ec))");
 		    # we have no save way out (yet) for other errors
@@ -651,8 +666,12 @@ sub next_state_error {
     my ($self, $sid, $cd, $sd, $lrm_res) = @_;
 
     my $ns = $self->{ns};
+    my $ms = $self->{ms};
 
     if ($cd->{state} eq 'disabled') {
+	# clean up on error recovery
+	delete $sd->{failed_nodes};
+
 	&$change_service_state($self, $sid, 'stopped');
 	return;
     }

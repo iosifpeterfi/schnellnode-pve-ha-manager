@@ -28,7 +28,7 @@ warn    123    node2/lrm: restart policy: retry number 1 for service 'fa:130'
 info    143    node2/lrm: starting service fa:130
 warn    143    node2/lrm: unable to start service fa:130
 err     143    node2/lrm: unable to start service fa:130 on local node after 1 retries
-err     160    node1/crm: recovery policy for service fa:130 failed, entering error state!
+err     160    node1/crm: recovery policy for service fa:130 failed, entering error state. Failed nodes: node2
 info    160    node1/crm: service 'fa:130': state changed from 'started' to 'error'
 err     163    node2/lrm: service fa:130 is in an error state and needs manual intervention. Look up 'ERROR RECOVERY' in the documentation.
 info    220      cmdlist: execute service fa:130 disabled
