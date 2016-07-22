@@ -41,5 +41,5 @@ info    201    node1/lrm: got lock 'ha_agent_node1_lock'
 info    201    node1/lrm: status change wait_for_agent_lock => active
 info    201    node1/lrm: starting service fa:130
 info    201    node1/lrm: service status fa:130 started
-info    220    node1/crm: relocation policy successful for 'fa:130', failed nodes: node2
+info    220    node1/crm: relocation policy successful for 'fa:130' on node 'node1', failed nodes: node2
 info    720     hardware: exit simulation - done

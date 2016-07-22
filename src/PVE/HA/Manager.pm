@@ -601,7 +601,7 @@ sub next_state_started {
 		if ($ec == SUCCESS) {
 
 		    if (defined($sd->{failed_nodes})) {
-			$haenv->log('info', "relocation policy successful for '$sid'," .
+			$haenv->log('info', "relocation policy successful for '$sid' on node '$sd->{node}'," .
 				    " failed nodes: " . join(', ', @{$sd->{failed_nodes}}) );
 		    }
 
