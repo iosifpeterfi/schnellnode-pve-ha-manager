@@ -545,13 +545,13 @@ sub next_state_stopped {
 }
 
 sub record_service_failed_on_node {
-	my ($self, $sid, $node) = @_;
+    my ($self, $sid, $node) = @_;
 
-	if(!defined($self->{ss}->{$sid}->{failed_nodes})) {
-	    $self->{ss}->{$sid}->{failed_nodes} = [];
-	}
+    if (!defined($self->{ss}->{$sid}->{failed_nodes})) {
+	$self->{ss}->{$sid}->{failed_nodes} = [];
+    }
 
-	push @{$self->{ss}->{$sid}->{failed_nodes}}, $node;
+    push @{$self->{ss}->{$sid}->{failed_nodes}}, $node;
 }
 
 sub next_state_started {
