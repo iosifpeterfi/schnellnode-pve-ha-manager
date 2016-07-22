@@ -1,3 +1,13 @@
+pve-ha-manager (1.0-33) unstable; urgency=medium
+
+  * relocate policy: try to avoid already failed nodes
+
+  * allow empty json status files
+
+  * more regression tests
+
+ -- Proxmox Support Team <support@proxmox.com>  Fri, 22 Jul 2016 12:16:48 +0200
+
 pve-ha-manager (1.0-32) unstable; urgency=medium
 
   * use correct verify function for ha-group-node-list
