@@ -679,7 +679,8 @@ sub next_state_started {
 		                "Tried nodes: " . join(', ', @{$sd->{failed_nodes}}));
 		}
 		# ensure service get started again if it went unexpected down
-		$sd->{uid} = compute_new_uuid($sd->{state});
+		# but ensure also no LRM result gets lost
+		$sd->{uid} = compute_new_uuid($sd->{state}) if defined($lrm_res);
 	    }
 	}
 
