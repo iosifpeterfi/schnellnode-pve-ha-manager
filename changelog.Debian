@@ -1,3 +1,9 @@
+pve-ha-manager (1.0-34) unstable; urgency=medium
+
+  * fix race condition on slow resource commands in started state
+
+ -- Proxmox Support Team <support@proxmox.com>  Mon, 12 Sep 2016 13:07:05 +0200
+
 pve-ha-manager (1.0-33) unstable; urgency=medium
 
   * relocate policy: try to avoid already failed nodes
