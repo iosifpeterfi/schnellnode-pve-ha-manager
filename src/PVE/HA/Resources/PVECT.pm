@@ -6,6 +6,7 @@ use warnings;
 use PVE::HA::Tools;
 
 use PVE::LXC;
+use PVE::LXC::Config;
 use PVE::API2::LXC;
 use PVE::API2::LXC::Status;
 
