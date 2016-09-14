@@ -1,0 +1,2 @@
+Test failover after single node network failure and a service already in the
+error state. The service should not get touched as it needs manual intervention.

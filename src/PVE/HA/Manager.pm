@@ -704,11 +704,6 @@ sub next_state_error {
 	return;
     }
 
-    if ($ns->node_is_offline_delayed($sd->{node})) {
-	&$change_service_state($self, $sid, 'fence');
-	return;
-    }
-
 }
 
 1;

@@ -1,0 +1,15 @@
+{
+    "master_node": "node1",
+    "node_status": {
+        "node1": "online",
+        "node2": "online",
+        "node3": "online"
+    },
+    "service_status": {
+        "vm:103": {
+            "node": "node3",
+            "state": "error",
+            "uid": "kVYSNAeLNiBHm0ceiyNovg"
+        }
+    }
+}
