@@ -1,0 +1,3 @@
+Test failover after single node network failure and a interrupted backup,
+simulated by a left over lock. The lock should be removed on service recovery as
+the cause it protected vanished after the fencing of node3.

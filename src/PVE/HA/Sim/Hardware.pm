@@ -194,6 +194,54 @@ sub change_service_location {
     $self->write_service_config($conf);
 }
 
+sub service_has_lock {
+    my ($self, $sid) = @_;
+
+    my $conf = $self->read_service_config();
+
+    die "no such service '$sid'\n" if !$conf->{$sid};
+
+    return $conf->{$sid}->{lock};
+}
+
+sub lock_service {
+    my ($self, $sid, $lock) = @_;
+
+    my $conf = $self->read_service_config();
+
+    die "no such service '$sid'\n" if !$conf->{$sid};
+
+    $conf->{$sid}->{lock} = $lock || 'backup';
+
+    $self->write_service_config($conf);
+
+    return $conf;
+}
+
+sub unlock_service {
+    my ($self, $sid, $lock) = @_;
+
+    my $conf = $self->read_service_config();
+
+    die "no such service '$sid'\n" if !$conf->{$sid};
+
+    if (!defined($conf->{$sid}->{lock})) {
+	warn "service '$sid' not locked\n";
+	return undef;
+    }
+
+    if (defined($lock) && $conf->{$sid}->{lock} ne $lock) {
+	warn "found lock '$conf->{$sid}->{lock}' trying to remove '$lock' lock\n";
+	return undef;
+    }
+
+    my $removed_lock = delete $conf->{$sid}->{lock};
+
+    $self->write_service_config($conf);
+
+    return $removed_lock;
+}
+
 sub queue_crm_commands_nolock {
     my ($self, $cmd) = @_;
 

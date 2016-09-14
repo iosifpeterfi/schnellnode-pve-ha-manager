@@ -89,6 +89,7 @@ sub log {
 # restart-lrm <node>
 # service <sid> <enabled|disabled>
 # service <sid> <migrate|relocate> <target>
+# service <sid> lock/unlock [lockname]
 
 sub sim_hardware_cmd {
     my ($self, $cmdstr, $logid) = @_;
@@ -192,6 +193,14 @@ sub sim_hardware_cmd {
 	    } elsif ($action eq 'delete') {
 
 		$self->delete_service($sid);
+
+	    } elsif ($action eq 'lock') {
+
+		$self->lock_service($sid, $target);
+
+	    } elsif ($action eq 'unlock') {
+
+		$self->unlock_service($sid, $target);
 
 	    } else {
 		die "sim_hardware_cmd: unknown service action '$action' " .

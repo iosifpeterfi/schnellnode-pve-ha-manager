@@ -37,14 +37,19 @@ sub config_file {
 sub start {
     my ($class, $haenv, $id) = @_;
 
-    my $service_type = $class->type();
+    my $sid = $class->type() . ":$id";
     my $nodename = $haenv->nodename();
     my $hardware = $haenv->hardware();
     my $ss = $hardware->read_service_status($nodename);
 
+    if (my $lock = $hardware->service_has_lock($sid)) {
+	$haenv->log('err', "service '$sid' locked ($lock), unable to start!");
+	return;
+    }
+
     $haenv->sleep(2);
 
-    $ss->{"$service_type:$id"} = 1;
+    $ss->{$sid} = 1;
 
     $hardware->write_service_status($nodename, $ss);
 
@@ -53,14 +58,19 @@ sub start {
 sub shutdown {
     my ($class, $haenv, $id) = @_;
 
-    my $service_type = $class->type();
+    my $sid = $class->type() . ":$id";
     my $nodename = $haenv->nodename();
     my $hardware = $haenv->hardware();
     my $ss = $hardware->read_service_status($nodename);
 
+    if (my $lock = $hardware->service_has_lock($sid)) {
+	$haenv->log('err', "service '$sid' locked ($lock), unable to shutdown!");
+	return;
+    }
+
     $haenv->sleep(2);
 
-    $ss->{"$service_type:$id"} = 0;
+    $ss->{$sid} = 0;
 
     $hardware->write_service_status($nodename, $ss);
 }
@@ -88,6 +98,11 @@ sub migrate {
 
     my $cmd = $online ? "migrate" : "relocate";
     $haenv->log("info", "service $sid - start $cmd to node '$target'");
+
+    if (my $lock = $hardware->service_has_lock($sid)) {
+	$haenv->log('err', "service '$sid' locked ($lock), unable to $cmd!");
+	return;
+    }
 
     # explicitly shutdown if $online isn't true (relocate)
     if (!$online && $class->check_running($haenv, $id)) {
