@@ -12,4 +12,4 @@ test:
 .PHONY: clean
 clean:
 	rm -rf *~ test-*/log  test-*/*~ test-*/status \
-	fence_cfgs/*.cfg.commands
+	fence_cfgs/*.cfg.commands fence_cfgs/*.write
