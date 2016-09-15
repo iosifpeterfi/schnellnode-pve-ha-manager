@@ -292,9 +292,10 @@ my $recover_fenced_service = sub {
 	$cd->{node} = $sd->{node} = $recovery_node;
 	&$change_service_state($self, $sid, 'started', node => $recovery_node);
     } else {
-	# no node found, let the service in 'fence' state and try again
+	# no possible node found, cannot recover
 	$haenv->log('err', "recovering service '$sid' from fenced node " .
 		    "'$fenced_node' failed, no recovery node found");
+	&$change_service_state($self, $sid, 'error');
     }
 };
 

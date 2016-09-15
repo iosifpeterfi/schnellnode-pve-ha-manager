@@ -1,0 +1,4 @@
+Test what happens if a service needs to get recovered but
+select_service_node cannot return any possible node.
+
+Avoid endless loops by placing the service in the error state.

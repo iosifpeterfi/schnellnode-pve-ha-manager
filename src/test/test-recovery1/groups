@@ -1,0 +1,4 @@
+group: prefer_node2
+	nodes node2
+	restricted 1
+
