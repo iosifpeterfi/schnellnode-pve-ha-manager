@@ -226,7 +226,6 @@ sub unlock_service {
     die "no such service '$sid'\n" if !$conf->{$sid};
 
     if (!defined($conf->{$sid}->{lock})) {
-	warn "service '$sid' not locked\n";
 	return undef;
     }
 
