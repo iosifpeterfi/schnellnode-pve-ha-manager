@@ -238,6 +238,26 @@ my $change_service_state = sub {
 		" to '${new_state}'$text_state");
 };
 
+# clean up a possible bad state from a recovered service to allow its start
+my $fence_recovery_cleanup = sub {
+    my ($self, $sid, $fenced_node) = @_;
+
+    my $haenv = $self->{haenv};
+
+    my (undef, $type, $id) = PVE::HA::Tools::parse_sid($sid);
+    my $plugin = PVE::HA::Resources->lookup($type);
+
+    # should not happen
+    die "unknown resource type '$type'" if !$plugin;
+
+    # locks may block recovery, cleanup those which are safe to remove after fencing
+    my $removable_locks = ['backup', 'mounted'];
+    if (my $removed_lock = $plugin->remove_locks($haenv, $id, $removable_locks, $fenced_node)) {
+	$haenv->log('warning', "removed leftover lock '$removed_lock' from recovered " .
+	            "service '$sid' to allow its start.");
+    }
+};
+
 # after a node was fenced this recovers the service to a new node
 my $recover_fenced_service = sub {
     my ($self, $sid, $cd) = @_;
@@ -263,6 +283,8 @@ my $recover_fenced_service = sub {
     if ($recovery_node) {
 	$haenv->log('info', "recover service '$sid' from fenced node " .
 		    "'$fenced_node' to node '$recovery_node'");
+
+	&$fence_recovery_cleanup($self, $sid, $fenced_node);
 
 	$haenv->steal_service($sid, $sd->{node}, $recovery_node);
 
