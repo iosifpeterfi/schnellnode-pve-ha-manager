@@ -1,3 +1,15 @@
+pve-ha-manager (1.0-35) unstable; urgency=medium
+
+  * change service state to error if no recovery node is available
+
+  * cleanup backup & mounted locks after recovery (fixes #1100)
+
+  * add possibility to simulate locks from services
+
+  * don't run regression test when building the simulator package
+
+ -- Proxmox Support Team <support@proxmox.com>  Thu, 15 Sep 2016 13:23:00 +0200
+
 pve-ha-manager (1.0-34) unstable; urgency=medium
 
   * fix race condition on slow resource commands in started state
