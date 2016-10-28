@@ -9,7 +9,6 @@ use PVE::Cluster;
 use PVE::HA::Config;
 use PVE::JSONSchema qw(get_standard_option);
 use PVE::RPCEnvironment;
-use PVE::HA::Env::PVE2;
 
 use PVE::RESTHandler;
 
@@ -86,13 +85,11 @@ __PACKAGE__->register_method ({
 			  status => "No quorum on node '$nodename'!", quorate => 0 };
 	}
 
-	my $haenv = PVE::HA::Env::PVE2->new($nodename);
+	my $status = PVE::HA::Config::read_manager_status();
 
-	my $status = $haenv->read_manager_status();
+	my $service_config = PVE::HA::Config::read_and_check_resources_config();
 
-	my $service_config = $haenv->read_service_config();
-
-	my $ctime = $haenv->get_time();
+	my $ctime = time();
 
 	if (defined($status->{master_node}) && defined($status->{timestamp})) {
 	    my $master = $status->{master_node};
@@ -121,7 +118,7 @@ __PACKAGE__->register_method ({
 	}
 	
 	foreach my $node (sort keys %{$status->{node_status}}) {
-	    my $lrm_status = $haenv->read_lrm_status($node);
+	    my $lrm_status = PVE::HA::Config::read_lrm_status($node);
 	    my $id = "lrm:$node";
 	    if (!$lrm_status->{timestamp}) {
 		push @$res, { id => $id, type => 'lrm',  node => $node, 
@@ -183,9 +180,7 @@ __PACKAGE__->register_method ({
     code => sub {
 	my ($param) = @_;
 
-	my $haenv = PVE::HA::Env::PVE2->new($nodename);
-
-	my $status = $haenv->read_manager_status();
+	my $status = PVE::HA::Config::read_manager_status();
 	
 	my $data = { manager_status => $status };
 
@@ -195,7 +190,7 @@ __PACKAGE__->register_method ({
 	};
 	
 	foreach my $node (sort keys %{$status->{node_status}}) {
-	    my $lrm_status = $haenv->read_lrm_status($node);
+	    my $lrm_status = PVE::HA::Config::read_lrm_status($node);
 	    $data->{lrm_status}->{$node} = $lrm_status;
 	}
 
