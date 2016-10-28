@@ -113,36 +113,7 @@ sub read_crm_commands {
 sub read_service_config {
     my ($self) = @_;
 
-    my $res = PVE::HA::Config::read_resources_config();
-
-    my $vmlist = PVE::Cluster::get_vmlist();
-    my $conf = {};
-
-    foreach my $sid (keys %{$res->{ids}}) {
-	my $d = $res->{ids}->{$sid};
-	my (undef, undef, $name) = PVE::HA::Tools::parse_sid($sid);
-	$d->{state} = 'enabled' if !defined($d->{state});
-	$d->{max_restart} = 1 if !defined($d->{max_restart});
-	$d->{max_relocate} = 1 if !defined($d->{max_relocate});
-	if (PVE::HA::Resources->lookup($d->{type})) {
-	    if (my $vmd = $vmlist->{ids}->{$name}) {
-		if (!$vmd) {
-		    warn "no such VM '$name'\n";
-		} else {
-		    $d->{node} = $vmd->{node};
-		    $conf->{$sid} = $d;
-		}
-	    } else {
-		if (defined($d->{node})) {
-		    $conf->{$sid} = $d;
-		} else {
-		    warn "service '$sid' without node\n";
-		}
-	    }
-	}
-    }
-
-    return $conf;
+    return PVE::HA::Config::read_and_check_resources_config();
 }
 
 sub read_fence_config {
