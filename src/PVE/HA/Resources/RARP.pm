@@ -1,4 +1,4 @@
-package Packet::RARP;
+package PVE::HA::Resources::RARP;
 #
 # $Id: RARP.pm,v 1.7 2002/05/09 05:16:56 tcaine Exp $
 
