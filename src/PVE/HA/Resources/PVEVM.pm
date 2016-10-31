@@ -100,7 +100,16 @@ sub migrate {
 	$class->shutdown($haenv, $id);
     }
 
-    my $oldconfig = $class->config_file($id, $nodename);
+    foreach my $opt (keys %$conf) {
+        next if $opt !~  m/^net\d+$/;
+        my $nicconf = PVE::QemuServer::parse_net($conf->{$opt});
+
+        #open /etc/udhcpcd.conf - read ip address for $nicconf->{macaddr}
+        my $cmd = [ 'ip', 'ro', 'add', $i->sender_ip, 'via', $targetip ];
+
+        PVE::Tools::run_command($cmd);
+    }
+
 
     my $upid = PVE::API2::Qemu->migrate_vm($params);
     PVE::HA::Tools::upid_wait($upid, $haenv);
