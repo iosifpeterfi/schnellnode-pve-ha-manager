@@ -8,6 +8,7 @@ use PVE::HA::Tools;
 use PVE::QemuConfig;
 use PVE::QemuServer;
 use PVE::API2::Qemu;
+use PVE::HA::Resources::RARP;
 
 use base qw(PVE::HA::Resources);
 
